@@ -70,7 +70,7 @@ Restaurant.init({
     validate: {
       // More flexible phone validation that accepts common formats
       isValidPhone(value) {
-        if (value && !/^[\+]?[\d\-\(\)\s\.]{7,20}$/.test(value)) {
+        if (value && !/^[+]?[\d\-()s.]{7,20}$/.test(value)) {
           throw new Error('Phone number must be a valid format');
         }
       }
