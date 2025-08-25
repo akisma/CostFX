@@ -1,6 +1,6 @@
 import winston from 'winston';
 
-const { combine, timestamp, errors, json, simple, colorize, printf } = winston.format;
+const { combine, timestamp, errors, json, colorize, printf } = winston.format;
 
 // Custom format for console output
 const consoleFormat = printf(({ level, message, timestamp, ...meta }) => {

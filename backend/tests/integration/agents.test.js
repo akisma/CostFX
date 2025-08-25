@@ -27,7 +27,7 @@ describe('AI Agents API Integration Tests', () => {
         // Missing agent field
       };
 
-      const response = await request(app)
+      await request(app)
         .post('/api/v1/agents/query')
         .send(invalidData)
         .expect(200); // Current implementation doesn't validate, but it should
@@ -51,7 +51,7 @@ describe('AI Agents API Integration Tests', () => {
     });
 
     test('should handle invalid restaurant ID', async () => {
-      const response = await request(app)
+      await request(app)
         .get('/api/v1/agents/insights/invalid')
         .expect(200); // Current implementation doesn't validate
 

@@ -70,7 +70,7 @@ describe('Error Handler Middleware Unit Tests', () => {
     
     expect(mockRes.json).toHaveBeenCalledWith({
       error: 'Internal Server Error',
-      message: 'Test error'
+      message: 'Something went wrong'
     });
     
     process.env.NODE_ENV = originalEnv;

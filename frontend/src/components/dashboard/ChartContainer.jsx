@@ -1,6 +1,7 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import PropTypes from 'prop-types'
 
-const ChartContainer = ({ title, data, type = 'line' }) => {
+const ChartContainer = ({ title, data }) => {
   return (
     <div className="card p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
@@ -34,6 +35,11 @@ const ChartContainer = ({ title, data, type = 'line' }) => {
       </div>
     </div>
   )
+}
+
+ChartContainer.propTypes = {
+  title: PropTypes.string.isRequired,
+  data: PropTypes.array.isRequired
 }
 
 export default ChartContainer

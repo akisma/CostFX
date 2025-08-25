@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import PropTypes from 'prop-types'
 import { 
   LayoutDashboard, 
   Package, 
@@ -94,6 +95,10 @@ const Layout = ({ children }) => {
       </div>
     </div>
   )
+}
+
+Layout.propTypes = {
+  children: PropTypes.node.isRequired
 }
 
 export default Layout

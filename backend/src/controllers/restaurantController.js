@@ -23,13 +23,11 @@ export async function getAllRestaurants(req, res, next) {
     });
 
     res.json({
-      data: restaurants.rows,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(restaurants.count / limit),
-        totalItems: restaurants.count,
-        itemsPerPage: parseInt(limit)
-      }
+      restaurants: restaurants.rows,
+      total: restaurants.count,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalPages: Math.ceil(restaurants.count / limit)
     });
   } catch (error) {
     next(error);
@@ -40,17 +38,24 @@ export async function getRestaurantById(req, res, next) {
   try {
     const { id } = req.params;
     
-    const restaurant = await Restaurant.findByPk(id, {
-      include: [
-        { association: 'recipes', where: { isActive: true }, required: false }
-      ]
-    });
+    // Validate ID format
+    if (isNaN(parseInt(id))) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Invalid restaurant ID format'
+      });
+    }
+    
+    const restaurant = await Restaurant.findByPk(id);
 
     if (!restaurant) {
-      throw new NotFoundError('Restaurant not found');
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Restaurant not found'
+      });
     }
 
-    res.json({ data: restaurant });
+    res.json(restaurant);
   } catch (error) {
     next(error);
   }
