@@ -1,18 +1,16 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
-// Mock axios before importing api
-const mockAxios = {
-  create: vi.fn(),
-  defaults: {},
-  get: vi.fn(),
-  post: vi.fn(),
-  put: vi.fn(),
-  delete: vi.fn(),
-  interceptors: {
-    request: { use: vi.fn() },
-    response: { use: vi.fn() }
-  }
+// Create a proper localStorage mock
+const localStorageMock = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn()
 }
+
+// Mock axios interceptors
+const mockRequestInterceptor = vi.fn()
+const mockResponseInterceptor = vi.fn()
 
 const mockAxiosInstance = {
   get: vi.fn(),
@@ -25,26 +23,45 @@ const mockAxiosInstance = {
     headers: { 'Content-Type': 'application/json' }
   },
   interceptors: {
+    request: { use: mockRequestInterceptor },
+    response: { use: mockResponseInterceptor }
+  }
+}
+
+const mockAxios = {
+  create: vi.fn().mockReturnValue(mockAxiosInstance),
+  defaults: {},
+  get: vi.fn(),
+  post: vi.fn(),
+  put: vi.fn(),
+  delete: vi.fn(),
+  interceptors: {
     request: { use: vi.fn() },
     response: { use: vi.fn() }
   }
 }
 
-mockAxios.create.mockReturnValue(mockAxiosInstance)
-
 vi.mock('axios', () => ({
   default: mockAxios
 }))
 
+// Mock localStorage
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock
+})
+
 describe('API Service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    localStorage.clear()
+    localStorageMock.clear()
+    localStorageMock.getItem.mockReturnValue(null)
+    // Clear module cache to get fresh import
+    vi.resetModules()
   })
 
   it('creates axios instance with correct config', async () => {
     // Import api after mocking axios
-    const { default: api } = await import('../../src/services/api')
+    await import('../../src/services/api')
     
     expect(mockAxios.create).toHaveBeenCalledWith({
       baseURL: 'http://localhost:3001/api/v1',
@@ -56,38 +73,90 @@ describe('API Service', () => {
   })
 
   it('includes auth token in requests when available', async () => {
-    localStorage.setItem('authToken', 'test-token')
+    // Setup localStorage mock to return a token
+    localStorageMock.getItem.mockReturnValue('test-token')
     
-    // Re-import to get fresh instance with token
-    delete require.cache[require.resolve('../../src/services/api')]
-    const { default: api } = await import('../../src/services/api')
+    // Import API which will set up interceptors
+    await import('../../src/services/api')
     
-    // Verify interceptor was set up (we can't easily test the interceptor logic in this setup)
-    expect(mockAxiosInstance.interceptors.request.use).toHaveBeenCalled()
+    // Verify request interceptor was set up
+    expect(mockRequestInterceptor).toHaveBeenCalled()
+    
+    // Get the interceptor function and test it
+    const requestInterceptor = mockRequestInterceptor.mock.calls[0][0]
+    const config = { headers: {} }
+    const result = requestInterceptor(config)
+    
+    expect(result.headers.Authorization).toBe('Bearer test-token')
   })
 
   it('handles requests without auth token', async () => {
-    // Ensure no token is present
-    localStorage.removeItem('authToken')
+    // Ensure localStorage returns null
+    localStorageMock.getItem.mockReturnValue(null)
     
-    // Import fresh api instance
-    delete require.cache[require.resolve('../../src/services/api')]
-    const { default: api } = await import('../../src/services/api')
+    // Import API
+    await import('../../src/services/api')
     
-    expect(mockAxiosInstance.interceptors.request.use).toHaveBeenCalled()
+    // Verify request interceptor was set up
+    expect(mockRequestInterceptor).toHaveBeenCalled()
+    
+    // Get the interceptor function and test it
+    const requestInterceptor = mockRequestInterceptor.mock.calls[0][0]
+    const config = { headers: {} }
+    const result = requestInterceptor(config)
+    
+    // Should not have Authorization header
+    expect(result.headers.Authorization).toBeUndefined()
   })
 
   it('handles 401 responses by clearing token and redirecting', async () => {
-    const { default: api } = await import('../../src/services/api')
+    // Mock window.location
+    delete window.location
+    window.location = { href: '' }
+    
+    await import('../../src/services/api')
     
     // Verify response interceptor was set up
-    expect(mockAxiosInstance.interceptors.response.use).toHaveBeenCalled()
+    expect(mockResponseInterceptor).toHaveBeenCalled()
+    
+    // Get the error handler from response interceptor
+    const responseErrorHandler = mockResponseInterceptor.mock.calls[0][1]
+    
+    // Test 401 error handling
+    const error = { response: { status: 401 } }
+    
+    try {
+      await responseErrorHandler(error)
+    } catch (e) {
+      // Should reject with the error
+      expect(e).toBe(error)
+    }
+    
+    // Should clear token and redirect
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('authToken')
+    expect(window.location.href).toBe('/login')
   })
 
   it('passes through non-401 errors', async () => {
-    const { default: api } = await import('../../src/services/api')
+    await import('../../src/services/api')
     
-    // Verify response interceptor was set up to handle errors
-    expect(mockAxiosInstance.interceptors.response.use).toHaveBeenCalled()
+    // Verify response interceptor was set up
+    expect(mockResponseInterceptor).toHaveBeenCalled()
+    
+    // Get the error handler from response interceptor
+    const responseErrorHandler = mockResponseInterceptor.mock.calls[0][1]
+    
+    // Test non-401 error handling
+    const error = { response: { status: 500 } }
+    
+    try {
+      await responseErrorHandler(error)
+    } catch (e) {
+      // Should reject with the error without clearing token
+      expect(e).toBe(error)
+    }
+    
+    // Should not call removeItem for non-401 errors
+    expect(localStorageMock.removeItem).not.toHaveBeenCalled()
   })
 })

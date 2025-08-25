@@ -29,8 +29,8 @@ describe('Dashboard Component', () => {
   it('renders loading state initially', () => {
     render(<Dashboard />)
     
-    // Should show loading state initially
-    expect(screen.getByText(/loading/i)).toBeInTheDocument()
+    // Should show loading state initially (check for spinner)
+    expect(document.querySelector('.spinner')).toBeInTheDocument()
   })
 
   it('renders dashboard metrics after loading', async () => {
@@ -38,7 +38,7 @@ describe('Dashboard Component', () => {
     
     // Wait for the loading to complete (simulated timeout in component)
     await waitFor(() => {
-      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument()
+      expect(document.querySelector('.spinner')).not.toBeInTheDocument()
     }, { timeout: 2000 })
 
     // Should render metric cards
@@ -58,7 +58,8 @@ describe('Dashboard Component', () => {
     render(<Dashboard />)
     
     await waitFor(() => {
-      expect(screen.getByText(/alerts/i)).toBeInTheDocument()
+      // Look for specific alert messages that should be present
+      expect(screen.getByText(/order more olive oil/i)).toBeInTheDocument()
     }, { timeout: 2000 })
   })
 
@@ -74,7 +75,8 @@ describe('Dashboard Component', () => {
     render(<Dashboard />)
     
     await waitFor(() => {
-      expect(screen.getByText(/waste/i)).toBeInTheDocument()
+      // Look specifically for the "Waste Percentage" metric card title
+      expect(screen.getByText('Waste Percentage')).toBeInTheDocument()
     }, { timeout: 2000 })
   })
 })

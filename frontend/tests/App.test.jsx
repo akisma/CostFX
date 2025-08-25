@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
 import { describe, it, expect, vi } from 'vitest'
-import App from '../src/App'
+import App, { AppRoutes } from '../src/App'
 import restaurantSlice from '../src/store/slices/restaurantSlice'
 import inventorySlice from '../src/store/slices/inventorySlice'
 import recipeSlice from '../src/store/slices/recipeSlice'
@@ -47,7 +47,7 @@ describe('App', () => {
   it('renders without crashing', () => {
     render(
       <TestWrapper>
-        <App />
+        <AppRoutes />
       </TestWrapper>
     )
     
@@ -59,7 +59,7 @@ describe('App', () => {
   it('renders the dashboard by default', () => {
     render(
       <TestWrapper>
-        <App />
+        <AppRoutes />
       </TestWrapper>
     )
     
