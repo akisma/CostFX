@@ -8,20 +8,27 @@ import CostAnalysis from './components/analysis/CostAnalysis'
 import WasteAnalysis from './components/analysis/WasteAnalysis'
 import ForecastView from './components/analysis/ForecastView'
 
+// Extract routes into a separate component that doesn't include the router
+export function AppRoutes() {
+  return (
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/inventory" element={<InventoryList />} />
+        <Route path="/recipes" element={<RecipeList />} />
+        <Route path="/recipes/:id" element={<RecipeDetail />} />
+        <Route path="/analysis/costs" element={<CostAnalysis />} />
+        <Route path="/analysis/waste" element={<WasteAnalysis />} />
+        <Route path="/analysis/forecast" element={<ForecastView />} />
+      </Routes>
+    </Layout>
+  )
+}
+
 function App() {
   return (
     <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/inventory" element={<InventoryList />} />
-          <Route path="/recipes" element={<RecipeList />} />
-          <Route path="/recipes/:id" element={<RecipeDetail />} />
-          <Route path="/analysis/costs" element={<CostAnalysis />} />
-          <Route path="/analysis/waste" element={<WasteAnalysis />} />
-          <Route path="/analysis/forecast" element={<ForecastView />} />
-        </Routes>
-      </Layout>
+      <AppRoutes />
     </Router>
   )
 }
