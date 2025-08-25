@@ -1,8 +1,9 @@
-import { beforeEach, afterEach, vi } from 'vitest'
-import { cleanup } from '@testing-library/react'
-import '@testing-library/jest-dom'
+import { beforeEach, afterEach, vi } from 'vitest';
+import { cleanup } from '@testing-library/react';
+import '@testing-library/jest-dom';
 
-// Mock environment variables
+// Set global reference
+globalThis.global = globalThis;
 Object.defineProperty(import.meta, 'env', {
   value: {
     VITE_API_URL: 'http://localhost:3001/api/v1'
@@ -10,7 +11,7 @@ Object.defineProperty(import.meta, 'env', {
 });
 
 // Mock fetch for API calls
-global.fetch = vi.fn();
+globalThis.fetch = vi.fn();
 
 // Mock localStorage
 const localStorageMock = {
@@ -19,7 +20,7 @@ const localStorageMock = {
   removeItem: vi.fn(),
   clear: vi.fn(),
 };
-global.localStorage = localStorageMock;
+globalThis.localStorage = localStorageMock;
 
 // Mock window.location
 delete window.location;

@@ -15,8 +15,5 @@ export default {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  transform: {
-    '^.+\\.js$': 'babel-jest'
-  },
   testTimeout: 10000
 };

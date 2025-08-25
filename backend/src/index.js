@@ -12,7 +12,7 @@ const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '../../');
 dotenv.config({ path: join(rootDir, '.env') });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
 async function startServer() {
   try {
