@@ -14,7 +14,6 @@ An AI-powered restaurant operations optimization system that provides actionable
 
 1. **Clone and setup**
 ```bash
-cd /Users/jessjacobs/Desktop/CostFX
 npm install
 ```
 
@@ -111,7 +110,7 @@ The system includes specialized AI agents:
 
 ## 📈 Data Collection Format
 
-For Dave's recipe and operational data collection:
+For recipe and operational data collection:
 
 ### Recipe Format
 ```json
@@ -183,27 +182,6 @@ cd frontend && npm run test:coverage
 - Vitest for frontend testing
 - ESLint for code quality
 - Docker for development environment
-
-## 📝 Next Steps
-
-1. **Complete the missing files** - Several placeholder components and models need implementation
-2. **Set up OpenAI integration** - Configure AI agents with your API key
-3. **Database setup** - Create initial migrations and seed data
-4. **Data collection** - Work with Dave to standardize recipe and operational data
-5. **Agent training** - Feed business logic and industry benchmarks into AI agents
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make changes and add tests
-4. Run tests and linting
-5. Submit a pull request
-
-## 📞 Support
-
-For questions about setup or development:
-- Check the project documentation
 - Review the API endpoints at `/api/v1`
 - Test the development environment with `npm run dev`
 
