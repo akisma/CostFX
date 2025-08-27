@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals';
 import agentService from '../../src/agents/AgentService.js';
 
 describe('ForecastAgent Integration', () => {

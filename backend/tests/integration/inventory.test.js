@@ -1,42 +1,38 @@
 import { jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../../src/app.js';
-import { AgentService } from '../../src/agents/AgentService.js';
+import agentService from '../../src/agents/AgentService.js';
 
 // Mock AgentService
-jest.mock('../../src/agents/AgentService.js', () => ({
-  AgentService: {
-    processRequest: jest.fn()
-  }
-}));
+jest.mock('../../src/agents/AgentService.js', () => {
+  return {
+    default: {
+      processRequest: jest.fn()
+    }
+  };
+});
 
-describe('Inventory Routes', () => {
+describe('Inventory Integration Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('GET /api/inventory/levels', () => {
-    test('should return inventory levels for valid restaurant ID', async () => {
+  describe('POST /api/v1/inventory/check-levels', () => {
+    test('should check inventory levels successfully', async () => {
       const mockResponse = {
-        inventoryItems: [
-          {
-            id: 1,
-            name: 'Test Item',
-            status: 'healthy',
-            currentStock: 50,
-            totalValue: 250.00
+        success: true,
+        data: {
+          restaurant_id: 1,
+          timestamp: new Date().toISOString(),
+          analysis: {
+            low_stock_items: [],
+            overstocked_items: [],
+            reorder_recommendations: []
           }
-        ],
-        summary: {
-          totalItems: 1,
-          totalValue: 250.00,
-          healthyItems: 1,
-          lowStockItems: 0
-        },
-        generatedAt: '2025-08-24T12:00:00.000Z'
+        }
       };
 
-      AgentService.processRequest.mockResolvedValue(mockResponse);
+      agentService.processRequest.mockResolvedValue(mockResponse);
 
       const response = await request(app)
         .get('/api/inventory/levels')
@@ -46,7 +42,7 @@ describe('Inventory Routes', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data).toEqual(mockResponse);
       
-      expect(AgentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
+      expect(agentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
         type: 'track_levels',
         data: { 
           restaurantId: 1,
@@ -65,7 +61,7 @@ describe('Inventory Routes', () => {
     });
 
     test('should handle AgentService errors', async () => {
-      AgentService.processRequest.mockRejectedValue(new Error('Agent processing failed'));
+      agentService.processRequest.mockRejectedValue(new Error('Agent processing failed'));
 
       const response = await request(app)
         .get('/api/inventory/levels')
@@ -78,13 +74,13 @@ describe('Inventory Routes', () => {
 
     test('should handle includeInactive parameter', async () => {
       const mockResponse = { inventoryItems: [], summary: {} };
-      AgentService.processRequest.mockResolvedValue(mockResponse);
+      agentService.processRequest.mockResolvedValue(mockResponse);
 
       await request(app)
         .get('/api/inventory/levels')
         .query({ restaurantId: '1', includeInactive: 'true' });
 
-      expect(AgentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
+      expect(agentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
         type: 'track_levels',
         data: { 
           restaurantId: 1,
@@ -111,7 +107,7 @@ describe('Inventory Routes', () => {
         }
       };
 
-      AgentService.processRequest.mockResolvedValue(mockResponse);
+      agentService.processRequest.mockResolvedValue(mockResponse);
 
       const response = await request(app)
         .get('/api/inventory/reorder-needs')
@@ -120,7 +116,7 @@ describe('Inventory Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data).toEqual(mockResponse);
       
-      expect(AgentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
+      expect(agentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
         type: 'predict_reorder',
         data: { 
           restaurantId: 1,
@@ -131,13 +127,13 @@ describe('Inventory Routes', () => {
 
     test('should use custom forecast days when provided', async () => {
       const mockResponse = { recommendations: [], summary: {} };
-      AgentService.processRequest.mockResolvedValue(mockResponse);
+      agentService.processRequest.mockResolvedValue(mockResponse);
 
       await request(app)
         .get('/api/inventory/reorder-needs')
         .query({ restaurantId: '1', forecastDays: '14' });
 
-      expect(AgentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
+      expect(agentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
         type: 'predict_reorder',
         data: { 
           restaurantId: 1,
@@ -164,7 +160,7 @@ describe('Inventory Routes', () => {
         }
       };
 
-      AgentService.processRequest.mockResolvedValue(mockResponse);
+      agentService.processRequest.mockResolvedValue(mockResponse);
 
       const response = await request(app)
         .get('/api/inventory/expiration-alerts')
@@ -173,7 +169,7 @@ describe('Inventory Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data).toEqual(mockResponse);
       
-      expect(AgentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
+      expect(agentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
         type: 'monitor_expiration',
         data: { 
           restaurantId: 1,
@@ -205,7 +201,7 @@ describe('Inventory Routes', () => {
         }
       };
 
-      AgentService.processRequest.mockResolvedValue(mockResponse);
+      agentService.processRequest.mockResolvedValue(mockResponse);
 
       const response = await request(app)
         .get('/api/inventory/waste-analysis')
@@ -214,7 +210,7 @@ describe('Inventory Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data).toEqual(mockResponse);
       
-      expect(AgentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
+      expect(agentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
         type: 'analyze_waste',
         data: { 
           restaurantId: 1,
@@ -242,7 +238,7 @@ describe('Inventory Routes', () => {
         }
       };
 
-      AgentService.processRequest.mockResolvedValue(mockResponse);
+      agentService.processRequest.mockResolvedValue(mockResponse);
 
       const response = await request(app)
         .get('/api/inventory/optimization')
@@ -251,7 +247,7 @@ describe('Inventory Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data).toEqual(mockResponse);
       
-      expect(AgentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
+      expect(agentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
         type: 'optimize_stock',
         data: { 
           restaurantId: 1,
@@ -262,14 +258,14 @@ describe('Inventory Routes', () => {
 
     test('should validate optimization goal parameter', async () => {
       const mockResponse = { optimizations: [], summary: {} };
-      AgentService.processRequest.mockResolvedValue(mockResponse);
+      agentService.processRequest.mockResolvedValue(mockResponse);
 
       // Test with valid goal
       await request(app)
         .get('/api/inventory/optimization')
         .query({ restaurantId: '1', optimizationGoal: 'cost_reduction' });
 
-      expect(AgentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
+      expect(agentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
         type: 'optimize_stock',
         data: { 
           restaurantId: 1,
@@ -282,7 +278,7 @@ describe('Inventory Routes', () => {
         .get('/api/inventory/optimization')
         .query({ restaurantId: '1', optimizationGoal: 'invalid_goal' });
 
-      expect(AgentService.processRequest).toHaveBeenLastCalledWith('InventoryAgent', {
+      expect(agentService.processRequest).toHaveBeenLastCalledWith('InventoryAgent', {
         type: 'optimize_stock',
         data: { 
           restaurantId: 1,
@@ -299,7 +295,7 @@ describe('Inventory Routes', () => {
       const mockExpirations = { alerts: [], summary: {} };
       const mockWaste = { wasteAnalysis: [], summary: {} };
 
-      AgentService.processRequest
+      agentService.processRequest
         .mockResolvedValueOnce(mockLevels)
         .mockResolvedValueOnce(mockReorders)
         .mockResolvedValueOnce(mockExpirations)
@@ -318,11 +314,11 @@ describe('Inventory Routes', () => {
       expect(response.body.data.summary).toBeDefined();
 
       // Should call AgentService 4 times for different data types
-      expect(AgentService.processRequest).toHaveBeenCalledTimes(4);
+      expect(agentService.processRequest).toHaveBeenCalledTimes(4);
     });
 
     test('should handle parallel request failures gracefully', async () => {
-      AgentService.processRequest
+      agentService.processRequest
         .mockResolvedValueOnce({ inventoryItems: [], summary: {} })
         .mockRejectedValueOnce(new Error('Reorder service failed'))
         .mockResolvedValueOnce({ alerts: [], summary: {} })
@@ -379,7 +375,7 @@ describe('Inventory Routes', () => {
     });
 
     test('should handle AgentService errors consistently', async () => {
-      AgentService.processRequest.mockRejectedValue(new Error('Service unavailable'));
+      agentService.processRequest.mockRejectedValue(new Error('Service unavailable'));
 
       const response = await request(app)
         .get('/api/inventory/levels')
@@ -392,7 +388,7 @@ describe('Inventory Routes', () => {
     });
 
     test('should handle invalid restaurant ID format', async () => {
-      AgentService.processRequest.mockResolvedValue({ inventoryItems: [], summary: {} });
+      agentService.processRequest.mockResolvedValue({ inventoryItems: [], summary: {} });
 
       const response = await request(app)
         .get('/api/inventory/levels')
@@ -400,7 +396,7 @@ describe('Inventory Routes', () => {
 
       expect(response.status).toBe(200); // Should still work, parseInt will handle conversion
       
-      expect(AgentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
+      expect(agentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
         type: 'track_levels',
         data: { 
           restaurantId: NaN, // parseInt('invalid') returns NaN
@@ -413,13 +409,13 @@ describe('Inventory Routes', () => {
   describe('Parameter validation', () => {
     test('should convert string parameters to numbers correctly', async () => {
       const mockResponse = { recommendations: [], summary: {} };
-      AgentService.processRequest.mockResolvedValue(mockResponse);
+      agentService.processRequest.mockResolvedValue(mockResponse);
 
       await request(app)
         .get('/api/inventory/reorder-needs')
         .query({ restaurantId: '123', forecastDays: '14' });
 
-      expect(AgentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
+      expect(agentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
         type: 'predict_reorder',
         data: { 
           restaurantId: 123,
@@ -430,13 +426,13 @@ describe('Inventory Routes', () => {
 
     test('should handle boolean parameters correctly', async () => {
       const mockResponse = { inventoryItems: [], summary: {} };
-      AgentService.processRequest.mockResolvedValue(mockResponse);
+      agentService.processRequest.mockResolvedValue(mockResponse);
 
       await request(app)
         .get('/api/inventory/levels')
         .query({ restaurantId: '1', includeInactive: 'true' });
 
-      expect(AgentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
+      expect(agentService.processRequest).toHaveBeenCalledWith('InventoryAgent', {
         type: 'track_levels',
         data: { 
           restaurantId: 1,
@@ -448,7 +444,7 @@ describe('Inventory Routes', () => {
         .get('/api/inventory/levels')
         .query({ restaurantId: '1', includeInactive: 'false' });
 
-      expect(AgentService.processRequest).toHaveBeenLastCalledWith('InventoryAgent', {
+      expect(agentService.processRequest).toHaveBeenLastCalledWith('InventoryAgent', {
         type: 'track_levels',
         data: { 
           restaurantId: 1,

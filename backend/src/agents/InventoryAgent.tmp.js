@@ -74,14 +74,15 @@ class InventoryAgent extends BaseAgent {
    * Track current inventory levels and identify stock issues
    */
   async trackInventoryLevels(data) {
-    const { restaurantId, includeInactive = false } = data;
+    const { restaurantId } = data;
+    // TODO: Use includeInactive parameter when implementing full filtering
     
     // Get current inventory from database models
     const inventoryItems = await this.getCurrentInventory(restaurantId);
 
     const analysis = inventoryItems.map(item => {
       let status = 'healthy';
-      let alerts = [];
+      const alerts = [];
 
       // Check stock levels
       if (item.currentStock <= 0) {
@@ -235,7 +236,7 @@ class InventoryAgent extends BaseAgent {
     // Get items with expiration dates
     const inventoryItems = await this.getExpiringItems(restaurantId);
 
-    const today = new Date();
+    // TODO: Use today variable when implementing date-based filtering
     const expirationAlerts = inventoryItems
       .map(item => {
         const daysUntilExpiration = this.getDaysUntilExpiration(item.expirationDate);
@@ -508,7 +509,8 @@ class InventoryAgent extends BaseAgent {
   /**
    * Generate specific recommendations for stock level optimization
    */
-  generateStockRecommendations(item, optimalMin, optimalMax, reorderPoint) {
+  generateStockRecommendations(item, optimalMin, optimalMax) {
+    // TODO: Use reorderPoint parameter when implementing advanced reorder logic
     const recommendations = [];
     
     if (optimalMin < item.minimumStock) {

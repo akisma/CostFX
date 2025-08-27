@@ -429,7 +429,7 @@ describe('ForecastAgent', () => {
       // Check that all quantities are within reasonable range
       const quantities = history.map(h => h.quantity);
       const avg = quantities.reduce((sum, q) => sum + q, 0) / quantities.length;
-      expect(avg).toBeCloseTo(30, 0); // Should be close to target average
+      expect(avg).toBeCloseTo(30, 0); // Should be close to target average (within 0.5)
     });
   });
 

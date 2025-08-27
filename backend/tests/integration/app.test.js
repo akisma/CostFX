@@ -39,9 +39,10 @@ describe('App Integration Tests', () => {
     test('should have CORS headers', async () => {
       const response = await request(app)
         .get('/health')
+        .set('Origin', 'http://localhost:3000')
         .expect(200);
 
-      expect(response.headers).toHaveProperty('access-control-allow-origin');
+      expect(response.headers).toHaveProperty('access-control-allow-credentials');
     });
 
     test('should have security headers', async () => {

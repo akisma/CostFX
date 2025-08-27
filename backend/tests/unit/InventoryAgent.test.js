@@ -1,5 +1,4 @@
 import { jest } from '@jest/globals';
-import InventoryAgent from '../../src/agents/InventoryAgent.js';
 
 // Mock the helper functions
 jest.unstable_mockModule('../../src/utils/helpers.js', () => ({
@@ -12,17 +11,20 @@ jest.unstable_mockModule('../../src/utils/helpers.js', () => ({
 }));
 
 // Mock Sequelize models
-jest.unstable_mockModule('../../src/models/index.js', () => ({
-  InventoryItem: {
-    findAll: jest.fn()
-  },
-  InventoryTransaction: {
-    findAll: jest.fn()
-  },
-  Supplier: {
+jest.unstable_mockModule('../../src/models/InventoryItem.js', () => ({
+  default: {
     findAll: jest.fn()
   }
 }));
+
+jest.unstable_mockModule('../../src/models/InventoryTransaction.js', () => ({
+  default: {
+    findAll: jest.fn()
+  }
+}));
+
+// Import InventoryAgent after mocks
+import InventoryAgent from '../../src/agents/InventoryAgent.js';
 
 describe('InventoryAgent', () => {
   let inventoryAgent;

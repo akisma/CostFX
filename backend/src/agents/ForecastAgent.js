@@ -341,16 +341,14 @@ class ForecastAgent extends BaseAgent {
    * Generate forecast for a single menu item
    */
   generateItemForecast(item, forecastDays) {
-    const { itemId, itemName, historicalSales, trend, seasonality } = item;
+    const { itemId, itemName, historicalSales, trend } = item;
     
-    // Apply simple exponential smoothing with trend and seasonality
-    const alpha = 0.3; // Smoothing parameter
-    const beta = 0.1;  // Trend parameter
-    const gamma = 0.1; // Seasonality parameter
+    // Apply simple exponential smoothing with trend
+    // Note: seasonality, alpha, beta, gamma are reserved for future enhancements
     
     const dailyForecasts = [];
-    let baseLevel = historicalSales[historicalSales.length - 1].quantity;
-    let trendLevel = trend || 0;
+    const baseLevel = historicalSales[historicalSales.length - 1].quantity;
+    const trendLevel = trend || 0;
     
     for (let day = 1; day <= forecastDays; day++) {
       // Apply trend
@@ -397,7 +395,7 @@ class ForecastAgent extends BaseAgent {
   getSeasonalFactor(date) {
     const month = date.getMonth() + 1; // 1-12
     
-    for (const [season, config] of Object.entries(this.config.seasonalFactors)) {
+    for (const [, config] of Object.entries(this.config.seasonalFactors)) {
       if (config.peak_months.includes(month)) {
         return config.multiplier;
       }
@@ -481,11 +479,15 @@ class ForecastAgent extends BaseAgent {
    */
   
   // Placeholder implementations for other helper methods
+  // eslint-disable-next-line no-unused-vars
   async getSeasonalSalesData(restaurantId, months) {
+    // TODO: Implement actual data retrieval using restaurantId and months parameters
     return this.generateMockSalesHistory(30, 10);
   }
 
+  // eslint-disable-next-line no-unused-vars
   analyzeSeasonal(data) {
+    // TODO: Implement actual seasonal analysis using data parameter
     return {
       spring: { averageGrowth: 10, confidence: 0.8 },
       summer: { averageGrowth: 25, confidence: 0.9 },
@@ -494,7 +496,9 @@ class ForecastAgent extends BaseAgent {
     };
   }
 
+  // eslint-disable-next-line no-unused-vars
   analyzeWeeklyPatterns(data) {
+    // TODO: Implement actual weekly pattern analysis using data parameter
     return {
       monday: 0.8,
       tuesday: 0.85,
@@ -506,7 +510,9 @@ class ForecastAgent extends BaseAgent {
     };
   }
 
+  // eslint-disable-next-line no-unused-vars
   generateSeasonalRecommendations(seasonal, weekly) {
+    // TODO: Implement actual recommendation generation using seasonal and weekly data
     return [
       {
         type: 'seasonal',
@@ -523,7 +529,9 @@ class ForecastAgent extends BaseAgent {
     ];
   }
 
+  // eslint-disable-next-line no-unused-vars
   async getMenuPricing(restaurantId) {
+    // TODO: Implement actual menu pricing retrieval using restaurantId parameter
     return [
       { itemId: 1, price: 12.99, cost: 4.50 },
       { itemId: 2, price: 9.99, cost: 3.25 },
@@ -605,14 +613,18 @@ class ForecastAgent extends BaseAgent {
     }));
   }
 
+  // eslint-disable-next-line no-unused-vars
   async getRecipeIngredients(restaurantId) {
+    // TODO: Implement actual recipe ingredient retrieval using restaurantId parameter
     return [
       { itemId: 1, ingredients: [{ name: 'Ground Beef', quantityPer: 0.25 }] },
       { itemId: 2, ingredients: [{ name: 'Lettuce', quantityPer: 0.1 }] }
     ];
   }
 
+  // eslint-disable-next-line no-unused-vars
   calculateIngredientNeeds(demandForecast, recipes, buffer) {
+    // TODO: Implement actual ingredient calculation using buffer parameter
     return recipes.map(recipe => ({
       ingredient: recipe.ingredients[0].name,
       totalNeeded: 100, // Calculated based on demand
@@ -621,7 +633,9 @@ class ForecastAgent extends BaseAgent {
     }));
   }
 
+  // eslint-disable-next-line no-unused-vars
   generateProcurementPlan(ingredients) {
+    // TODO: Use ingredients parameter for actual procurement planning
     return {
       totalCost: 500,
       orderFrequency: 'weekly',
@@ -637,7 +651,9 @@ class ForecastAgent extends BaseAgent {
     }));
   }
 
+  // eslint-disable-next-line no-unused-vars
   analyzeYearOverYear(data) {
+    // TODO: Implement actual year-over-year analysis using data parameter
     return {
       growth: 15,
       trend: 'positive',

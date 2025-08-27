@@ -7,6 +7,7 @@ import RecipeDetail from './components/recipes/RecipeDetail'
 import CostAnalysis from './components/analysis/CostAnalysis'
 import WasteAnalysis from './components/analysis/WasteAnalysis'
 import ForecastView from './components/analysis/ForecastView'
+import ForecastTest from './components/ForecastTest'
 
 // Extract routes into a separate component that doesn't include the router
 export function AppRoutes() {
@@ -20,6 +21,7 @@ export function AppRoutes() {
         <Route path="/analysis/costs" element={<CostAnalysis />} />
         <Route path="/analysis/waste" element={<WasteAnalysis />} />
         <Route path="/analysis/forecast" element={<ForecastView />} />
+        <Route path="/test/forecast" element={<ForecastTest />} />
       </Routes>
     </Layout>
   )
