@@ -153,6 +153,37 @@ class BaseAgent {
   }
 
   /**
+   * Update agent metrics after processing a request
+   */
+  updateMetrics(processingTime, success = true) {
+    if (success) {
+      this.state.processedRequests++;
+    } else {
+      this.state.errors++;
+    }
+    
+    // Initialize metrics if not exists
+    if (!this.metrics) {
+      this.metrics = {
+        requests: 0,
+        errors: 0,
+        totalProcessingTime: 0,
+        averageProcessingTime: 0
+      };
+    }
+    
+    this.metrics.requests++;
+    if (!success) {
+      this.metrics.errors++;
+    }
+    
+    this.metrics.totalProcessingTime += processingTime;
+    this.metrics.averageProcessingTime = this.metrics.totalProcessingTime / this.metrics.requests;
+    
+    this.state.lastActivity = new Date().toISOString();
+  }
+
+  /**
    * Shutdown agent gracefully
    */
   async shutdown() {

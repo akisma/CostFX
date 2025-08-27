@@ -151,6 +151,47 @@ class AgentManager {
   }
 
   /**
+   * Route request to a specific agent by name
+   */
+  async routeToSpecificAgent(agentName, request) {
+    const agent = this.agents.get(agentName);
+    
+    if (!agent) {
+      throw new Error(`Agent '${agentName}' not found`);
+    }
+    
+    if (agent.state.status !== 'active') {
+      throw new Error(`Agent '${agentName}' is not active (status: ${agent.state.status})`);
+    }
+    
+    const startTime = Date.now();
+    
+    try {
+      // Add request metadata
+      const enrichedRequest = {
+        ...request,
+        id: this.generateRequestId(),
+        timestamp: new Date().toISOString(),
+        targetAgent: agentName
+      };
+      
+      // Process request through agent
+      const result = await agent.process(enrichedRequest);
+      
+      // Update statistics
+      const responseTime = Date.now() - startTime;
+      this.updateRequestStats(true, responseTime);
+      
+      return result;
+      
+    } catch (error) {
+      const responseTime = Date.now() - startTime;
+      this.updateRequestStats(false, responseTime);
+      throw error;
+    }
+  }
+
+  /**
    * Get status of all registered agents
    */
   getAgentStatuses() {

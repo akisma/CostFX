@@ -150,6 +150,140 @@ router.post('/cost/optimize', async (req, res) => {
   }
 });
 
+// Forecast demand for menu items
+router.post('/forecast/demand', async (req, res) => {
+  try {
+    const { restaurantId, forecastDays, menuItems, includeConfidenceIntervals } = req.body;
+    
+    // Validate required fields
+    if (!restaurantId) {
+      return res.status(400).json({ error: 'Restaurant ID is required' });
+    }
+    
+    const result = await agentService.forecastDemand(restaurantId, {
+      forecastDays: forecastDays || 30,
+      menuItems,
+      includeConfidenceIntervals: includeConfidenceIntervals !== false
+    });
+    
+    res.json(result);
+    
+  } catch (error) {
+    console.error('[AgentRoute] Demand forecast error:', error);
+    res.status(500).json({ 
+      error: 'Demand forecast failed', 
+      message: error.message 
+    });
+  }
+});
+
+// Analyze seasonal trends
+router.post('/forecast/seasonal', async (req, res) => {
+  try {
+    const { restaurantId, analysisMonths, includeYearOverYear } = req.body;
+    
+    // Validate required fields
+    if (!restaurantId) {
+      return res.status(400).json({ error: 'Restaurant ID is required' });
+    }
+    
+    const result = await agentService.analyzeSeasonalTrends(restaurantId, {
+      analysisMonths: analysisMonths || 12,
+      includeYearOverYear: includeYearOverYear !== false
+    });
+    
+    res.json(result);
+    
+  } catch (error) {
+    console.error('[AgentRoute] Seasonal analysis error:', error);
+    res.status(500).json({ 
+      error: 'Seasonal analysis failed', 
+      message: error.message 
+    });
+  }
+});
+
+// Predict revenue
+router.post('/forecast/revenue', async (req, res) => {
+  try {
+    const { restaurantId, forecastDays, scenario, includeProfitability } = req.body;
+    
+    // Validate required fields
+    if (!restaurantId) {
+      return res.status(400).json({ error: 'Restaurant ID is required' });
+    }
+    
+    const result = await agentService.predictRevenue(restaurantId, {
+      forecastDays: forecastDays || 30,
+      scenario: scenario || 'current',
+      includeProfitability: includeProfitability !== false
+    });
+    
+    res.json(result);
+    
+  } catch (error) {
+    console.error('[AgentRoute] Revenue prediction error:', error);
+    res.status(500).json({ 
+      error: 'Revenue prediction failed', 
+      message: error.message 
+    });
+  }
+});
+
+// Optimize capacity planning
+router.post('/forecast/capacity', async (req, res) => {
+  try {
+    const { restaurantId, forecastDays, currentCapacity, optimizationGoal } = req.body;
+    
+    // Validate required fields
+    if (!restaurantId) {
+      return res.status(400).json({ error: 'Restaurant ID is required' });
+    }
+    
+    const result = await agentService.optimizeCapacity(restaurantId, {
+      forecastDays: forecastDays || 30,
+      currentCapacity,
+      optimizationGoal: optimizationGoal || 'balanced'
+    });
+    
+    res.json(result);
+    
+  } catch (error) {
+    console.error('[AgentRoute] Capacity optimization error:', error);
+    res.status(500).json({ 
+      error: 'Capacity optimization failed', 
+      message: error.message 
+    });
+  }
+});
+
+// Forecast ingredient needs
+router.post('/forecast/ingredients', async (req, res) => {
+  try {
+    const { restaurantId, forecastDays, includeBuffer, bufferPercentage } = req.body;
+    
+    // Validate required fields
+    if (!restaurantId) {
+      return res.status(400).json({ error: 'Restaurant ID is required' });
+    }
+    
+    const result = await agentService.forecastIngredientNeeds(restaurantId, {
+      forecastDays: forecastDays || 30,
+      includeBuffer: includeBuffer !== false,
+      bufferPercentage: bufferPercentage || 15
+    });
+    
+    res.json(result);
+    
+  } catch (error) {
+    console.error('[AgentRoute] Ingredient forecast error:', error);
+    res.status(500).json({ 
+      error: 'Ingredient forecast failed', 
+      message: error.message 
+    });
+  }
+});
+
 // Get agent system health
 router.get('/health', async (req, res) => {
   try {

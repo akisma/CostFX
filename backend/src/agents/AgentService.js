@@ -1,6 +1,7 @@
 import AgentManager from './AgentManager.js';
 import CostAgent from './CostAgent.js';
 import InventoryAgent from './InventoryAgent.js';
+import ForecastAgent from './ForecastAgent.js';
 
 /**
  * AgentService - Service layer for managing AI agents
@@ -29,9 +30,9 @@ class AgentService {
       const inventoryAgent = new InventoryAgent();
       await this.manager.registerAgent(inventoryAgent);
 
-      // TODO: Register other agents as they're implemented
-      // const forecastAgent = new ForecastAgent();
-      // await this.manager.registerAgent(forecastAgent);
+      // Register Forecast Agent
+      const forecastAgent = new ForecastAgent();
+      await this.manager.registerAgent(forecastAgent);
 
       this.initialized = true;
       console.log('[AgentService] All agents initialized successfully');
@@ -173,6 +174,83 @@ class AgentService {
   async getAgentStatuses() {
     await this.ensureInitialized();
     return this.manager.getAgentStatuses();
+  }
+
+  // Forecast Agent Methods
+
+  /**
+   * Forecast demand for menu items
+   */
+  async forecastDemand(restaurantId, options = {}) {
+    await this.ensureInitialized();
+    
+    return await this.manager.routeToSpecificAgent('ForecastAgent', {
+      type: 'forecast_demand',
+      data: {
+        restaurantId,
+        ...options
+      }
+    });
+  }
+
+  /**
+   * Analyze seasonal trends and patterns
+   */
+  async analyzeSeasonalTrends(restaurantId, options = {}) {
+    await this.ensureInitialized();
+    
+    return await this.manager.routeToSpecificAgent('ForecastAgent', {
+      type: 'analyze_seasonal_trends',
+      data: {
+        restaurantId,
+        ...options
+      }
+    });
+  }
+
+  /**
+   * Predict revenue based on demand forecasts
+   */
+  async predictRevenue(restaurantId, options = {}) {
+    await this.ensureInitialized();
+    
+    return await this.manager.routeToSpecificAgent('ForecastAgent', {
+      type: 'predict_revenue',
+      data: {
+        restaurantId,
+        ...options
+      }
+    });
+  }
+
+  /**
+   * Optimize capacity planning
+   */
+  async optimizeCapacity(restaurantId, options = {}) {
+    await this.ensureInitialized();
+    
+    return await this.manager.routeToSpecificAgent('ForecastAgent', {
+      type: 'optimize_capacity',
+      data: {
+        restaurantId,
+        ...options
+      }
+    });
+  }
+
+  /**
+   * Forecast ingredient needs based on demand predictions
+   */
+  async forecastIngredientNeeds(restaurantId, options = {}) {
+    await this.ensureInitialized();
+    
+    return await this.manager.routeToSpecificAgent('ForecastAgent', {
+      type: 'forecast_ingredients',
+      data: {
+        restaurantId,
+        ...options
+      }
+    });
   }
 
   /**
