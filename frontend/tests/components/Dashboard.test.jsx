@@ -1,25 +1,37 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import { vi, describe, it, expect, beforeEach } from 'vitest'
-import Dashboard from '../../src/components/dashboard/Dashboard'
+/* eslint-disable react/prop-types */
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import Dashboard from '../../src/components/dashboard/Dashboard.jsx';
+
+// Mock recharts to avoid canvas issues in tests
+vi.mock('recharts', () => ({
+  AreaChart: ({ children }) => <div data-testid="area-chart">{children}</div>,
+  Area: () => <div data-testid="area" />,
+  XAxis: () => <div data-testid="x-axis" />,
+  YAxis: () => <div data-testid="y-axis" />,
+  CartesianGrid: () => <div data-testid="cartesian-grid" />,
+  Tooltip: () => <div data-testid="tooltip" />,
+  ResponsiveContainer: ({ children }) => <div data-testid="responsive-container">{children}</div>,
+}));
 
 // Mock the child components
 vi.mock('../../src/components/dashboard/MetricCard', () => ({
-  default: ({ title, value, icon }) => (
+  default: ({ title, value }) => (
     <div data-testid="metric-card">
       <span>{title}</span>
       <span>{value}</span>
     </div>
   )
-}))
+}));
 
 vi.mock('../../src/components/dashboard/ChartContainer', () => ({
   default: ({ title, children }) => (
     <div data-testid="chart-container">
-      <h3>{title}</h3>
+      <span>{title}</span>
       {children}
     </div>
   )
-}))
+}));
 
 describe('Dashboard Component', () => {
   beforeEach(() => {

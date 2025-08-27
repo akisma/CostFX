@@ -64,7 +64,7 @@ describe('API Service', () => {
     await import('../../src/services/api')
     
     expect(mockAxios.create).toHaveBeenCalledWith({
-      baseURL: 'http://localhost:3001/api/v1',
+      baseURL: 'http://localhost:3003/api/v1',
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json'

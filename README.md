@@ -1,6 +1,14 @@
 # Restaurant AI Operations System - CostFX
 
-An AI-powered restaurant operations optimization system that provides actionable insights on food waste, cost optimization, inventory management, and operational efficiency.
+An AI-powered restaurant operations optimization system that provides actionable insights on food waste, cost optimization, inventory management, and **advanced demand forecasting**. 
+
+## ✨ Key Features
+
+🤖 **3 Active AI Agents:** Cost Analysis, Inventory Management, and **Forecast Intelligence**  
+📊 **Real-time Analytics:** Interactive dashboards with comprehensive data visualization  
+🔮 **Predictive Forecasting:** Demand, revenue, seasonal trends, and capacity optimization  
+📱 **Modern UI:** React-based responsive interface with professional design  
+🏗️ **Production Ready:** Enterprise-grade architecture with comprehensive testing  
 
 ## 🚀 Quick Start
 

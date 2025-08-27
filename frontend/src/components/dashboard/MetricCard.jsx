@@ -1,6 +1,8 @@
-import { TrendingUp, TrendingDown } from 'lucide-react'
+import React from 'react';
+import PropTypes from 'prop-types';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 
-const MetricCard = ({ title, value, icon: Icon, trend, color = 'blue' }) => {
+const MetricCard = ({ title, value, icon, trend = null, color = 'blue' }) => {
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600',
     green: 'bg-green-50 text-green-600',
@@ -17,7 +19,11 @@ const MetricCard = ({ title, value, icon: Icon, trend, color = 'blue' }) => {
           <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
         </div>
         <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
-          <Icon className="h-6 w-6" />
+          <div className="h-6 w-6 text-center">
+            {icon && (typeof icon === 'function' || typeof icon === 'object') 
+              ? React.createElement(icon, { className: "h-6 w-6" }) 
+              : icon}
+          </div>
         </div>
       </div>
       
@@ -37,7 +43,18 @@ const MetricCard = ({ title, value, icon: Icon, trend, color = 'blue' }) => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default MetricCard
+MetricCard.propTypes = {
+  title: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  icon: PropTypes.oneOfType([PropTypes.func, PropTypes.string, PropTypes.element]),
+  trend: PropTypes.shape({
+    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    isPositive: PropTypes.bool.isRequired
+  }),
+  color: PropTypes.string
+};
+
+export default MetricCard;

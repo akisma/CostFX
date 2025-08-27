@@ -8,6 +8,10 @@ class Restaurant extends Model {
       foreignKey: 'restaurantId',
       as: 'recipes'
     });
+    Restaurant.hasMany(models.InventoryItem, {
+      foreignKey: 'restaurantId',
+      as: 'inventoryItems'
+    });
     Restaurant.hasMany(models.InventoryTransaction, {
       foreignKey: 'restaurantId',
       as: 'inventoryTransactions'

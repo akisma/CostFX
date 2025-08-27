@@ -76,6 +76,25 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Value Proposition */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+        <div className="flex items-start space-x-4">
+          <div className="flex-shrink-0">
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-blue-600" />
+            </div>
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Smart Restaurant Operations</h2>
+            <p className="text-gray-700 leading-relaxed">
+              CostFX transforms your restaurant system from reactive management to proactive waste prevention, 
+              creating a complete solution that not only tracks and analyzes inventory but actively generates 
+              solutions to minimize waste while maintaining profitability and quality.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Alerts */}
       {alerts.length > 0 && (
         <div className="space-y-2">
