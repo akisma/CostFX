@@ -132,9 +132,6 @@ jobs:
             -var="environment=${{ steps.set-env.outputs.environment }}" \
             -var="backend_image=${{ needs.build.outputs.backend-image }}" \
             -var="frontend_image=${{ needs.build.outputs.frontend-image }}" \
-            -var="jwt_secret=${{ secrets.JWT_SECRET }}" \
-            -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
-            -var="db_password=${{ secrets.DB_PASSWORD }}" \
             -out=tfplan
 
       - name: Terraform Apply

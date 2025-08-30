@@ -119,23 +119,5 @@ variable "frontend_image" {
   default     = ""
 }
 
-# Application Secrets
-variable "jwt_secret" {
-  description = "JWT secret for authentication"
-  type        = string
-  sensitive   = true
-}
-
-variable "openai_api_key" {
-  description = "OpenAI API key"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "db_password" {
-  description = "Database password"
-  type        = string
-  sensitive   = true
-  default     = "changeme123"
-}
+# Application Secrets - stored in SSM Parameter Store
+# No sensitive variables here - all secrets managed via SSM

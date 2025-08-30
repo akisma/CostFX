@@ -9,7 +9,7 @@ This directory contains the complete infrastructure and deployment configuration
 │   CloudFront    │    │  Application     │
 │   (Optional)    │────│  Load Balancer   │
 └─────────────────┘    └─────────┬────────┘
-                                 │
+                                 │ HTTPS
                        ┌─────────▼────────┐
                        │   ECS Cluster    │
                        │ ┌─────┐ ┌─────┐  │
@@ -32,9 +32,24 @@ This directory contains the complete infrastructure and deployment configuration
 - **Backend**: Node.js API server in a container
 - **Database**: AWS RDS PostgreSQL (managed)
 - **Cache**: AWS ElastiCache Redis (managed)
-- **Load Balancer**: Application Load Balancer with path-based routing
-- **Container Registry**: AWS ECR for Docker images
-- **Secrets**: AWS Systems Manager Parameter Store
+- **Load Balancer**: Application Load Balancer with HTTPS/TLS termination
+- **Container Registry**: AWS ECR for Docker images with vulnerability scanning
+- **Secrets**: AWS Systems Manager Parameter Store (encrypted)
+- **Security**: SSL/TLS encryption, auto HTTP→HTTPS redirect
+
+## 🔐 Security Features
+
+### Encryption & TLS
+- **HTTPS enforced**: All traffic redirected to HTTPS with modern TLS 1.3 policy
+- **SSL certificate**: AWS Certificate Manager integration
+- **Secrets management**: All sensitive data encrypted in SSM Parameter Store
+- **Container security**: ECR vulnerability scanning enabled
+
+### Network Security
+- **VPC isolation**: Private subnets for database and cache
+- **Security groups**: Restrictive ingress/egress rules
+- **Database SSL**: Enforced SSL connections in production
+- **No hardcoded secrets**: All secrets generated or managed via SSM
 
 ## 🚀 Quick Start
 
@@ -43,9 +58,22 @@ This directory contains the complete infrastructure and deployment configuration
 1. **AWS CLI** configured with appropriate credentials
 2. **Docker** installed and running
 3. **Terraform** >= 1.0 installed
-4. **Sufficient AWS permissions**
+4. **SSL Certificate** created in AWS Certificate Manager
+5. **Sufficient AWS permissions**
 
-### 1. Configure Environment
+### 1. Setup SSL Certificate
+
+```bash
+# Request SSL certificate via AWS Certificate Manager
+aws acm request-certificate \
+  --domain-name your-domain.com \
+  --validation-method DNS \
+  --region us-west-2
+
+# Note the certificate ARN from the output
+```
+
+### 2. Configure Environment
 
 ```bash
 # Copy example configuration
@@ -55,22 +83,51 @@ cp deploy/terraform/terraform.tfvars.example deploy/terraform/terraform.tfvars
 vim deploy/terraform/terraform.tfvars
 ```
 
-### 2. Deploy Everything
+### 3. Deploy Infrastructure
 
 ```bash
-# One-command deployment
-./deploy/scripts/deploy.sh
+# Deploy via GitHub Actions (recommended)
+git push origin main
+
+# OR deploy manually via Terraform
+cd deploy/terraform
+terraform init
+terraform plan
+terraform apply
 ```
 
-### 3. Update Secrets
+### 4. Set Required Secrets
+
+After infrastructure deployment, set these required parameters in AWS SSM:
 
 ```bash
-# Set your OpenAI API key
+# Set OpenAI API key (required)
 aws ssm put-parameter \
   --name '/costfx/dev/openai_api_key' \
-  --value 'your_openai_api_key_here' \
+  --value 'sk-your-openai-api-key-here' \
   --type SecureString \
   --overwrite
+
+# Set SSL certificate ARN (required for HTTPS)
+aws ssm put-parameter \
+  --name '/costfx/dev/ssl_certificate_arn' \
+  --value 'arn:aws:acm:us-west-2:123456789012:certificate/your-cert-id' \
+  --type SecureString \
+  --overwrite
+```
+
+### 5. Verify Deployment
+
+```bash
+# Check deployment status
+aws ecs describe-services \
+  --cluster costfx-dev-cluster \
+  --services costfx-dev-backend costfx-dev-frontend
+
+# Get load balancer URL
+aws elbv2 describe-load-balancers \
+  --query 'LoadBalancers[?LoadBalancerName==`costfx-dev-alb`].DNSName' \
+  --output text
 ```
 
 ## 🧪 Local Testing
@@ -107,34 +164,71 @@ For testing flexibility:
 - `BACKEND_EXTERNAL_PORT` - External backend port (default: 3001)
 - `FRONTEND_EXTERNAL_PORT` - External frontend port (default: 8080)
 
-## 🎯 GitHub Actions Ready
+## 🎯 GitHub Actions Deployment
 
-This deployment is designed for CI/CD with GitHub Actions:
+This deployment is designed for secure CI/CD with GitHub Actions:
+
+### Required GitHub Secrets
+
+Set these secrets in your GitHub repository settings (`Settings → Secrets and variables → Actions`):
+
+```bash
+# AWS Credentials
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+
+# Terraform State Management
+TERRAFORM_STATE_BUCKET=your-terraform-state-bucket-name
+```
+
+### GitHub Actions Features
 
 - ✅ **Configurable ports** for parallel testing
 - ✅ **No hardcoded URLs** - everything is environment-driven
 - ✅ **Non-interactive mode** when `GITHUB_ACTIONS=true`
 - ✅ **Proper cleanup** and error handling
 - ✅ **Build args** for frontend API URL configuration
+- ✅ **Terraform plan/apply** with proper state management
+- ✅ **Multi-environment support** (dev/staging/prod)
 
-Example GitHub Actions usage:
+### Deployment Workflow
 
 ```yaml
-- name: Test containers
-  env:
-    GITHUB_ACTIONS: true
-    BACKEND_EXTERNAL_PORT: 3001
-    FRONTEND_EXTERNAL_PORT: 8080
-  run: ./deploy/scripts/test-local.sh
+# Triggered on:
+# - Push to main branch (production)
+# - Push to develop branch (development)
+# - Manual workflow dispatch
 
-- name: Deploy to AWS
-  env:
-    AWS_REGION: us-west-2
-    ENVIRONMENT: prod
-  run: ./deploy/scripts/deploy.sh
+name: Deploy to AWS
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+# Automatic process:
+# 1. Run tests
+# 2. Build Docker images
+# 3. Push to ECR
+# 4. Deploy via Terraform
+# 5. Health checks
 ```
 
+### Security Best Practices
+
+- 🔐 **No secrets in code**: All sensitive data in SSM Parameter Store
+- 🔒 **HTTPS enforced**: Automatic HTTP→HTTPS redirect
+- 🛡️ **Container scanning**: ECR vulnerability scanning enabled
+- 🔑 **Least privilege**: IAM roles with minimal required permissions
+- 📊 **Audit trail**: CloudWatch logs for all deployments
+
 ## 🔧 Key Features
+
+### Security & Compliance
+- **HTTPS enforced**: All traffic encrypted with TLS 1.3
+- **Secrets management**: Zero secrets in code or environment variables
+- **Database encryption**: SSL enforced for all database connections
+- **Container security**: Vulnerability scanning on all images
+- **Network isolation**: Private subnets and security groups
 
 ### Flexible Port Management
 - **Production**: Uses standard ports (3001 backend, 80 frontend)
@@ -148,9 +242,25 @@ Example GitHub Actions usage:
 - **Build-time configuration**: API URLs configured during Docker build
 
 ### Infrastructure as Code
-- **Terraform**: Complete AWS infrastructure
-- **Security**: Private subnets, security groups, managed secrets
+- **Terraform**: Complete AWS infrastructure with state management
+- **Security**: Private subnets, security groups, encrypted secrets
 - **Monitoring**: CloudWatch logs and health checks
 - **Cost-optimized**: t3.micro instances for development
+- **Multi-environment**: Support for dev/staging/prod
 
-Ready for production deployment! 🚀
+### Secrets Management via SSM Parameter Store
+
+All sensitive configuration is stored securely in AWS SSM Parameter Store:
+
+| Parameter | Type | Auto-Generated | Description |
+|-----------|------|----------------|-------------|
+| `/costfx/{env}/database_url` | SecureString | ✅ Yes | PostgreSQL connection string |
+| `/costfx/{env}/redis_url` | SecureString | ✅ Yes | Redis connection string |
+| `/costfx/{env}/jwt_secret` | SecureString | ✅ Yes | JWT signing secret (64 chars) |
+| `/costfx/{env}/openai_api_key` | SecureString | ❌ Manual | OpenAI API key |
+| `/costfx/{env}/ssl_certificate_arn` | SecureString | ❌ Manual | SSL certificate ARN |
+
+**Auto-generated secrets** are created during Terraform deployment and never need manual intervention.
+**Manual secrets** must be set after initial deployment as shown in the Quick Start guide.
+
+Ready for production deployment with enterprise-grade security! 🚀

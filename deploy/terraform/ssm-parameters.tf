@@ -52,6 +52,21 @@ resource "aws_ssm_parameter" "openai_api_key" {
   }
 }
 
+# SSL Certificate ARN
+resource "aws_ssm_parameter" "ssl_certificate_arn" {
+  name  = "/costfx/${var.environment}/ssl_certificate_arn"
+  type  = "SecureString"
+  value = "PLACEHOLDER_UPDATE_MANUALLY"
+
+  tags = {
+    Name = "${var.app_name}-${var.environment}-ssl-certificate-arn"
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 # Backend API URL for frontend (used in build process)
 resource "aws_ssm_parameter" "backend_api_url" {
   name  = "/${var.app_name}/${var.environment}/backend_api_url"
