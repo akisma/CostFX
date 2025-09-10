@@ -10,8 +10,8 @@ terraform {
   
   # Configure for remote state
   backend "s3" {
-    bucket = "costfx-terraform-state"  # Update this with your actual bucket name
-    key    = "infrastructure/terraform.tfstate"
+    bucket = "costfx-tf-state-568530517605"
+    key    = "env/dev/infra.tfstate"
     region = "us-west-2"
   }
 }

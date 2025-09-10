@@ -1,0 +1,6 @@
+app_name: costfx
+region: us-west-2
+env: dev
+terraform_root: "{{ playbook_dir | realpath }}/.."  # absolute path to deploy/infra
+backend_file: "{{ terraform_root }}/backend-{{ env }}.hcl"
+tf_var_file: "{{ terraform_root }}/environments/{{ env }}/terraform.tfvars"

@@ -2,7 +2,8 @@
 resource "aws_ssm_parameter" "database_url" {
   name  = "/${var.app_name}/${var.environment}/database_url"
   type  = "SecureString"
-  value = "postgresql://${aws_db_instance.postgres.username}:${random_password.db_password.result}@${aws_db_instance.postgres.endpoint}/${aws_db_instance.postgres.db_name}"
+  # Ensure password is URL-encoded and SSL is required by default
+  value = "postgresql://${aws_db_instance.postgres.username}:${urlencode(random_password.db_password.result)}@${aws_db_instance.postgres.endpoint}/${aws_db_instance.postgres.db_name}?ssl=true"
 
   tags = {
     Name = "${var.app_name}-${var.environment}-database-url"

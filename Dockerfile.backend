@@ -2,14 +2,14 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy backend package files
+COPY backend/package*.json ./
 
-# Install dependencies
+# Install production dependencies
 RUN npm install --only=production
 
-# Copy source code
-COPY . .
+# Copy backend source
+COPY backend/ .
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs
@@ -17,6 +17,7 @@ RUN adduser -S nodejs -u 1001
 USER nodejs
 
 # Expose port
+ENV PORT=3001
 EXPOSE 3001
 
 # Start the application

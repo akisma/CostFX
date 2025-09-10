@@ -30,6 +30,10 @@ resource "aws_ecs_task_definition" "backend" {
         {
           name  = "PORT"
           value = "3001"
+        },
+        {
+          name  = "PGSSLMODE"
+          value = "no-verify"
         }
       ]
       

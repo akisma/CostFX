@@ -2,6 +2,23 @@
 
 This directory contains the infrastructure as code and deployment scripts for deploying CostFX to AWS ECS using Terraform.
 
+## Quick Start
+
+For a complete deployment from scratch, follow these steps:
+
+1. **Prerequisites Setup** - Configure AWS credentials and install tools
+2. **Infrastructure Deployment** - Deploy AWS resources with Terraform  
+3. **Container Deployment** - Build and push Docker images to ECR
+4. **Service Deployment** - Deploy ECS services and verify health
+
+**Complete deployment time**: ~15-20 minutes
+
+**Live Application**: Once deployed, access your application at:
+- **Frontend**: `http://{alb-dns-name}/`
+- **Backend API**: `http://{alb-dns-name}/api/v1/`
+
+---
+
 ## Architecture Overview
 
 ```
@@ -31,44 +48,215 @@ This directory contains the infrastructure as code and deployment scripts for de
 
 ### Networking
 - **VPC** with public and private subnets across 2 AZs
-- **Internet Gateway** for public subnet internet access
+- **Internet Gateway** for public subnet internet access  
 - **NAT Gateways** for private subnet outbound access
 - **Security Groups** with least-privilege access
 
 ### Compute
 - **ECS Fargate Cluster** for container orchestration
 - **Frontend Service** - Nginx serving React build artifacts
-- **Backend Service** - Node.js API server
-- **Application Load Balancer** with path-based routing
+- **Backend Service** - Node.js API server with SSL database connectivity
+- **Application Load Balancer** with path-based routing (`/` → frontend, `/api/*` → backend)
 
 ### Storage & Caching
-- **RDS PostgreSQL** in private subnets with automated backups
+- **RDS PostgreSQL** in private subnets with SSL encryption and automated backups
 - **ElastiCache Redis** for session storage and caching
 
 ### Security & Configuration
 - **SSM Parameter Store** for environment variables and secrets
-- **ECR** repositories for container images
+- **ECR** repositories for container images with vulnerability scanning
 - **IAM Roles** with least-privilege policies
 
 ## Prerequisites
 
-1. **AWS CLI** installed and configured
+1. **AWS CLI** installed and configured with appropriate credentials
    ```bash
    aws configure
+   # Verify access
+   aws sts get-caller-identity
    ```
 
 2. **Docker** installed and running
+   ```bash
+   docker --version
+   docker info
+   ```
 
 3. **Terraform** >= 1.0 installed
+   ```bash
+   terraform version
+   ```
 
 4. **Required AWS Permissions**:
-   - EC2, ECS, RDS, ElastiCache
-   - IAM, SSM, ECR
+   - EC2, ECS, RDS, ElastiCache (full access)
+   - IAM, SSM, ECR (full access) 
    - VPC, ALB management
+   - S3 (for Terraform state)
 
-## Quick Start
+5. **Account Setup**:
+   - Terraform state bucket must exist: `costfx-tf-state-{account-id}`
+   - ECR repositories will be created automatically
 
-### 1. Deploy Infrastructure
+---
+
+## Complete Deployment Guide
+
+### Step 1: Initial Setup and Infrastructure
+
+1. **Clone and navigate to the project**:
+   ```bash
+   git clone <repository-url>
+   cd CostFX
+   ```
+
+2. **Configure Terraform backend** (if needed):
+   ```bash
+   # Create S3 bucket for state (replace with your account ID)
+   aws s3 mb s3://costfx-tf-state-$(aws sts get-caller-identity --query Account --output text)
+   ```
+
+3. **Initialize and deploy infrastructure**:
+   ```bash
+   cd deploy/infra
+   
+   # Initialize Terraform
+   terraform init
+   
+   # Plan the deployment (review changes)
+   terraform plan \
+     -var="backend_image=568530517605.dkr.ecr.us-west-2.amazonaws.com/costfx-dev-backend:latest" \
+     -var="frontend_image=568530517605.dkr.ecr.us-west-2.amazonaws.com/costfx-dev-frontend:latest"
+   
+   # Apply the changes
+   terraform apply \
+     -var="backend_image=568530517605.dkr.ecr.us-west-2.amazonaws.com/costfx-dev-backend:latest" \
+     -var="frontend_image=568530517605.dkr.ecr.us-west-2.amazonaws.com/costfx-dev-frontend:latest"
+   ```
+
+### Step 2: Build and Deploy Container Images
+
+1. **Login to ECR**:
+   ```bash
+   cd ../../  # Back to project root
+   aws ecr get-login-password --region us-west-2 | \
+     docker login --username AWS --password-stdin \
+     $(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-west-2.amazonaws.com
+   ```
+
+2. **Build backend image**:
+   ```bash
+   docker build --platform linux/amd64 \
+     -f deploy/docker/Dockerfile.backend \
+     -t $(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-west-2.amazonaws.com/costfx-dev-backend:latest .
+   ```
+
+3. **Build frontend image**:
+   ```bash
+   docker build --platform linux/amd64 \
+     -f deploy/docker/Dockerfile.frontend \
+     -t $(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-west-2.amazonaws.com/costfx-dev-frontend:latest .
+   ```
+
+4. **Push images to ECR**:
+   ```bash
+   docker push $(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-west-2.amazonaws.com/costfx-dev-backend:latest
+   docker push $(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-west-2.amazonaws.com/costfx-dev-frontend:latest
+   ```
+
+### Step 3: Deploy ECS Services
+
+1. **Update ECS services to use new images**:
+   ```bash
+   # Update backend service
+   aws ecs update-service \
+     --cluster costfx-dev-cluster \
+     --service costfx-dev-backend \
+     --force-new-deployment \
+     --region us-west-2
+   
+   # Update frontend service  
+   aws ecs update-service \
+     --cluster costfx-dev-cluster \
+     --service costfx-dev-frontend \
+     --force-new-deployment \
+     --region us-west-2
+   ```
+
+2. **Monitor deployment progress**:
+   ```bash
+   # Check service status
+   aws ecs describe-services \
+     --cluster costfx-dev-cluster \
+     --services costfx-dev-backend costfx-dev-frontend \
+     --region us-west-2 \
+     --query 'services[].{Name:serviceName,Running:runningCount,Desired:desiredCount}'
+   
+   # Check target group health
+   ALB_TG_ARN=$(aws elbv2 describe-target-groups \
+     --names costfx-dev-b-tg \
+     --region us-west-2 \
+     --query 'TargetGroups[0].TargetGroupArn' --output text)
+   
+   aws elbv2 describe-target-health \
+     --target-group-arn $ALB_TG_ARN \
+     --region us-west-2
+   ```
+
+### Step 4: Verify Deployment
+
+1. **Get application URL**:
+   ```bash
+   cd deploy/infra
+   ALB_DNS=$(terraform output -raw alb_dns)
+   echo "Frontend: http://$ALB_DNS/"
+   echo "Backend API: http://$ALB_DNS/api/v1/"
+   ```
+
+2. **Test endpoints**:
+   ```bash
+   # Test frontend
+   curl -s "http://$ALB_DNS/" | grep -o '<title>.*</title>'
+   
+   # Test backend API
+   curl -s "http://$ALB_DNS/api/v1/" | head -20
+   ```
+
+### Step 5: Post-Deployment Configuration
+
+1. **Update OpenAI API Key** (required for AI agents):
+   ```bash
+   aws ssm put-parameter \
+     --name '/costfx/dev/openai_api_key' \
+     --value 'your_actual_openai_api_key_here' \
+     --type SecureString \
+     --overwrite \
+     --region us-west-2
+   ```
+
+2. **Run database migrations** (if needed):
+   ```bash
+   # Get running backend task ID
+   TASK_ARN=$(aws ecs list-tasks \
+     --cluster costfx-dev-cluster \
+     --service-name costfx-dev-backend \
+     --region us-west-2 \
+     --query 'taskArns[0]' --output text)
+   
+   # Execute migration command
+   aws ecs execute-command \
+     --cluster costfx-dev-cluster \
+     --task $TASK_ARN \
+     --container backend \
+     --command "npm run migrate" \
+     --interactive \
+     --region us-west-2
+   ```
+
+---
+
+## Alternative: Automated Deployment Script
+
+For a simpler deployment, use the provided script:
 
 ```bash
 # Set environment variables (optional)
@@ -76,11 +264,11 @@ export AWS_REGION=us-west-2
 export ENVIRONMENT=dev
 export APP_NAME=costfx
 
-# Run the deployment script
+# Run the automated deployment
 ./deploy/scripts/deploy.sh
 ```
 
-### 2. Update Configuration
+**Note**: The automated script may need updates based on recent fixes. Manual deployment is recommended for first-time setup.
 
 After deployment, update the OpenAI API key:
 
@@ -267,17 +455,151 @@ terraform destroy -var="environment=dev"
    - Set up automatic rotation for database passwords
    - Rotate JWT secrets regularly
 
+---
+
+## Troubleshooting
+
+### Common Issues and Solutions
+
+#### 1. Backend Tasks Failing with Database Connection Errors
+
+**Symptoms**: ECS tasks crash immediately, logs show "no pg_hba.conf entry" or SSL connection errors.
+
+**Solution**:
+```bash
+# Check if SSL environment variables are set correctly
+aws ecs describe-task-definition \
+  --task-definition costfx-dev-backend \
+  --query 'taskDefinition.containerDefinitions[0].environment'
+
+# Should include:
+# - PGSSLMODE=no-verify
+# - PORT=3001
+# - NODE_ENV=dev
+
+# If missing, update the ECS module and redeploy
+cd deploy/infra
+terraform apply -target='module.ecs[0].aws_ecs_task_definition.backend'
+```
+
+#### 2. Load Balancer Returns 502 Bad Gateway
+
+**Symptoms**: Frontend/backend URLs return 502 errors.
+
+**Troubleshooting**:
+```bash
+# Check target group health
+aws elbv2 describe-target-health \
+  --target-group-arn $(aws elbv2 describe-target-groups \
+    --names costfx-dev-b-tg \
+    --query 'TargetGroups[0].TargetGroupArn' --output text)
+
+# Check ECS service status
+aws ecs describe-services \
+  --cluster costfx-dev-cluster \
+  --services costfx-dev-backend costfx-dev-frontend \
+  --query 'services[].{Name:serviceName,Running:runningCount,Desired:desiredCount}'
+
+# Check container logs
+aws logs describe-log-streams \
+  --log-group-name /ecs/costfx-dev \
+  --order-by LastEventTime --descending --limit 2
+```
+
+#### 3. Docker Build Failures
+
+**Symptoms**: Platform mismatch errors, "CannotPullContainerError".
+
+**Solution**:
+```bash
+# Always build for linux/amd64 platform
+docker build --platform linux/amd64 \
+  -f deploy/docker/Dockerfile.backend \
+  -t your-ecr-url:latest .
+
+# Verify image architecture
+docker inspect your-ecr-url:latest | grep -i arch
+```
+
+#### 4. Terraform State Issues
+
+**Symptoms**: Resources exist in AWS but Terraform wants to create them.
+
+**Solution**:
+```bash
+# Check if you're in the correct directory
+cd deploy/infra  # NOT deploy/terraform
+
+# Verify state bucket configuration
+terraform init -reconfigure
+
+# Import existing resources if needed
+terraform import module.ecs[0].aws_ecs_cluster.this costfx-dev-cluster
+```
+
+#### 5. Health Check Failures
+
+**Symptoms**: ECS tasks running but load balancer targets unhealthy.
+
+**Check**:
+```bash
+# Verify health check endpoint responds
+TASK_IP=$(aws ecs describe-tasks \
+  --cluster costfx-dev-cluster \
+  --tasks $(aws ecs list-tasks --cluster costfx-dev-cluster --service-name costfx-dev-backend --query 'taskArns[0]' --output text) \
+  --query 'tasks[0].attachments[0].details[?name==`privateIPv4Address`].value' --output text)
+
+curl http://$TASK_IP:3001/api/v1/
+```
+
+### Log Analysis
+
+```bash
+# View recent backend logs
+aws logs tail /ecs/costfx-dev --since 10m --filter-pattern "backend"
+
+# View specific error patterns
+aws logs filter-log-events \
+  --log-group-name /ecs/costfx-dev \
+  --filter-pattern "ERROR" \
+  --start-time $(date -d '1 hour ago' +%s)000
+```
+
+### Performance Monitoring
+
+```bash
+# Check ECS service metrics
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ECS \
+  --metric-name CPUUtilization \
+  --dimensions Name=ServiceName,Value=costfx-dev-backend Name=ClusterName,Value=costfx-dev-cluster \
+  --start-time $(date -d '1 hour ago' -u +%Y-%m-%dT%H:%M:%S) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+  --period 300 \
+  --statistics Average
+```
+
+---
+
 ## Support
 
 For issues and questions:
-1. Check CloudWatch logs for application errors
-2. Verify AWS resource status in the console
-3. Review Terraform state for infrastructure issues
+1. **Check CloudWatch logs** for application errors:
+   ```bash
+   aws logs tail /ecs/costfx-dev --follow
+   ```
+2. **Verify AWS resource status** in the console
+3. **Review Terraform state** for infrastructure issues:
+   ```bash
+   terraform show
+   ```
+4. **Check this troubleshooting guide** for common solutions
 
 ## Next Steps
 
-1. Set up CI/CD pipeline with GitHub Actions
-2. Configure monitoring and alerting
-3. Implement automated backups
-4. Set up staging environment
-5. Configure custom domain with Route 53
+1. **Set up CI/CD pipeline** with GitHub Actions
+2. **Configure monitoring and alerting** with CloudWatch
+3. **Implement automated backups** for RDS and Redis
+4. **Set up staging environment** with separate Terraform workspace
+5. **Configure custom domain** with Route 53 and ACM certificate
+6. **Enable HTTPS** by updating ALB listener configuration

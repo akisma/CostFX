@@ -56,78 +56,84 @@ This directory contains the complete infrastructure and deployment configuration
 ### Prerequisites
 
 1. **AWS CLI** configured with appropriate credentials
-2. **Docker** installed and running
+2. **Docker** installed and running  
 3. **Terraform** >= 1.0 installed
-4. **SSL Certificate** created in AWS Certificate Manager
-5. **Sufficient AWS permissions**
+4. **Sufficient AWS permissions** for ECS, RDS, ECR, ALB, VPC
+5. **OpenAI API Key** for the AI agents functionality
 
-### 1. Setup SSL Certificate
+### Step 1: Initial Setup
 
 ```bash
-# Request SSL certificate via AWS Certificate Manager
-aws acm request-certificate \
-  --domain-name your-domain.com \
-  --validation-method DNS \
-  --region us-west-2
+# Clone and navigate to the project
+cd /path/to/costfx
 
-# Note the certificate ARN from the output
+# Setup Terraform state bucket (one-time setup)
+./deploy/scripts/setup-terraform-state.sh
+
+# Setup ECR repositories
+./deploy/scripts/setup-ecr.sh
 ```
 
-### 2. Configure Environment
+### Step 2: Configure Environment Variables
 
 ```bash
 # Copy example configuration
 cp deploy/terraform/terraform.tfvars.example deploy/terraform/terraform.tfvars
 
-# Edit configuration for your environment
+# Edit with your specific values
 vim deploy/terraform/terraform.tfvars
 ```
 
-### 3. Deploy Infrastructure
+Required variables:
+- `ssl_certificate_arn` - Your SSL certificate ARN from ACM
+- `environment` - Environment name (dev, staging, prod)
+- `app_name` - Application name (default: costfx)
+
+### Step 3: Deploy Infrastructure
 
 ```bash
-# Deploy via GitHub Actions (recommended)
-git push origin main
+# Use the deployment script for automated deployment
+./deploy/scripts/deploy.sh
 
-# OR deploy manually via Terraform
-cd deploy/terraform
-terraform init
-terraform plan
-terraform apply
+# This will:
+# 1. Initialize Terraform
+# 2. Deploy AWS infrastructure
+# 3. Build and push Docker images
+# 4. Deploy ECS services
+# 5. Create required SSM parameters
 ```
 
-### 4. Set Required Secrets
+### Step 4: Set Required Secrets
 
-After infrastructure deployment, set these required parameters in AWS SSM:
+After infrastructure deployment, set your OpenAI API key:
 
 ```bash
-# Set OpenAI API key (required)
+# Set OpenAI API key (required for AI agents)
 aws ssm put-parameter \
   --name '/costfx/dev/openai_api_key' \
   --value 'sk-your-openai-api-key-here' \
   --type SecureString \
-  --overwrite
-
-# Set SSL certificate ARN (required for HTTPS)
-aws ssm put-parameter \
-  --name '/costfx/dev/ssl_certificate_arn' \
-  --value 'arn:aws:acm:us-west-2:123456789012:certificate/your-cert-id' \
-  --type SecureString \
-  --overwrite
+  --overwrite \
+  --region us-west-2
 ```
 
-### 5. Verify Deployment
+### Step 5: Verify Deployment
 
 ```bash
-# Check deployment status
+# Check service status
 aws ecs describe-services \
   --cluster costfx-dev-cluster \
-  --services costfx-dev-backend costfx-dev-frontend
+  --services costfx-dev-backend costfx-dev-frontend \
+  --region us-west-2
 
-# Get load balancer URL
+# Get application URL
 aws elbv2 describe-load-balancers \
   --query 'LoadBalancers[?LoadBalancerName==`costfx-dev-alb`].DNSName' \
-  --output text
+  --output text \
+  --region us-west-2
+
+# Test the API
+curl http://your-alb-url/api/v1/health
 ```
 
 ## 🧪 Local Testing
@@ -143,6 +149,156 @@ BACKEND_EXTERNAL_PORT=3002 FRONTEND_EXTERNAL_PORT=8081 ./deploy/scripts/test-loc
 
 # GitHub Actions compatible (no user input)
 GITHUB_ACTIONS=true ./deploy/scripts/test-local.sh
+```
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+#### Backend ECS Tasks Failing
+
+**Problem**: Backend tasks fail to start with database connection errors
+```
+ERROR: no pg_hba.conf entry for host "xxx", user "xxx", database "xxx", no encryption
+```
+
+**Solution**: Ensure SSL configuration is correct
+```bash
+# Check current environment variables in ECS task definition
+aws ecs describe-task-definition \
+  --task-definition costfx-dev-backend \
+  --query 'taskDefinition.containerDefinitions[0].environment'
+
+# Should include:
+# - PGSSLMODE=no-verify
+# - PORT=3001
+```
+
+**Fix**: Update task definition with correct SSL settings
+```bash
+# Re-deploy with SSL environment variables
+./deploy/scripts/deploy.sh --update-ssm-only
+```
+
+#### 502 Bad Gateway Errors
+
+**Problem**: Load balancer returns 502 errors
+
+**Diagnostic Steps**:
+```bash
+# Check ECS service status
+aws ecs describe-services \
+  --cluster costfx-dev-cluster \
+  --services costfx-dev-backend costfx-dev-frontend
+
+# Check task health
+aws ecs list-tasks --cluster costfx-dev-cluster
+aws ecs describe-tasks --cluster costfx-dev-cluster --tasks <task-arn>
+
+# Check target group health
+aws elbv2 describe-target-health \
+  --target-group-arn $(aws elbv2 describe-target-groups \
+    --query 'TargetGroups[?TargetGroupName==`costfx-dev-backend-tg`].TargetGroupArn' \
+    --output text)
+```
+
+**Common Fixes**:
+1. **Port mismatch**: Ensure backend runs on port 3001
+2. **Health check failure**: Check `/api/v1/health` endpoint
+3. **Security group**: Ensure ALB can reach ECS tasks on port 3001
+
+#### Database Connection Issues
+
+**Problem**: Cannot connect to RDS database
+
+**Diagnostic**:
+```bash
+# Check RDS instance status
+aws rds describe-db-instances \
+  --db-instance-identifier costfx-dev-db
+
+# Check security groups
+aws ec2 describe-security-groups \
+  --group-ids $(aws rds describe-db-instances \
+    --db-instance-identifier costfx-dev-db \
+    --query 'DBInstances[0].VpcSecurityGroups[0].VpcSecurityGroupId' \
+    --output text)
+```
+
+**Solutions**:
+1. **SSL Required**: RDS requires SSL in production
+2. **Security Groups**: Ensure ECS security group can access RDS port 5432
+3. **Subnet Groups**: Ensure RDS is in correct VPC subnets
+
+#### Docker Build Failures
+
+**Problem**: Docker builds fail during deployment
+
+**Check**:
+```bash
+# Test local Docker builds
+docker build -f Dockerfile.backend -t costfx-backend .
+docker build -f Dockerfile.frontend -t costfx-frontend .
+
+# Check for common issues:
+# - Node.js version compatibility
+# - Package.json dependencies
+# - Build context size
+```
+
+#### ECR Push Failures
+
+**Problem**: Cannot push images to ECR
+
+**Solution**:
+```bash
+# Re-authenticate with ECR
+aws ecr get-login-password --region us-west-2 | \
+  docker login --username AWS --password-stdin \
+  568530517605.dkr.ecr.us-west-2.amazonaws.com
+
+# Check repository exists
+aws ecr describe-repositories --region us-west-2
+```
+
+### Performance Monitoring
+
+Monitor your deployment:
+
+```bash
+# ECS Service Metrics
+aws ecs describe-services \
+  --cluster costfx-dev-cluster \
+  --services costfx-dev-backend costfx-dev-frontend \
+  --query 'services[*].{Name:serviceName,Running:runningCount,Desired:desiredCount,Status:status}'
+
+# Load Balancer Health
+aws elbv2 describe-target-health \
+  --target-group-arn $(aws elbv2 describe-target-groups \
+    --query 'TargetGroups[?contains(TargetGroupName,`costfx-dev`)].TargetGroupArn' \
+    --output text)
+
+# CloudWatch Logs
+aws logs describe-log-groups --log-group-name-prefix "/ecs/costfx-dev"
+aws logs tail "/ecs/costfx-dev-backend" --follow
+```
+
+### Rollback Procedures
+
+If deployment fails:
+
+```bash
+# Revert to previous task definition
+aws ecs update-service \
+  --cluster costfx-dev-cluster \
+  --service costfx-dev-backend \
+  --task-definition costfx-dev-backend:PREVIOUS_REVISION
+
+# Scale down for maintenance
+./deploy/scripts/scale-down-dev.sh
+
+# Scale back up after fixes
+./deploy/scripts/scale-up-dev.sh
 ```
 
 ## ⚙️ Configuration
@@ -254,13 +410,39 @@ All sensitive configuration is stored securely in AWS SSM Parameter Store:
 
 | Parameter | Type | Auto-Generated | Description |
 |-----------|------|----------------|-------------|
-| `/costfx/{env}/database_url` | SecureString | ✅ Yes | PostgreSQL connection string |
-| `/costfx/{env}/redis_url` | SecureString | ✅ Yes | Redis connection string |
-| `/costfx/{env}/jwt_secret` | SecureString | ✅ Yes | JWT signing secret (64 chars) |
-| `/costfx/{env}/openai_api_key` | SecureString | ❌ Manual | OpenAI API key |
-| `/costfx/{env}/ssl_certificate_arn` | SecureString | ❌ Manual | SSL certificate ARN |
+| `/costfx/{env}/database_url` | SecureString | ✅ Yes | PostgreSQL connection string with SSL |
+| `/costfx/{env}/redis_url` | SecureString | ✅ Yes | ElastiCache Redis connection string |
+| `/costfx/{env}/jwt_secret` | SecureString | ✅ Yes | JWT signing secret (64 random chars) |
+| `/costfx/{env}/openai_api_key` | SecureString | ❌ Manual | OpenAI API key for AI agents |
 
-**Auto-generated secrets** are created during Terraform deployment and never need manual intervention.
-**Manual secrets** must be set after initial deployment as shown in the Quick Start guide.
+**Auto-generated secrets** are created during Terraform deployment with secure random values.
+**Manual secrets** must be set after initial deployment using the AWS CLI.
+
+### Current Working Configuration
+
+The deployment includes these tested environment variables for ECS tasks:
+
+**Backend Environment Variables**:
+- `NODE_ENV=production`
+- `PORT=3001` (critical for ALB health checks)
+- `PGSSLMODE=no-verify` (required for RDS SSL connections)
+- Database and Redis URLs loaded from SSM Parameter Store
+- JWT secret loaded from SSM Parameter Store
+
+**Frontend Environment Variables**:
+- `NODE_ENV=production`
+- `VITE_API_URL` configured during Docker build
+
+### SSL/TLS Configuration
+
+**Database SSL**: 
+- RDS requires SSL connections in production
+- Backend automatically detects RDS hostnames and enables SSL
+- `PGSSLMODE=no-verify` handles certificate validation
+
+**Load Balancer SSL**:
+- HTTPS termination at ALB level
+- HTTP automatically redirects to HTTPS
+- Modern TLS 1.3 security policy
 
 Ready for production deployment with enterprise-grade security! 🚀
