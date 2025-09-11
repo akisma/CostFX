@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - develop
-      - feature/aws-deploy-v1  # Include your current branch
+      - feature/aws-deploy-v1
   pull_request:
     branches:
       - main
@@ -16,7 +16,28 @@ env:
   ECR_REPOSITORY_FRONTEND: costfx-frontend
 
 jobs:
-  # Test the containers locally first
+  # Determine environment and configuration
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+      deploy: ${{ steps.env.outputs.deploy }}
+    steps:
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ ${{ github.ref }} == 'refs/heads/main' ]]; then
+            echo "environment=prod" >> $GITHUB_OUTPUT
+            echo "deploy=true" >> $GITHUB_OUTPUT
+          elif [[ ${{ github.ref }} == 'refs/heads/develop' || ${{ github.ref }} == 'refs/heads/feature/aws-deploy-v1' ]]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "deploy=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Test containers locally first
   test:
     runs-on: ubuntu-latest
     steps:
@@ -26,16 +47,19 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Test containers
+      - name: Test backend build
         run: |
-          chmod +x deploy/scripts/test-local.sh
-          GITHUB_ACTIONS=true deploy/scripts/test-local.sh test
+          docker build -f deploy/docker/Dockerfile.backend --target test .
+
+      - name: Test frontend build
+        run: |
+          docker build -f deploy/docker/Dockerfile.frontend --target test .
 
   # Build and push Docker images
   build:
-    needs: test
+    needs: [setup, test]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    if: needs.setup.outputs.deploy == 'true'
     outputs:
       backend-image: ${{ steps.backend-image.outputs.image }}
       frontend-image: ${{ steps.frontend-image.outputs.image }}
@@ -54,16 +78,15 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Build and push backend image
         id: backend-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:$IMAGE_TAG -f deploy/docker/Dockerfile.backend .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:$IMAGE_TAG \
+            -f deploy/docker/Dockerfile.backend \
+            --target production .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:$IMAGE_TAG
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY_BACKEND:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
@@ -72,9 +95,10 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
+          ENVIRONMENT: ${{ needs.setup.outputs.environment }}
         run: |
-          # Determine API URL based on environment
-          if [[ ${{ github.ref }} == 'refs/heads/main' ]]; then
+          # Set API URL based on environment
+          if [[ $ENVIRONMENT == 'prod' ]]; then
             API_URL="https://api.costfx.app/api/v1"
           else
             API_URL="https://dev-api.costfx.app/api/v1"
@@ -89,9 +113,10 @@ jobs:
 
   # Deploy infrastructure with Terraform
   deploy:
-    needs: build
+    needs: [setup, build]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    if: needs.setup.outputs.deploy == 'true'
+    environment: ${{ needs.setup.outputs.environment }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -103,56 +128,63 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.5.0
-
-      - name: Set environment
-        id: set-env
-        run: |
-          if [[ ${{ github.ref }} == 'refs/heads/main' ]]; then
-            echo "environment=prod" >> $GITHUB_OUTPUT
-          else
-            echo "environment=dev" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Terraform Init
-        working-directory: deploy/terraform
-        run: |
-          terraform init \
-            -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}" \
-            -backend-config="key=infrastructure/${{ steps.set-env.outputs.environment }}/terraform.tfstate" \
-            -backend-config="region=${{ env.AWS_REGION }}"
-
+      # Use the professional Terraform GitHub Actions
       - name: Terraform Plan
-        working-directory: deploy/terraform
-        run: |
-          terraform plan \
-            -var="environment=${{ steps.set-env.outputs.environment }}" \
-            -var="backend_image=${{ needs.build.outputs.backend-image }}" \
-            -var="frontend_image=${{ needs.build.outputs.frontend-image }}" \
-            -out=tfplan
+        uses: dflook/terraform-plan@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          path: deploy/terraform
+          workspace: ${{ needs.setup.outputs.environment }}
+          variables: |
+            environment = "${{ needs.setup.outputs.environment }}"
+            backend_image = "${{ needs.build.outputs.backend-image }}"
+            frontend_image = "${{ needs.build.outputs.frontend-image }}"
+          backend_config: |
+            bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}
+            key=env/${{ needs.setup.outputs.environment }}/infra.tfstate
+            region=${{ env.AWS_REGION }}
 
       - name: Terraform Apply
-        working-directory: deploy/terraform
-        run: terraform apply -auto-approve tfplan
+        uses: dflook/terraform-apply@v1
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/feature/aws-deploy-v1'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          path: deploy/terraform
+          workspace: ${{ needs.setup.outputs.environment }}
+          variables: |
+            environment = "${{ needs.setup.outputs.environment }}"
+            backend_image = "${{ needs.build.outputs.backend-image }}"
+            frontend_image = "${{ needs.build.outputs.frontend-image }}"
+          backend_config: |
+            bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}
+            key=env/${{ needs.setup.outputs.environment }}/infra.tfstate
+            region=${{ env.AWS_REGION }}
+          auto_approve: true
 
-      - name: Get outputs
-        working-directory: deploy/terraform
+      - name: Get deployment outputs
+        uses: dflook/terraform-output@v1
+        id: tf-outputs
+        with:
+          path: deploy/terraform
+          workspace: ${{ needs.setup.outputs.environment }}
+          backend_config: |
+            bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}
+            key=env/${{ needs.setup.outputs.environment }}/infra.tfstate
+            region=${{ env.AWS_REGION }}
+
+      - name: Set output variables
         run: |
-          echo "Load Balancer URL: $(terraform output -raw load_balancer_url)"
-          echo "Backend URL: $(terraform output -raw backend_url)"
+          echo "LOAD_BALANCER_URL=${{ steps.tf-outputs.outputs.load_balancer_url }}" >> $GITHUB_ENV
+          echo "BACKEND_URL=${{ steps.tf-outputs.outputs.backend_url }}" >> $GITHUB_ENV
 
-  # Health check deployment
-  health-check:
-    needs: deploy
+  # Update SSM parameters with secrets
+  update-secrets:
+    needs: [setup, deploy]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    if: needs.setup.outputs.deploy == 'true'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -160,66 +192,121 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.5.0
-
-      - name: Set environment
-        id: set-env
+      - name: Update application secrets
         run: |
-          if [[ ${{ github.ref }} == 'refs/heads/main' ]]; then
-            echo "environment=prod" >> $GITHUB_OUTPUT
-          else
-            echo "environment=dev" >> $GITHUB_OUTPUT
-          fi
+          # Update JWT secret
+          aws ssm put-parameter \
+            --name '/costfx/${{ needs.setup.outputs.environment }}/jwt_secret' \
+            --value '${{ secrets.JWT_SECRET }}' \
+            --type SecureString \
+            --overwrite \
+            --region ${{ env.AWS_REGION }}
+
+          # Update OpenAI API key
+          aws ssm put-parameter \
+            --name '/costfx/${{ needs.setup.outputs.environment }}/openai_api_key' \
+            --value '${{ secrets.OPENAI_API_KEY }}' \
+            --type SecureString \
+            --overwrite \
+            --region ${{ env.AWS_REGION }}
+
+          # Update database password
+          aws ssm put-parameter \
+            --name '/costfx/${{ needs.setup.outputs.environment }}/db_password' \
+            --value '${{ secrets.DB_PASSWORD }}' \
+            --type SecureString \
+            --overwrite \
+            --region ${{ env.AWS_REGION }}
+
+  # Health check deployment with retry logic
+  health-check:
+    needs: [setup, deploy, update-secrets]
+    runs-on: ubuntu-latest
+    if: needs.setup.outputs.deploy == 'true'
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Get deployment URLs
-        working-directory: deploy/terraform
+        uses: dflook/terraform-output@v1
+        id: tf-outputs
+        with:
+          path: deploy/terraform
+          workspace: ${{ needs.setup.outputs.environment }}
+          backend_config: |
+            bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}
+            key=env/${{ needs.setup.outputs.environment }}/infra.tfstate
+            region=${{ env.AWS_REGION }}
+
+      - name: Wait for ECS service stability
         run: |
-          terraform init \
-            -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}" \
-            -backend-config="key=infrastructure/${{ steps.set-env.outputs.environment }}/terraform.tfstate" \
-            -backend-config="region=${{ env.AWS_REGION }}"
-          
-          LOAD_BALANCER_URL=$(terraform output -raw load_balancer_url)
-          BACKEND_URL=$(terraform output -raw backend_url)
-          
-          echo "LOAD_BALANCER_URL=$LOAD_BALANCER_URL" >> $GITHUB_ENV
-          echo "BACKEND_URL=$BACKEND_URL" >> $GITHUB_ENV
+          echo "Waiting for ECS services to become stable..."
+          aws ecs wait services-stable \
+            --cluster costfx-${{ needs.setup.outputs.environment }}-cluster \
+            --services costfx-${{ needs.setup.outputs.environment }}-backend costfx-${{ needs.setup.outputs.environment }}-frontend \
+            --region ${{ env.AWS_REGION }}
 
       - name: Health check backend
         run: |
-          echo "Testing backend health..."
+          BACKEND_URL="${{ steps.tf-outputs.outputs.backend_url }}"
+          echo "Testing backend health at: $BACKEND_URL/api/v1/"
+          
           for i in {1..30}; do
-            if curl -f -s "${{ env.BACKEND_URL }}/api/v1/" > /dev/null; then
+            if curl -f -s --connect-timeout 10 --max-time 30 "$BACKEND_URL/api/v1/" > /dev/null; then
               echo "✅ Backend is healthy!"
               break
             fi
-            echo "Attempt $i/30: Backend not ready, waiting..."
+            echo "Attempt $i/30: Backend not ready, waiting 30s..."
+            if [ $i -eq 30 ]; then
+              echo "❌ Backend health check failed after 15 minutes"
+              exit 1
+            fi
             sleep 30
           done
 
       - name: Health check frontend
         run: |
-          echo "Testing frontend health..."
-          for i in {1..30}; do
-            if curl -f -s "${{ env.LOAD_BALANCER_URL }}" > /dev/null; then
+          FRONTEND_URL="${{ steps.tf-outputs.outputs.load_balancer_url }}"
+          echo "Testing frontend health at: $FRONTEND_URL"
+          
+          for i in {1..20}; do
+            if curl -f -s --connect-timeout 10 --max-time 30 "$FRONTEND_URL" > /dev/null; then
               echo "✅ Frontend is healthy!"
               break
             fi
-            echo "Attempt $i/30: Frontend not ready, waiting..."
+            echo "Attempt $i/20: Frontend not ready, waiting 30s..."
+            if [ $i -eq 20 ]; then
+              echo "❌ Frontend health check failed after 10 minutes"
+              exit 1
+            fi
             sleep 30
           done
 
-      - name: Test API endpoints
+      - name: Test core API endpoints
         run: |
+          BACKEND_URL="${{ steps.tf-outputs.outputs.backend_url }}"
           echo "Testing core API endpoints..."
           
           # Test restaurant endpoints
-          curl -f -s "${{ env.BACKEND_URL }}/api/v1/restaurants" || echo "⚠️ Restaurants endpoint not ready"
+          curl -f -s --connect-timeout 10 --max-time 30 "$BACKEND_URL/api/v1/restaurants" || echo "⚠️ Restaurants endpoint not ready"
           
           # Test agent endpoints  
-          curl -f -s "${{ env.BACKEND_URL }}/api/v1/agents/health" || echo "⚠️ Agents health endpoint not ready"
+          curl -f -s --connect-timeout 10 --max-time 30 "$BACKEND_URL/api/v1/agents/health" || echo "⚠️ Agents health endpoint not ready"
           
           echo "🎉 Deployment health check completed!"
+
+      - name: Deployment summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ needs.setup.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend URL**: ${{ steps.tf-outputs.outputs.load_balancer_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend URL**: ${{ steps.tf-outputs.outputs.backend_url }}/api/v1" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend Image**: ${{ needs.build.outputs.backend-image }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend Image**: ${{ needs.build.outputs.frontend-image }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All health checks passed!" >> $GITHUB_STEP_SUMMARY

@@ -99,6 +99,12 @@ variable "domain_name" {
   default     = ""
 }
 
+variable "ssl_certificate_arn" {
+  description = "ARN of the SSL certificate from AWS Certificate Manager"
+  type        = string
+  default     = "arn:aws:acm:us-west-2:568530517605:certificate/1942a79f-41b0-424f-955e-70b358ff0f17"
+}
+
 # Security
 variable "allowed_cidr_blocks" {
   description = "CIDR blocks allowed to access the load balancer"

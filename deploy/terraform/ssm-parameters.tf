@@ -1,25 +1,35 @@
+# ============================================================================
+# SSM PARAMETERS FOR APPLICATION CONFIGURATION
+# ============================================================================
+
+# Random passwords
+resource "random_password" "jwt_secret" {
+  length  = 64
+  special = true
+}
+
 # Database URL parameter
 resource "aws_ssm_parameter" "database_url" {
   name  = "/${var.app_name}/${var.environment}/database_url"
   type  = "SecureString"
   # Ensure password is URL-encoded and SSL is required by default
-  value = "postgresql://${aws_db_instance.postgres.username}:${urlencode(random_password.db_password.result)}@${aws_db_instance.postgres.endpoint}/${aws_db_instance.postgres.db_name}?ssl=true"
+  value = "postgresql://${module.rds.db_instance_username}:${urlencode(random_password.db_password.result)}@${module.rds.db_instance_endpoint}/${module.rds.db_instance_name}?ssl=true"
 
   tags = {
     Name = "${var.app_name}-${var.environment}-database-url"
   }
 }
 
-# Redis URL parameter
-resource "aws_ssm_parameter" "redis_url" {
-  name  = "/${var.app_name}/${var.environment}/redis_url"
-  type  = "SecureString"
-  value = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:${aws_elasticache_cluster.redis.cache_nodes[0].port}"
-
-  tags = {
-    Name = "${var.app_name}-${var.environment}-redis-url"
-  }
-}
+# Redis URL parameter - temporarily disabled for destroy
+# resource "aws_ssm_parameter" "redis_url" {
+#   name  = "/${var.app_name}/${var.environment}/redis_url"
+#   type  = "SecureString"
+#   value = "redis://placeholder:6379"
+# 
+#   tags = {
+#     Name = "${var.app_name}-${var.environment}-redis-url"
+#   }
+# }
 
 # JWT Secret parameter
 resource "aws_ssm_parameter" "jwt_secret" {
@@ -30,12 +40,6 @@ resource "aws_ssm_parameter" "jwt_secret" {
   tags = {
     Name = "${var.app_name}-${var.environment}-jwt-secret"
   }
-}
-
-# Random JWT secret
-resource "random_password" "jwt_secret" {
-  length  = 64
-  special = true
 }
 
 # OpenAI API Key parameter (you'll need to set this manually)
@@ -53,28 +57,24 @@ resource "aws_ssm_parameter" "openai_api_key" {
   }
 }
 
-# SSL Certificate ARN - DISABLED FOR DEV
-# resource "aws_ssm_parameter" "ssl_certificate_arn" {
-#   name  = "/costfx/${var.environment}/ssl_certificate_arn"
-#   type  = "SecureString"
-#   value = "PLACEHOLDER_UPDATE_MANUALLY"
-#
-#   tags = {
-#     Name = "${var.app_name}-${var.environment}-ssl-certificate-arn"
-#   }
-#
-#   lifecycle {
-#     ignore_changes = [value]
-#   }
-# }
-
 # Backend API URL for frontend (used in build process)
 resource "aws_ssm_parameter" "backend_api_url" {
   name  = "/${var.app_name}/${var.environment}/backend_api_url"
   type  = "String"
-  value = "http://${aws_lb.main.dns_name}/api/v1"
+  value = "https://${aws_lb.main.dns_name}/api/v1"
 
   tags = {
     Name = "${var.app_name}-${var.environment}-backend-api-url"
+  }
+}
+
+# SSL Certificate ARN parameter (for HTTPS configuration)
+resource "aws_ssm_parameter" "ssl_certificate_arn" {
+  name  = "/${var.app_name}/${var.environment}/ssl_certificate_arn"
+  type  = "String"
+  value = var.ssl_certificate_arn
+
+  tags = {
+    Name = "${var.app_name}-${var.environment}-ssl-certificate-arn"
   }
 }
