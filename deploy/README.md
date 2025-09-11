@@ -4,18 +4,70 @@ This directory contains the infrastructure as code and deployment scripts for de
 
 ## Quick Start
 
-For a complete deployment from scratch, follow these steps:
+Deploy the complete application with a single command:
 
-1. **Prerequisites Setup** - Configure AWS credentials and install tools
-2. **Infrastructure Deployment** - Deploy AWS resources with Terraform  
-3. **Container Deployment** - Build and push Docker images to ECR
-4. **Service Deployment** - Deploy ECS services and verify health
+```bash
+./deploy.sh
+```
 
 **Complete deployment time**: ~15-20 minutes
 
 **Live Application**: Once deployed, access your application at:
 - **Frontend**: `http://{alb-dns-name}/`
 - **Backend API**: `http://{alb-dns-name}/api/v1/`
+
+## Deployment Options
+
+The unified deployment script provides several options:
+
+```bash
+# Full deployment (default)
+./deploy.sh
+
+# Deploy infrastructure only
+./deploy.sh --setup-infra
+
+# Rebuild frontend only (useful after infrastructure changes)
+./deploy.sh --frontend-only
+
+# Update SSM parameters only
+./deploy.sh --update-ssm-only
+
+# Show help
+./deploy.sh --help
+```
+
+## Environment Variables
+
+Configure deployment using environment variables:
+
+```bash
+export AWS_REGION=us-west-2     # AWS region (default: us-west-2)
+export ENVIRONMENT=dev          # Environment name (default: dev)
+export APP_NAME=costfx          # Application name (default: costfx)
+```
+
+## Directory Structure
+
+```
+deploy/
+├── deploy.sh              # Main deployment script (single entry point)
+├── terraform/             # All Terraform infrastructure code
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   └── ...
+├── docker/                # Docker configurations
+│   ├── Dockerfile.backend
+│   ├── Dockerfile.frontend
+│   └── nginx.conf
+└── scripts/               # Support utilities
+    ├── utils.sh           # Common functions
+    ├── setup-ecr.sh       # One-time ECR setup
+    └── setup-terraform-state.sh
+```
+
+---
 
 ---
 

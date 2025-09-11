@@ -43,8 +43,6 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-.claude/
-
 # Virtual environments
 .env
 .venv
