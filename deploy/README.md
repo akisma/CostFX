@@ -268,7 +268,27 @@ export APP_NAME=costfx
 ./deploy/scripts/deploy.sh
 ```
 
-**Note**: The automated script may need updates based on recent fixes. Manual deployment is recommended for first-time setup.
+**Deployment Commands Available:**
+
+```bash
+# Full deployment (default) - includes frontend API URL fix
+./deploy/scripts/deploy.sh deploy
+
+# Rebuild only the frontend with correct API URL
+./deploy/scripts/deploy.sh rebuild-frontend
+# OR use the dedicated script:
+./deploy/scripts/rebuild-frontend.sh
+
+# Update only SSM parameters
+./deploy/scripts/deploy.sh update-ssm-only
+```
+
+**What the deployment script does:**
+1. Deploy AWS infrastructure with Terraform
+2. Build and push Docker images to ECR
+3. **Automatically detect the load balancer URL and rebuild frontend with correct API URL**
+4. Deploy ECS services with new images
+5. Wait for deployment completion and show application URL
 
 After deployment, update the OpenAI API key:
 
@@ -417,7 +437,24 @@ Auto-scaling can be configured by modifying:
    aws ecs execute-command --cluster costfx-dev-cluster --task [task-id] --interactive --command "/bin/sh"
    ```
 
-3. **Image Pull Errors**
+3. **Frontend API URL Issues (Network Error)**
+   
+   **Problem**: Analysis/forecast page shows "Network Error"
+   
+   **Cause**: Frontend was built before load balancer was ready, so it's using localhost:3001
+   
+   **Solution**:
+   ```bash
+   # Quick fix - rebuild frontend with correct API URL
+   ./deploy/scripts/rebuild-frontend.sh
+   
+   # OR using the main deployment script
+   ./deploy/scripts/deploy.sh rebuild-frontend
+   ```
+   
+   **Prevention**: This is now automatically handled in the deployment script
+
+4. **Image Pull Errors**
    ```bash
    # Verify ECR permissions and image existence
    aws ecr describe-images --repository-name costfx-dev-backend

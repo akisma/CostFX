@@ -67,6 +67,24 @@ ecr_login() {
     echo_success "ECR login successful!"
 }
 
+# Get the load balancer DNS name
+get_alb_dns() {
+    local ALB_DNS=""
+    
+    # First try to get from Terraform output
+    ALB_DNS=$(terraform -chdir=deploy/terraform output -raw load_balancer_dns 2>/dev/null || echo "")
+    
+    # If that fails, try to get from AWS CLI using naming convention
+    if [ -z "$ALB_DNS" ]; then
+        ALB_DNS=$(aws elbv2 describe-load-balancers \
+            --query "LoadBalancers[?LoadBalancerName=='$APP_NAME-$ENVIRONMENT-alb'].DNSName" \
+            --output text \
+            --region $AWS_REGION 2>/dev/null || echo "")
+    fi
+    
+    echo "$ALB_DNS"
+}
+
 # Build and push Docker images
 build_and_push_images() {
     echo_info "Building and pushing Docker images..."
@@ -83,13 +101,16 @@ build_and_push_images() {
     
     # Build frontend image with proper API URL
     echo_info "Building frontend image..."
+    
     # Get ALB DNS for API URL
-    ALB_DNS=$(terraform -chdir=deploy/terraform output -raw load_balancer_dns 2>/dev/null || echo "")
+    ALB_DNS=$(get_alb_dns)
     if [ -n "$ALB_DNS" ]; then
         API_URL="http://$ALB_DNS/api/v1"
+        echo_success "Using API URL: $API_URL"
     else
         API_URL="http://localhost:3001/api/v1"
-        echo_warning "Load balancer DNS not found, using localhost API URL"
+        echo_warning "Load balancer DNS not found, using localhost API URL: $API_URL"
+        echo_warning "Frontend will need to be rebuilt after infrastructure is fully deployed"
     fi
     
     docker build \
@@ -97,7 +118,45 @@ build_and_push_images() {
         --build-arg VITE_API_URL="$API_URL" \
         -t $FRONTEND_REPO_URI:latest .
     docker push $FRONTEND_REPO_URI:latest
-    echo_success "Frontend image pushed!"
+    echo_success "Frontend image pushed with API URL: $API_URL"
+}
+
+# Rebuild frontend image with correct API URL (for when ALB wasn't available during initial build)
+rebuild_frontend_if_needed() {
+    echo_info "Checking if frontend needs to be rebuilt with correct API URL..."
+    
+    # Get current ALB DNS
+    ALB_DNS=$(get_alb_dns)
+    if [ -z "$ALB_DNS" ]; then
+        echo_warning "Load balancer DNS still not available, skipping frontend rebuild"
+        return
+    fi
+    
+    API_URL="http://$ALB_DNS/api/v1"
+    echo_info "Load balancer available at: $ALB_DNS"
+    
+    # Check if we previously built with localhost (indicating ALB wasn't ready)
+    # We'll rebuild the frontend to ensure it has the correct API URL
+    echo_info "Rebuilding frontend with correct API URL: $API_URL"
+    
+    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    FRONTEND_REPO_URI="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$APP_NAME-$ENVIRONMENT-frontend"
+    
+    docker build \
+        -f deploy/docker/Dockerfile.frontend \
+        --build-arg VITE_API_URL="$API_URL" \
+        -t $FRONTEND_REPO_URI:latest .
+    docker push $FRONTEND_REPO_URI:latest
+    echo_success "Frontend image rebuilt and pushed with correct API URL: $API_URL"
+    
+    # Force update frontend service to use new image
+    echo_info "Forcing frontend service to use updated image..."
+    aws ecs update-service \
+        --cluster "$APP_NAME-$ENVIRONMENT-cluster" \
+        --service "$APP_NAME-$ENVIRONMENT-frontend" \
+        --force-new-deployment \
+        --region $AWS_REGION > /dev/null
+    echo_success "Frontend service deployment triggered"
 }
 
 # Deploy infrastructure
@@ -174,9 +233,34 @@ show_app_url() {
 
 # Main deployment function
 main() {
-    echo_info "Starting deployment of CostFX to AWS ECS..."
+    # Parse command line arguments
+    case "${1:-deploy}" in
+        "deploy")
+            echo_success "🚀 Starting full deployment..."
+            ;;
+        "rebuild-frontend")
+            echo_success "🔧 Rebuilding frontend with correct API URL..."
+            check_prerequisites
+            ecr_login
+            rebuild_frontend_if_needed
+            echo_success "✅ Frontend rebuild completed!"
+            return
+            ;;
+        "update-ssm-only")
+            echo_success "📝 Updating SSM parameters only..."
+            check_prerequisites
+            deploy_infrastructure
+            echo_success "✅ SSM parameters updated!"
+            return
+            ;;
+        *)
+            echo_error "Invalid command. Usage: $0 [deploy|rebuild-frontend|update-ssm-only]"
+            exit 1
+            ;;
+    esac
+
     echo_info "Environment: $ENVIRONMENT"
-    echo_info "Region: $AWS_REGION"
+    echo_info "AWS Region: $AWS_REGION" 
     echo_info "App Name: $APP_NAME"
     echo ""
     
@@ -184,6 +268,7 @@ main() {
     deploy_infrastructure
     ecr_login
     build_and_push_images
+    rebuild_frontend_if_needed
     update_services
     wait_for_deployment
     show_app_url
