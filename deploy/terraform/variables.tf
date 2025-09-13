@@ -119,5 +119,16 @@ variable "frontend_image" {
   default     = ""
 }
 
+# Monitoring and Alerting
+variable "alert_email" {
+  description = "Email address for CloudWatch alerts and cost notifications"
+  type        = string
+  default     = "jessjacobsLLC@gmail.com"
+  validation {
+    condition     = can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.alert_email)) || var.alert_email == ""
+    error_message = "The alert_email value must be a valid email address or empty string."
+  }
+}
+
 # Application Secrets - stored in SSM Parameter Store
 # No sensitive variables here - all secrets managed via SSM
