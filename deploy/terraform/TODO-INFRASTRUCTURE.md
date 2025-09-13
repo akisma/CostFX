@@ -69,7 +69,27 @@
 - [ ] Test: Verify ALB logs still working
 - [ ] **COMMIT**: "feat: enhance S3 security for ALB logs"
 
-#### **STEP 4: WAF Protection for Load Balancer**
+## ✅ Step 4: WAF Protection for Load Balancer - COMPLETED 🎯
+**Status: DEPLOYED & TESTED**
+- **Resources Created:** 6 total
+  - ✅ WAF Web ACL with 6 managed rule sets
+  - ✅ ALB-WAF association 
+  - ✅ CloudWatch log group for WAF (ready for future logging)
+  - ✅ 2 CloudWatch alarms for WAF monitoring
+- **Protection Features:**
+  - ✅ OWASP Top 10 protection (Core Rule Set)
+  - ✅ Known bad inputs blocking
+  - ✅ Rate limiting (2000 req/5min per IP)
+  - ✅ IP reputation filtering  
+  - ✅ SQL injection protection
+  - ✅ API & login endpoint focus for rate limiting
+- **Monitoring:** Email alerts for >100 blocked requests or >50 rate limit triggers
+- **API Test:** ✅ https://cost-fx.com/api/v1/ responding normally through WAF
+- **Commit Template:** `feat: add AWS WAF protection with managed rules and rate limiting`
+
+---
+
+## 🔄 Step 5: Cost Monitoring and Optimization - PENDING
 *Priority: HIGH | Effort: MEDIUM | Risk: MEDIUM*
 - [ ] Create `waf.tf` file
 - [ ] Add AWS WAF Web ACL with:
