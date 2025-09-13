@@ -72,7 +72,7 @@ resource "aws_ssm_parameter" "backend_api_url" {
 resource "aws_ssm_parameter" "ssl_certificate_arn" {
   name  = "/${var.app_name}/${var.environment}/ssl_certificate_arn"
   type  = "String"
-  value = var.ssl_certificate_arn
+  value = local.certificate_arn
 
   tags = {
     Name = "${var.app_name}-${var.environment}-ssl-certificate-arn"

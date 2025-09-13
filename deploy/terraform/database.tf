@@ -6,6 +6,8 @@
 resource "random_password" "db_password" {
   length  = 32
   special = true
+  # Exclude characters that RDS doesn't allow: / @ " and space
+  override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
 module "rds" {

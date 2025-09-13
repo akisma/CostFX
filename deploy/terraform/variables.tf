@@ -94,15 +94,9 @@ variable "app_name" {
 }
 
 variable "domain_name" {
-  description = "Domain name for the application (optional)"
+  description = "Domain name for the application"
   type        = string
-  default     = ""
-}
-
-variable "ssl_certificate_arn" {
-  description = "ARN of the SSL certificate from AWS Certificate Manager"
-  type        = string
-  default     = "arn:aws:acm:us-west-2:568530517605:certificate/1942a79f-41b0-424f-955e-70b358ff0f17"
+  default     = "cost-fx.com"
 }
 
 # Security
