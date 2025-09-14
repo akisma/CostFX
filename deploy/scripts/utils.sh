@@ -98,7 +98,12 @@ get_alb_dns() {
 deploy_infrastructure() {
     echo_info "Deploying infrastructure with Terraform..."
     
-    cd terraform
+    # Get the directory where this script is located
+    local UTILS_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local DEPLOY_DIR="$(cd "$UTILS_SCRIPT_DIR/.." && pwd)"
+    
+    # Navigate to terraform directory
+    cd "$DEPLOY_DIR/terraform"
     
     # Initialize Terraform
     terraform init
@@ -143,12 +148,14 @@ build_and_push_images() {
     
     if [ -n "$ALB_DNS" ]; then
         echo_info "Using API URL: $API_URL"
-        docker build -f deploy/docker/Dockerfile.frontend \
+        docker build -f Dockerfile.frontend \
+            --platform linux/amd64 \
             --build-arg VITE_API_URL="$API_URL" \
             -t $FRONTEND_REPO_URI:latest .
     else
         echo_warning "ALB DNS not found, building frontend with placeholder URL"
-        docker build -f deploy/docker/Dockerfile.frontend \
+        docker build -f Dockerfile.frontend \
+            --platform linux/amd64 \
             --build-arg VITE_API_URL="http://localhost:3001/api/v1" \
             -t $FRONTEND_REPO_URI:latest .
     fi
@@ -174,15 +181,16 @@ rebuild_frontend_with_correct_api_url() {
     local API_URL="http://${ALB_DNS}/api/v1"
     echo_info "Building frontend with API URL: $API_URL"
     
-    # Build and push frontend with correct API URL
-    docker build -f deploy/docker/Dockerfile.frontend \
+    # Build and push frontend with correct API URL for AMD64 platform
+    docker build -f Dockerfile.frontend \
+        --platform linux/amd64 \
         --build-arg VITE_API_URL="$API_URL" \
         -t $FRONTEND_REPO_URI:latest .
     docker push $FRONTEND_REPO_URI:latest
     
     # Force ECS service update
     aws ecs update-service \
-        --cluster "$APP_NAME-$ENVIRONMENT-cluster" \
+        --cluster "$APP_NAME-$ENVIRONMENT" \
         --service "$APP_NAME-$ENVIRONMENT-frontend" \
         --force-new-deployment \
         --region $AWS_REGION > /dev/null
@@ -196,14 +204,14 @@ update_services() {
     
     # Update backend service
     aws ecs update-service \
-        --cluster "$APP_NAME-$ENVIRONMENT-cluster" \
+        --cluster "$APP_NAME-$ENVIRONMENT" \
         --service "$APP_NAME-$ENVIRONMENT-backend" \
         --force-new-deployment \
         --region $AWS_REGION > /dev/null
     
     # Update frontend service
     aws ecs update-service \
-        --cluster "$APP_NAME-$ENVIRONMENT-cluster" \
+        --cluster "$APP_NAME-$ENVIRONMENT" \
         --service "$APP_NAME-$ENVIRONMENT-frontend" \
         --force-new-deployment \
         --region $AWS_REGION > /dev/null

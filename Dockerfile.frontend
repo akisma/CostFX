@@ -18,6 +18,10 @@ RUN --mount=type=cache,target=/root/.npm \
 # Copy frontend source
 COPY frontend/ .
 
+# Accept build arg for API URL configuration
+ARG VITE_API_URL=http://localhost:3001/api/v1
+ENV VITE_API_URL=${VITE_API_URL}
+
 # Build static assets
 RUN npm run build
 

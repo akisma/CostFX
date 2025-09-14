@@ -123,7 +123,7 @@ deploy_frontend_only() {
     # Wait for deployment
     echo_info "Waiting for frontend deployment to complete..."
     aws ecs wait services-stable \
-        --cluster "$APP_NAME-$ENVIRONMENT-cluster" \
+        --cluster "$APP_NAME-$ENVIRONMENT" \
         --services "$APP_NAME-$ENVIRONMENT-frontend" \
         --region $AWS_REGION
     
