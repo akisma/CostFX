@@ -9,7 +9,7 @@ const settings = {
   redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
 
   // Authentication
-  jwtSecret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+  jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
 
   // AI Services

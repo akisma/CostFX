@@ -1,3 +1,23 @@
+.docs
+
+# Terraform local state (if backend misconfigured)
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Generated image vars
+deploy/infra/environments/*/generated-images.auto.tfvars
+deploy/infra/environments/*/.backend_image
+deploy/infra/environments/*/.frontend_image
+
+# Node modules
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+shared/node_modules/
+
+# Logs
+*.log
 # Python
 __pycache__/
 *.py[cod]
@@ -21,8 +41,6 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-
-.claude/
 
 # Virtual environments
 .env

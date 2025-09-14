@@ -1,0 +1,53 @@
+# Production Dockerfile for CostFX Frontend
+FROM node:18-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# Copy workspace package files
+COPY package*.json ./
+COPY frontend/package*.json ./frontend/
+
+# Install dependencies using workspace
+RUN npm ci --workspace=frontend && npm cache clean --force
+
+# Copy frontend source and configuration files
+COPY frontend/ ./frontend/
+
+# Accept build args for API URL
+ARG VITE_API_URL=http://localhost:3001/api/v1
+ENV VITE_API_URL=$VITE_API_URL
+
+# Set working directory to frontend workspace
+WORKDIR /app/frontend
+
+# Build the application
+RUN npm run build
+
+# Production stage with nginx
+FROM nginx:alpine AS production
+
+# Install security updates
+RUN apk update && apk upgrade
+
+# Copy built assets from frontend workspace
+COPY --from=builder /app/frontend/dist /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY deploy/docker/nginx.conf /etc/nginx/nginx.conf
+
+# Create non-root user (check if nginx user already exists)
+RUN if ! getent group nginx >/dev/null 2>&1; then addgroup -g 1001 -S nginx; fi && \
+    if ! getent passwd nginx >/dev/null 2>&1; then adduser -S nginx -u 1001 -G nginx; fi
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+
+# Expose port
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

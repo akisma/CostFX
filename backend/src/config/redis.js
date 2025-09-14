@@ -10,23 +10,26 @@ const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '../../../');
 dotenv.config({ path: join(rootDir, '.env') });
 
-const redis = createClient({
-  url: process.env.REDIS_URL || 'redis://localhost:6379'
-});
+const REDIS_URL = process.env.REDIS_URL;
+const redis = REDIS_URL ? createClient({ url: REDIS_URL }) : null;
 
-redis.on('error', (err) => {
-  logger.error('Redis Client Error:', err);
-});
-
-redis.on('connect', () => {
-  logger.info('✅ Redis connection established');
-});
-
-redis.on('ready', () => {
-  logger.info('📡 Redis client ready');
-});
+if (redis) {
+  redis.on('error', (err) => {
+    logger.error('Redis Client Error:', err);
+  });
+  redis.on('connect', () => {
+    logger.info('✅ Redis connection established');
+  });
+  redis.on('ready', () => {
+    logger.info('📡 Redis client ready');
+  });
+}
 
 export async function connectRedis() {
+  if (!redis) {
+    logger.info('ℹ️ REDIS_URL not set; skipping Redis connection');
+    return;
+  }
   try {
     await redis.connect();
   } catch (error) {

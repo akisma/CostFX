@@ -1,24 +1,49 @@
-FROM node:18-alpine
+# syntax=docker/dockerfile:1
+ARG NODE_VERSION=18-alpine
+ARG NGINX_VERSION=alpine
+
+FROM node:${NODE_VERSION} AS build
 
 WORKDIR /app
 
-# Copy package files
+# Copy root package files and frontend package files for workspace install
 COPY package*.json ./
+COPY frontend/package*.json ./frontend/
 
-# Install dependencies
-RUN npm install
+# Install dependencies with cache mount for better performance  
+# Use npm install for workspace compatibility
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --workspace=frontend --include-workspace-root
 
-# Copy source code
-COPY . .
+# Copy frontend source
+COPY frontend/ .
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
-RUN chown -R nodejs:nodejs /app
-USER nodejs
+# Accept build arg for API URL configuration
+ARG VITE_API_URL=http://localhost:3001/api/v1
+ENV VITE_API_URL=${VITE_API_URL}
 
-# Expose port
-EXPOSE 3000
+# Build static assets
+RUN npm run build
 
-# Start the development server
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Use standard nginx alpine image (can bind to port 80)
+FROM nginx:${NGINX_VERSION} AS runtime
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Copy optimized nginx configuration
+COPY deploy/docker/nginx.conf /etc/nginx/nginx.conf
+
+# Copy built assets
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Expose port 80 (standard web port)
+EXPOSE 80
+
+# Add health check using curl
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:80/health || exit 1
+
+# Use explicit entrypoint and cmd
+ENTRYPOINT ["nginx", "-c", "/etc/nginx/nginx.conf"]
+CMD ["-g", "daemon off;"]

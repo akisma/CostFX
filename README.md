@@ -193,6 +193,26 @@ cd frontend && npm run test:coverage
 - Review the API endpoints at `/api/v1`
 - Test the development environment with `npm run dev`
 
+## 🚀 Production Deployment
+
+Deploy to AWS ECS with a single command:
+
+```bash
+cd deploy
+./deploy.sh
+```
+
+**Deployment Options:**
+- `./deploy.sh` - Full deployment (infrastructure + containers)
+- `./deploy.sh --setup-infra` - Deploy infrastructure only  
+- `./deploy.sh --frontend-only` - Rebuild frontend with correct API URLs
+- `./deploy.sh --help` - Show all options
+
+See [deploy/README.md](deploy/README.md) for detailed deployment documentation.
+
+**Deployment time:** ~15-20 minutes  
+**Architecture:** AWS ECS Fargate + RDS PostgreSQL + ElastiCache Redis
+
 ---
 
 **Built for restaurant operations optimization with AI-powered insights.**
