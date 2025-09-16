@@ -558,10 +558,43 @@ terraform apply
 - `DATABASE_URL` (from SSM Parameter Store)
 - `REDIS_URL` (from SSM Parameter Store)
 - `JWT_SECRET` (from SSM Parameter Store)
+- `OPENAI_API_KEY` (from SSM Parameter Store)
+
+**SSM Parameter Configuration**:
+The application uses AWS Systems Manager (SSM) Parameter Store for secure configuration management:
+
+```bash
+# Current SSM Parameters (stored securely)
+/costfx/dev/backend_api_url      # Backend API URL for frontend
+/costfx/dev/database_url         # PostgreSQL connection string
+/costfx/dev/jwt_secret          # JWT signing secret
+/costfx/dev/openai_api_key      # OpenAI API key for AI agents
+/costfx/dev/ssl_certificate_arn # SSL certificate ARN for HTTPS
+```
+
+**GitHub Actions Integration**:
+GitHub Actions workflows automatically update SSM parameters during deployment:
+
+```yaml
+# Update application secrets in GitHub Actions
+- name: Update application secrets
+  run: |
+    aws ssm put-parameter \
+      --name '/costfx/${{ needs.setup.outputs.environment }}/jwt_secret' \
+      --value '${{ secrets.JWT_SECRET }}' \
+      --type SecureString \
+      --overwrite \
+      --region ${{ env.AWS_REGION }}
+```
 
 **Frontend Production Environment**:
 - `VITE_API_URL=/api/v1` (relative path for ALB routing)
 - `VITE_NODE_ENV=production`
+
+**Production URLs**:
+- **Frontend**: https://cost-fx.com/
+- **Backend API**: https://cost-fx.com/api/v1/
+- **Load Balancer**: costfx-dev-alb-1499165776.us-west-2.elb.amazonaws.com
 
 ### Monitoring and Observability
 

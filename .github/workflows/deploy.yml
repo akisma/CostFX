@@ -99,9 +99,9 @@ jobs:
         run: |
           # Set API URL based on environment
           if [[ $ENVIRONMENT == 'prod' ]]; then
-            API_URL="https://api.costfx.app/api/v1"
+            API_URL="https://cost-fx.com/api/v1"
           else
-            API_URL="https://dev-api.costfx.app/api/v1"
+            API_URL="https://cost-fx.com/api/v1"
           fi
           
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG \

@@ -103,6 +103,7 @@ Your code must be 100% clean. No exceptions.
 - **Table-driven tests** for complex logic
 - **Channels for synchronization**: Use channels to signal readiness, not sleep
 - **Select for timeouts**: Use `select` with timeout channels, not sleep loops
+- **GIT**: DO NOT EVER INTERACT WITH GIT IN ANY OTHER FASHION THAN READ-ONLY!!! DO NOT STAGE COMMITS, DO NOT MAKE COMMITS.
 
 ## Implementation Standards
 
