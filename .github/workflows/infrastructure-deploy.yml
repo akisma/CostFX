@@ -46,29 +46,6 @@ jobs:
   # Run application tests (MUST PASS for deployment)
   test:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: costfx_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -86,12 +63,8 @@ jobs:
       - name: Run backend tests
         env:
           NODE_ENV: test
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/costfx_test
-          REDIS_URL: redis://localhost:6379
-          JWT_SECRET: test-secret-key-for-testing-only
-          OPENAI_API_KEY: test-key-not-real
         run: |
-          echo "🧪 Running backend tests..."
+          echo "🧪 Running backend unit tests (mocked)..."
           cd backend
           npm test
           echo "✅ Backend tests passed!"

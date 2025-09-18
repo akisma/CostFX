@@ -1,20 +1,20 @@
-import { jest } from '@jest/globals';
+import { vi, describe, beforeEach, test, expect } from 'vitest';
 import request from 'supertest';
 import app from '../../src/app.js';
 import agentService from '../../src/agents/AgentService.js';
 
 // Mock AgentService
-jest.mock('../../src/agents/AgentService.js', () => {
+vi.mock('../../src/agents/AgentService.js', () => {
   return {
     default: {
-      processRequest: jest.fn()
+      processRequest: vi.fn()
     }
   };
 });
 
 describe('Inventory Integration Tests', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('POST /api/v1/inventory/check-levels', () => {

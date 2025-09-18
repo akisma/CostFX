@@ -1,4 +1,4 @@
-import { describe, test, expect, jest } from '@jest/globals';
+import { describe, test, expect, vi } from 'vitest';
 
 describe('Restaurant Controller Unit Tests', () => {
   describe('Basic functionality', () => {
@@ -17,8 +17,8 @@ describe('Restaurant Controller Unit Tests', () => {
 
     test('should create mock response objects', () => {
       const mockRes = {
-        json: jest.fn(),
-        status: jest.fn().mockReturnThis()
+        json: vi.fn(),
+        status: vi.fn().mockReturnThis()
       };
 
       mockRes.status(200);

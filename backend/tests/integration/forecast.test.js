@@ -1,3 +1,4 @@
+import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import agentService from '../../src/agents/AgentService.js';
 
 describe('ForecastAgent Integration', () => {

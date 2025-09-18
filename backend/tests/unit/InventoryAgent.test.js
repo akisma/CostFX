@@ -1,25 +1,25 @@
-import { jest } from '@jest/globals';
+import { vi, describe, beforeEach, test, expect } from 'vitest';
 
 // Mock the helper functions
-jest.unstable_mockModule('../../src/utils/helpers.js', () => ({
-  calculateReorderPoint: jest.fn((dailyUsage, leadTime, safetyStock) => 
+vi.mock('../../src/utils/helpers.js', () => ({
+  calculateReorderPoint: vi.fn((dailyUsage, leadTime, safetyStock) => 
     dailyUsage * leadTime + safetyStock
   ),
-  calculateEconomicOrderQuantity: jest.fn((annualDemand, orderCost, holdingCost) => 
+  calculateEconomicOrderQuantity: vi.fn((annualDemand, orderCost, holdingCost) => 
     Math.sqrt((2 * annualDemand * orderCost) / holdingCost)
   )
 }));
 
 // Mock Sequelize models
-jest.unstable_mockModule('../../src/models/InventoryItem.js', () => ({
+vi.mock('../../src/models/InventoryItem.js', () => ({
   default: {
-    findAll: jest.fn()
+    findAll: vi.fn()
   }
 }));
 
-jest.unstable_mockModule('../../src/models/InventoryTransaction.js', () => ({
+vi.mock('../../src/models/InventoryTransaction.js', () => ({
   default: {
-    findAll: jest.fn()
+    findAll: vi.fn()
   }
 }));
 
@@ -31,7 +31,7 @@ describe('InventoryAgent', () => {
   
   beforeEach(() => {
     inventoryAgent = new InventoryAgent();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Constructor', () => {
@@ -60,7 +60,7 @@ describe('InventoryAgent', () => {
   describe('process method', () => {
     test('should route track_levels request correctly', async () => {
       const mockResult = { inventoryItems: [], summary: {} };
-      jest.spyOn(inventoryAgent, 'trackInventoryLevels').mockResolvedValue(mockResult);
+      vi.spyOn(inventoryAgent, 'trackInventoryLevels').mockResolvedValue(mockResult);
 
       const request = {
         type: 'track_levels',
@@ -76,7 +76,7 @@ describe('InventoryAgent', () => {
 
     test('should route predict_reorder request correctly', async () => {
       const mockResult = { recommendations: [], summary: {} };
-      jest.spyOn(inventoryAgent, 'predictReorderNeeds').mockResolvedValue(mockResult);
+      vi.spyOn(inventoryAgent, 'predictReorderNeeds').mockResolvedValue(mockResult);
 
       const request = {
         type: 'predict_reorder',
@@ -100,8 +100,8 @@ describe('InventoryAgent', () => {
 
     test('should update metrics on successful request', async () => {
       const mockResult = { inventoryItems: [] };
-      jest.spyOn(inventoryAgent, 'trackInventoryLevels').mockResolvedValue(mockResult);
-      jest.spyOn(inventoryAgent, 'updateMetrics').mockImplementation(() => {});
+      vi.spyOn(inventoryAgent, 'trackInventoryLevels').mockResolvedValue(mockResult);
+      vi.spyOn(inventoryAgent, 'updateMetrics').mockImplementation(() => {});
 
       const request = {
         type: 'track_levels',
@@ -114,8 +114,8 @@ describe('InventoryAgent', () => {
     });
 
     test('should update metrics on failed request', async () => {
-      jest.spyOn(inventoryAgent, 'trackInventoryLevels').mockRejectedValue(new Error('Test error'));
-      jest.spyOn(inventoryAgent, 'updateMetrics').mockImplementation(() => {});
+      vi.spyOn(inventoryAgent, 'trackInventoryLevels').mockRejectedValue(new Error('Test error'));
+      vi.spyOn(inventoryAgent, 'updateMetrics').mockImplementation(() => {});
 
       const request = {
         type: 'track_levels',
@@ -150,7 +150,7 @@ describe('InventoryAgent', () => {
         }
       ];
 
-      jest.spyOn(inventoryAgent, 'getCurrentInventory').mockResolvedValue(mockInventory);
+      vi.spyOn(inventoryAgent, 'getCurrentInventory').mockResolvedValue(mockInventory);
 
       const result = await inventoryAgent.trackInventoryLevels({ restaurantId: 1 });
 
@@ -176,7 +176,7 @@ describe('InventoryAgent', () => {
         }
       ];
 
-      jest.spyOn(inventoryAgent, 'getCurrentInventory').mockResolvedValue(mockInventory);
+      vi.spyOn(inventoryAgent, 'getCurrentInventory').mockResolvedValue(mockInventory);
 
       const result = await inventoryAgent.trackInventoryLevels({ restaurantId: 1 });
 
@@ -213,7 +213,7 @@ describe('InventoryAgent', () => {
         }
       ];
 
-      jest.spyOn(inventoryAgent, 'getInventoryItemsWithUsage').mockResolvedValue(mockInventory);
+      vi.spyOn(inventoryAgent, 'getInventoryItemsWithUsage').mockResolvedValue(mockInventory);
 
       const result = await inventoryAgent.predictReorderNeeds({ restaurantId: 1, forecastDays: 7 });
 
@@ -248,7 +248,7 @@ describe('InventoryAgent', () => {
         }
       ];
 
-      jest.spyOn(inventoryAgent, 'getExpiringItems').mockResolvedValue(mockInventory);
+      vi.spyOn(inventoryAgent, 'getExpiringItems').mockResolvedValue(mockInventory);
 
       const result = await inventoryAgent.monitorExpirationDates({ restaurantId: 1 });
 
@@ -287,7 +287,7 @@ describe('InventoryAgent', () => {
         }
       ];
 
-      jest.spyOn(inventoryAgent, 'getWasteData').mockResolvedValue(mockWasteData);
+      vi.spyOn(inventoryAgent, 'getWasteData').mockResolvedValue(mockWasteData);
 
       const result = await inventoryAgent.analyzeWastePatterns({ restaurantId: 1, timeframeDays: 30 });
 
@@ -316,7 +316,7 @@ describe('InventoryAgent', () => {
         }
       ];
 
-      jest.spyOn(inventoryAgent, 'getInventoryItemsWithUsage').mockResolvedValue(mockInventory);
+      vi.spyOn(inventoryAgent, 'getInventoryItemsWithUsage').mockResolvedValue(mockInventory);
 
       const result = await inventoryAgent.optimizeStockLevels({ 
         restaurantId: 1, 
@@ -416,7 +416,7 @@ describe('InventoryAgent Integration', () => {
 
   test('should handle complete workflow from request to response', async () => {
     // Mock all dependencies for integration test
-    jest.spyOn(inventoryAgent, 'getCurrentInventory').mockResolvedValue([
+    vi.spyOn(inventoryAgent, 'getCurrentInventory').mockResolvedValue([
       {
         id: 1,
         name: 'Test Item',
@@ -443,7 +443,7 @@ describe('InventoryAgent Integration', () => {
   });
 
   test('should maintain state consistency across multiple requests', async () => {
-    jest.spyOn(inventoryAgent, 'getCurrentInventory').mockResolvedValue([]);
+    vi.spyOn(inventoryAgent, 'getCurrentInventory').mockResolvedValue([]);
 
     await inventoryAgent.process({ type: 'track_levels', data: { restaurantId: 1 } });
     await inventoryAgent.process({ type: 'track_levels', data: { restaurantId: 1 } });
