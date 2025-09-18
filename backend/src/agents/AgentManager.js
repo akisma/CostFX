@@ -2,7 +2,7 @@ import BaseAgent from './BaseAgent.js';
 
 /**
  * AgentManager - Orchestrates multiple agents and handles request routing
- * Manages agent lifecycle, communication, and load balancing. 
+ * Manages agent lifecycle, communication, and load balancing
  */
 class AgentManager {
   constructor() {
