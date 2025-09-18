@@ -243,7 +243,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: backend-task-definition.json
-          container-name: costfx-dev-backend
+          container-name: backend
           image: ${{ needs.build.outputs.backend_image }}
 
       - name: Deploy backend to ECS
@@ -269,7 +269,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: frontend-task-definition.json
-          container-name: costfx-dev-frontend
+          container-name: frontend
           image: ${{ needs.build.outputs.frontend_image }}
 
       - name: Deploy frontend to ECS
