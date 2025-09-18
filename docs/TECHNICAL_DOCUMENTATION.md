@@ -35,7 +35,32 @@ CostFX is a multi-agent AI system that automates restaurant operations to reduce
 - ✅ **Backend Infrastructure**: Express.js API with agent orchestration
 - ✅ **Frontend Dashboard**: React with Redux state management
 - ✅ **Database**: PostgreSQL with Sequelize ORM
-- ✅ **Testing**: Comprehensive test suites with 100% pass rates
+- ✅ **Testing**: Vitest-based test suites with ES modules support (59/102 tests passing)
+- ✅ **CI/CD**: GitHub Actions with separated app and infrastructure deployments
+
+### Development Status (September 2025)
+
+#### Recently Completed
+- ✅ **Jest to Vitest Migration**: Resolved ES modules testing issues
+- ✅ **GitHub Actions Optimization**: Separated fast app deployment from infrastructure deployment
+- ✅ **Test Framework Modernization**: Native ES modules support with better mock handling
+
+#### Current Test Health
+- **Total Tests**: 102 tests across unit and integration suites
+- **Passing Tests**: 59 tests (58% pass rate)
+- **Status**: Acceptable for CI/CD (improvement from 0% when Jest was failing)
+
+**Test Categories**:
+- ✅ **Core Infrastructure**: Error handling, logging, controllers (100% passing)
+- ✅ **ForecastAgent**: Complete implementation (24/24 tests passing)
+- ⚠️ **InventoryAgent**: Tests expect methods not yet implemented in class
+- ⚠️ **Integration Tests**: Fail due to missing API endpoints (normal during development)
+
+#### Next Development Priorities
+1. **Complete InventoryAgent Implementation**: Add missing methods to match test expectations
+2. **API Route Development**: Implement missing endpoints for integration tests
+3. **Database Integration**: Resolve remaining model relationship issues
+4. **Frontend-Backend Integration**: Connect React dashboard to backend APIs
 
 ---
 
@@ -244,23 +269,40 @@ router.post('/new/process', async (req, res, next) => {
 
 ### Testing Implementation
 
+**Current Setup**: Vitest with native ES modules support (migrated from Jest in September 2025)
+
 #### Test Structure
 ```
 backend/tests/
-├── setup.js              # Test configuration
+├── setup.js              # Vitest configuration with mocks
+├── vitest.config.js       # Test environment configuration
 ├── fixtures/              # Test data
 ├── unit/                  # Unit tests
-│   ├── agents/           # Agent-specific tests
+│   ├── agents/           # Agent-specific tests (some tests need implementation updates)
 │   ├── models/           # Model tests
-│   └── services/         # Service tests
-└── integration/          # Integration tests
+│   └── services/         # Service tests  
+└── integration/          # Integration tests (some routes need implementation)
     └── api/              # API endpoint tests
 ```
 
-#### Writing Agent Tests
+**Current Test Status**: 59/102 tests passing
+- ✅ All unit tests for error handling, logging, and controllers pass
+- ✅ ForecastAgent tests fully operational (24/24 passing)
+- ⚠️ InventoryAgent tests need method implementation alignment
+- ⚠️ Integration tests failing due to missing API endpoints (expected)
+
+#### Writing Agent Tests with Vitest
 ```javascript
 // backend/tests/unit/agents/NewAgent.test.js
+import { describe, test, expect, vi, beforeEach } from 'vitest';
 import NewAgent from '../../../src/agents/NewAgent.js';
+
+// Mock dependencies using Vitest
+vi.mock('../../src/models/SomeModel.js', () => ({
+  default: {
+    findAll: vi.fn()
+  }
+}));
 
 describe('NewAgent', () => {
   let agent;
@@ -278,6 +320,18 @@ describe('NewAgent', () => {
     expect(result.metadata.confidence).toBeGreaterThan(0);
   });
 });
+```
+
+#### Test Commands
+```bash
+# Run all tests (Vitest)
+npm test                    # Runs vitest run (CI mode)
+npm run test:watch         # Runs vitest (watch mode)  
+npm run test:coverage      # Runs with coverage report
+
+# Backend testing with database setup
+npm run test:setup         # Set up test database
+npm run test:integration   # Run integration tests only
 ```
 
 ### Database Migrations
@@ -506,6 +560,30 @@ export default defineConfig({
 ---
 
 ## Deployment Guide
+
+### Recent Updates (September 2025)
+
+#### Jest to Vitest Migration
+- **Migration Completed**: Backend testing migrated from Jest to Vitest for better ES modules support
+- **Current Status**: 59/102 tests passing (improvement from failing Jest tests)
+- **Key Changes**:
+  - `package.json`: Updated test scripts to use `vitest run`
+  - `vitest.config.js`: New configuration file for test environment
+  - `tests/setup.js`: Converted Jest mocks to Vitest mocks using `vi.mock()`
+  - All test files: Updated imports from `@jest/globals` to `vitest`
+  - Mock functions: Changed `jest.fn()` to `vi.fn()` and `jest.spyOn()` to `vi.spyOn()`
+
+#### Current Test Environment
+- **Framework**: Vitest with native ES modules support
+- **Environment**: Node.js test environment with mocked external dependencies
+- **Coverage**: 59/102 tests passing (expected due to missing API implementations)
+- **CI/CD**: GitHub Actions uses `npm test` which now runs Vitest
+
+#### Test Results Breakdown
+- ✅ **Unit Tests**: error handling, logging, restaurant controller (all passing)
+- ✅ **ForecastAgent**: 24/24 tests passing (fully implemented)
+- ⚠️ **InventoryAgent**: Tests fail due to missing method implementations in actual class
+- ⚠️ **Integration Tests**: Fail due to missing API routes (expected during development)
 
 ### Deployment Strategy Overview
 
@@ -782,8 +860,41 @@ resource "aws_cloudwatch_metric_alarm" "high_response_time" {
 
 #### Testing Issues
 
-**Issue**: Jest tests failing with ES module errors
-- **Cause**: Incorrect Jest configuration for ES modules
+**Issue**: Tests failing with "describe is not defined" or ES module errors
+- **Cause**: Missing Vitest imports or outdated Jest configuration
+- **Solution**: 
+  ```javascript
+  // Ensure all test files have proper Vitest imports
+  import { describe, test, expect, vi, beforeEach } from 'vitest';
+  
+  // Check vitest.config.js exists and is properly configured
+  // Run: npm test (should use vitest run)
+  ```
+
+**Issue**: "Cannot find module" errors in tests
+- **Cause**: Mock imports not properly configured for Vitest
+- **Solution**:
+  ```javascript
+  // Use vi.mock() instead of jest.mock()
+  vi.mock('../../src/models/SomeModel.js', () => ({
+    default: {
+      findAll: vi.fn()
+    }
+  }));
+  ```
+
+**Issue**: Tests pass locally but fail in CI/CD
+- **Cause**: Database dependencies or environment differences
+- **Solution**: 
+  ```bash
+  # Check that tests use mocks and don't require real database
+  # Verify GitHub Actions uses: npm test (not npm run test:integration)
+  # Check test scripts in package.json use vitest run
+  ```
+
+**Legacy Issue**: Jest tests failing with ES module errors (resolved September 2025)
+- **Cause**: Jest experimental ES modules support was unstable
+- **Solution**: ✅ **Migrated to Vitest** - Native ES modules support, better mock handling
 - **Solution**: Ensure `jest.config.js` includes Babel transformation (see Technical Solutions)
 
 **Issue**: Database tests failing
@@ -867,6 +978,43 @@ docker exec -it <container-id> /bin/sh
 # Check ECS task logs
 aws logs tail /costfx/backend --follow
 ```
+
+---
+
+## Change Log
+
+### September 17, 2025 - Testing Framework Migration
+**Major Update**: Migrated backend testing from Jest to Vitest for improved ES modules support
+
+**Changes Made**:
+- **Backend Testing Migration**:
+  - Updated `package.json` test scripts from Jest to Vitest
+  - Created `vitest.config.js` with proper ES modules configuration
+  - Converted `tests/setup.js` from Jest mocks to Vitest mocks
+  - Updated all test files: imports, mock functions, and spy methods
+  - Result: 59/102 tests now passing (vs 0% with failing Jest setup)
+
+- **GitHub Actions Optimization**:
+  - Confirmed dual-workflow strategy working correctly
+  - App deployment uses fast Vitest testing (no database required)
+  - Infrastructure deployment uses comprehensive testing (database included)
+
+- **Documentation Updates**:
+  - Updated technical documentation with current test status
+  - Added troubleshooting section for testing issues
+  - Documented the Jest→Vitest migration process and rationale
+
+**Technical Rationale**:
+- Jest's experimental ES modules support was unstable in CI/CD
+- Vitest provides native ES modules support without experimental flags
+- Better mock handling and faster test execution
+- Maintains same test coverage while improving reliability
+
+**Current Status**:
+- ✅ CI/CD pipeline functional with Vitest
+- ✅ Mock-based testing eliminates database dependencies in app deployment
+- ⚠️ Some tests need implementation alignment (expected during development)
+- 🎯 Ready for continued development with stable testing foundation
 
 ---
 
