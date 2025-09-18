@@ -1,8 +1,43 @@
-import { describe, test, expect, beforeEach, afterEach } from 'vitest';
+import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
 import app from '../../src/app.js';
+import Restaurant from '../../src/models/Restaurant.js';
+
+// Mock restaurant data
+const mockRestaurants = [
+  {
+    id: 1,
+    name: 'Test Restaurant 1',
+    location: 'Test Location 1',
+    cuisine: 'Italian',
+    phone: '555-0001',
+    email: 'test1@restaurant.com'
+  },
+  {
+    id: 2,
+    name: 'Test Restaurant 2',
+    location: 'Test Location 2',
+    cuisine: 'French',
+    phone: '555-0002',
+    email: 'test2@restaurant.com'
+  }
+];
 
 describe('Restaurant API Integration Tests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    
+    // Set up Restaurant mock defaults
+    Restaurant.findAndCountAll.mockResolvedValue({
+      rows: mockRestaurants,
+      count: mockRestaurants.length
+    });
+    
+    Restaurant.findByPk.mockImplementation((id) => {
+      const restaurant = mockRestaurants.find(r => r.id == id);
+      return Promise.resolve(restaurant || null);
+    });
+  });
   describe('GET /api/v1/restaurants', () => {
     test('should return list of restaurants', async () => {
       const response = await request(app)

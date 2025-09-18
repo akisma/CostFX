@@ -2,7 +2,19 @@ const settings = {
   // Server
   port: process.env.PORT || 3001,
   nodeEnv: process.env.NODE_ENV || 'development',
+  
+  // URLs
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+  baseUrl: process.env.BASE_URL || `http://localhost:${process.env.PORT || 3001}`,
+  apiPath: '/api/v1',
+  
+  // CORS allowed origins
+  corsOrigins: [
+    'http://localhost:3000',  // Frontend dev server
+    'http://localhost:3001',  // Backend dev server 
+    'http://localhost:3002',  // Docker dev server
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
 
   // Database
   databaseUrl: process.env.DATABASE_URL,

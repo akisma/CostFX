@@ -3,13 +3,15 @@
  * Configures global mocks and test environment
  */
 import { vi, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
+import { testConfig } from '../../shared/src/config/testConfig.js';
 
 // Mock environment variables
 process.env.NODE_ENV = 'test';
+process.env.PORT = testConfig.backend.port.toString();
 process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.OPENAI_API_KEY = 'test-openai-key';
 process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
-process.env.REDIS_URL = 'redis://localhost:6379';
+process.env.REDIS_URL = `redis://${testConfig.redis.host}:${testConfig.redis.port}`;
 
 // Mock database connection
 vi.mock('../src/config/database.js', () => ({
@@ -45,6 +47,7 @@ vi.mock('../src/config/redis.js', () => ({
 vi.mock('../src/models/Restaurant.js', () => ({
   default: {
     findAll: vi.fn(),
+    findAndCountAll: vi.fn(),
     findByPk: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),

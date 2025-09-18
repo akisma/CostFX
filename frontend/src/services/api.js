@@ -1,15 +1,8 @@
 import axios from 'axios'
+import { getApiConfig } from '../config/settings.js'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1'
-
-// Create axios instance with default config --
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-})
+// Create axios instance with centralized config
+const api = axios.create(getApiConfig())
 
 // Request interceptor for auth tokens --
 api.interceptors.request.use(
