@@ -1,12 +1,14 @@
 import { beforeEach, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { testConfig } from '../../shared/src/config/testConfig.js';
 
 // Set global reference
 globalThis.global = globalThis;
 Object.defineProperty(import.meta, 'env', {
   value: {
-    VITE_API_URL: 'http://localhost:3001/api/v1'
+    VITE_API_URL: testConfig.backend.apiUrl,
+    NODE_ENV: 'test'
   }
 });
 

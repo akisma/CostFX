@@ -4,6 +4,7 @@ import { dirname, join } from 'path';
 import app from './app.js';
 import { connectDB } from './config/database.js';
 import { connectRedis } from './config/redis.js';
+import settings from './config/settings.js';
 import logger from './utils/logger.js';
 
 // Load .env from the root directory (parent of backend)
@@ -12,8 +13,6 @@ const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '../../');
 dotenv.config({ path: join(rootDir, '.env') });
 
-const PORT = process.env.PORT || 3002;
-
 async function startServer() {
   try {
     // Connect to databases
@@ -21,10 +20,10 @@ async function startServer() {
     await connectRedis();
     
     // Start HTTP server
-    const server = app.listen(PORT, () => {
-      logger.info(`🚀 Server running on port ${PORT}`);
-      logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
-      logger.info(`🔗 API Documentation: http://localhost:${PORT}/api-docs`);
+    const server = app.listen(settings.port, () => {
+      logger.info(`🚀 Server running on port ${settings.port}`);
+      logger.info(`📊 Environment: ${settings.nodeEnv}`);
+      logger.info(`🔗 API Documentation: ${settings.baseUrl}/api-docs`);
     });
 
     // Graceful shutdown

@@ -1,4 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { testConfig } from '../../../shared/src/config/testConfig.js'
 
 // Create a proper localStorage mock
 const localStorageMock = {
@@ -18,7 +19,7 @@ const mockAxiosInstance = {
   put: vi.fn(),
   delete: vi.fn(),
   defaults: {
-    baseURL: 'http://localhost:3001/api/v1',
+    baseURL: testConfig.backend.apiUrl,
     timeout: 10000,
     headers: { 'Content-Type': 'application/json' }
   },
@@ -45,6 +46,17 @@ vi.mock('axios', () => ({
   default: mockAxios
 }))
 
+// Mock the config settings
+vi.mock('../../src/config/settings.js', () => ({
+  getApiConfig: () => ({
+    baseURL: testConfig.backend.apiUrl,
+    timeout: 10000,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+}))
+
 // Mock localStorage
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock
@@ -64,7 +76,7 @@ describe('API Service', () => {
     await import('../../src/services/api')
     
     expect(mockAxios.create).toHaveBeenCalledWith({
-      baseURL: 'http://localhost:3003/api/v1',
+      baseURL: testConfig.backend.apiUrl,
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json'
