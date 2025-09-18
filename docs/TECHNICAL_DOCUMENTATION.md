@@ -507,48 +507,141 @@ export default defineConfig({
 
 ## Deployment Guide
 
+### Deployment Strategy Overview
+
+CostFX uses a **two-workflow deployment strategy** that separates application deployments from infrastructure changes:
+
+1. **App Deployment** (`.github/workflows/app-deploy.yml`): Fast ECS-only updates for frontend/backend code changes
+2. **Infrastructure Deployment** (`.github/workflows/infrastructure-deploy.yml`): Manual Terraform deployments for infrastructure changes
+
+This separation provides:
+- ⚡ **Fast app deployments** (~3-5 minutes vs ~15-20 minutes)
+- 💰 **Cost optimization** by avoiding unnecessary Terraform runs
+- 🔒 **Infrastructure stability** with controlled manual deployments
+- 🎯 **Focused workflows** with clear separation of concerns
+
+### Application Deployment Workflow
+
+**Triggers**: Automatically runs on push to `main`/`develop` when these paths change:
+- `frontend/**`
+- `backend/**` 
+- `shared/**`
+- `.env*` files
+- `package.json`
+- `deploy/docker/**`
+
+**Process**:
+1. **Smart Detection**: Only builds/deploys changed components (frontend or backend)
+2. **Application Tests**: Runs Jest (backend) and Vitest (frontend) tests with PostgreSQL/Redis services
+3. **Linting Checks**: ESLint validation (warnings allowed, errors block deployment)
+4. **Docker Testing**: Tests container builds for changed components
+5. **ECR Push**: Builds and pushes new container images with git SHA tags (only if tests pass)
+6. **ECS Deployment**: Uses `aws-actions/amazon-ecs-deploy-task-definition` for fast updates
+7. **Health Checks**: Validates deployment success with endpoint testing
+
+**Test Requirements**:
+- ✅ **Application tests MUST pass** - Jest (backend) and Vitest (frontend) with full database setup
+- ⚠️ **Linting warnings allowed** - ESLint runs but warnings don't block deployment
+- 🐳 **Docker builds must succeed** - Container builds tested before push
+
+**Example Usage**:
+```bash
+# Automatic deployment when you push code changes
+git add frontend/src/components/NewComponent.jsx
+git commit -m "Add new dashboard component"
+git push origin main  # Triggers app-deploy.yml automatically
+```
+
+### Infrastructure Deployment Workflow
+
+**Triggers**: Manual only via GitHub Actions `workflow_dispatch`
+
+**Use Cases**:
+- Infrastructure changes (VPC, security groups, load balancers)
+- Database schema migrations requiring downtime
+- New AWS services or major configuration changes
+- SSL certificate updates
+- Terraform state management
+
+**Process**:
+1. **Manual Trigger**: Navigate to GitHub Actions → "CostFX Infrastructure Deploy" → "Run workflow"
+2. **Environment Selection**: Choose dev/prod environment
+3. **Application Tests**: Full test suite validation (Jest + Vitest with databases)
+4. **Docker Testing**: Complete container build validation
+5. **Full Terraform Run**: Plan and apply infrastructure changes
+6. **Container Updates**: Optionally updates containers with latest images
+7. **Complete Health Check**: Full system validation
+
+**Test Requirements**:
+- ✅ **All tests must pass** - Complete backend and frontend test suites
+- ⚠️ **Linting warnings allowed** - Full codebase linting with warnings permitted
+- 🐳 **All Docker builds validated** - Both frontend and backend containers tested
+
+**Example Usage**:
+```bash
+# For infrastructure changes, use manual deployment
+# 1. Make infrastructure changes in deploy/terraform/
+# 2. Go to GitHub Actions → "CostFX Infrastructure Deploy (Manual)"
+# 3. Click "Run workflow" → Select environment → Run
+```
+
+### Local Development Commands
+
+```bash
+# Run all tests (same as GitHub Actions)
+npm test                    # Runs both backend and frontend tests
+npm run test:backend       # Backend Jest tests with PostgreSQL
+npm run test:frontend      # Frontend Vitest tests
+
+# Run linting 
+npm run lint               # Lint both backend and frontend
+npm run lint:backend       # ESLint backend code
+npm run lint:frontend      # ESLint frontend code
+
+# Test containers locally (same as GitHub Actions)
+docker build -f deploy/docker/Dockerfile.backend --target test .
+docker build -f deploy/docker/Dockerfile.frontend --target test .
+
+# Build production containers
+docker build -f deploy/docker/Dockerfile.backend --target production .
+docker build -f deploy/docker/Dockerfile.frontend --target production .
+
+# Manual infrastructure deployment (emergency)
+./deploy/scripts/deploy.sh
+```
+
+### Test Environment Requirements
+
+**Backend Tests** (Jest):
+- PostgreSQL database (uses `costfx_test` database)
+- Redis instance for caching tests
+- Environment variables: `NODE_ENV=test`, `DATABASE_URL`, `REDIS_URL`
+- JWT and OpenAI test keys for agent testing
+
+**Frontend Tests** (Vitest):
+- Unit tests for React components
+- Redux store testing
+- API integration mocking
+- UI component rendering validation
+
+**Deployment Rules**:
+- 🚫 **Tests failing = No deployment** - All tests must pass green
+- ⚠️ **Linting warnings = Deployment continues** - Warnings logged but don't block
+- 🔴 **Linting errors = No deployment** - Hard errors block deployment
+- 🐳 **Docker build failure = No deployment** - Container builds must succeed
+
 ### AWS ECS Infrastructure
 
 The application deploys to AWS using ECS Fargate with the following components:
 
 #### Infrastructure Components
-- **ECS Cluster**: Fargate tasks for frontend and backend
+- **ECS Cluster**: `costfx-dev` with Fargate tasks for frontend and backend
+- **ECS Services**: `costfx-dev-backend` and `costfx-dev-frontend`
 - **Load Balancer**: ALB with `/api/*` → backend, `/*` → frontend routing
 - **Databases**: RDS PostgreSQL and ElastiCache Redis (managed)
-- **Container Registry**: ECR repositories for both services
+- **Container Registry**: ECR repositories `costfx-dev-backend` and `costfx-dev-frontend`
 - **Networking**: VPC with public/private subnets and NAT gateways
 - **Security**: Security groups and IAM roles with least privilege
-
-#### Deployment Process
-
-1. **Build and Push Containers**:
-```bash
-# Build containers
-docker build -f deploy/docker/Dockerfile.backend -t costfx-backend .
-docker build -f deploy/docker/Dockerfile.frontend -t costfx-frontend .
-
-# Tag and push to ECR
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
-docker tag costfx-backend:latest $ECR_REGISTRY/costfx-backend:latest
-docker tag costfx-frontend:latest $ECR_REGISTRY/costfx-frontend:latest
-docker push $ECR_REGISTRY/costfx-backend:latest
-docker push $ECR_REGISTRY/costfx-frontend:latest
-```
-
-2. **Deploy Infrastructure**:
-```bash
-# Deploy with Terraform
-cd deploy/terraform
-terraform init
-terraform plan
-terraform apply
-```
-
-3. **One-Command Deployment**:
-```bash
-# Using deployment script
-./deploy/scripts/deploy.sh
-```
 
 #### Environment Variables
 
@@ -573,7 +666,37 @@ The application uses AWS Systems Manager (SSM) Parameter Store for secure config
 ```
 
 **GitHub Actions Integration**:
-GitHub Actions workflows automatically update SSM parameters during deployment:
+The new app deployment workflow automatically updates SSM parameters and uses intelligent path filtering:
+
+```yaml
+# App deployment only triggers on relevant changes
+on:
+  push:
+    paths:
+      - 'frontend/**'      # Frontend code changes
+      - 'backend/**'       # Backend code changes  
+      - 'shared/**'        # Shared utilities
+      - '.env*'            # Environment files
+      - 'deploy/docker/**' # Docker configurations
+
+# Smart component detection and building
+- name: Check for app changes
+  uses: dorny/paths-filter@v2
+  id: changes
+  with:
+    filters: |
+      backend:
+        - 'backend/**'
+        - 'shared/**'
+        - 'deploy/docker/Dockerfile.backend'
+      frontend:
+        - 'frontend/**'
+        - 'shared/**'
+        - 'deploy/docker/Dockerfile.frontend'
+```
+
+**Infrastructure Deployment**:
+Infrastructure changes use the manual workflow with Terraform:
 
 ```yaml
 # Update application secrets in GitHub Actions
