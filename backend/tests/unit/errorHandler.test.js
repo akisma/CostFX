@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, jest } from '@jest/globals';
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { errorHandler } from '../../src/middleware/errorHandler.js';
 
 describe('Error Handler Middleware Unit Tests', () => {
@@ -7,10 +7,10 @@ describe('Error Handler Middleware Unit Tests', () => {
   beforeEach(() => {
     mockReq = {};
     mockRes = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn()
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn()
     };
-    mockNext = jest.fn();
+    mockNext = vi.fn();
   });
 
   test('should handle generic errors', () => {

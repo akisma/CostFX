@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { vi, describe, beforeEach, test, expect } from 'vitest';
 import ForecastAgent from '../../src/agents/ForecastAgent.js';
 
 describe('ForecastAgent', () => {
@@ -6,7 +6,7 @@ describe('ForecastAgent', () => {
   
   beforeEach(() => {
     forecastAgent = new ForecastAgent();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Constructor', () => {
@@ -51,7 +51,7 @@ describe('ForecastAgent', () => {
   describe('process method', () => {
     test('should route forecast_demand request correctly', async () => {
       const mockResult = { itemForecasts: [], summary: {} };
-      jest.spyOn(forecastAgent, 'forecastDemand').mockResolvedValue(mockResult);
+      vi.spyOn(forecastAgent, 'forecastDemand').mockResolvedValue(mockResult);
 
       const request = {
         type: 'forecast_demand',
@@ -67,7 +67,7 @@ describe('ForecastAgent', () => {
 
     test('should route analyze_seasonal_trends request correctly', async () => {
       const mockResult = { seasonalTrends: {}, recommendations: [] };
-      jest.spyOn(forecastAgent, 'analyzeSeasonalTrends').mockResolvedValue(mockResult);
+      vi.spyOn(forecastAgent, 'analyzeSeasonalTrends').mockResolvedValue(mockResult);
 
       const request = {
         type: 'analyze_seasonal_trends',
@@ -82,7 +82,7 @@ describe('ForecastAgent', () => {
 
     test('should route predict_revenue request correctly', async () => {
       const mockResult = { totalProjections: {}, insights: [] };
-      jest.spyOn(forecastAgent, 'predictRevenue').mockResolvedValue(mockResult);
+      vi.spyOn(forecastAgent, 'predictRevenue').mockResolvedValue(mockResult);
 
       const request = {
         type: 'predict_revenue',
@@ -106,8 +106,8 @@ describe('ForecastAgent', () => {
 
     test('should update metrics on successful request', async () => {
       const mockResult = { itemForecasts: [] };
-      jest.spyOn(forecastAgent, 'forecastDemand').mockResolvedValue(mockResult);
-      jest.spyOn(forecastAgent, 'updateMetrics').mockImplementation(() => {});
+      vi.spyOn(forecastAgent, 'forecastDemand').mockResolvedValue(mockResult);
+      vi.spyOn(forecastAgent, 'updateMetrics').mockImplementation(() => {});
 
       const request = {
         type: 'forecast_demand',
@@ -120,8 +120,8 @@ describe('ForecastAgent', () => {
     });
 
     test('should update metrics on failed request', async () => {
-      jest.spyOn(forecastAgent, 'forecastDemand').mockRejectedValue(new Error('Test error'));
-      jest.spyOn(forecastAgent, 'updateMetrics').mockImplementation(() => {});
+      vi.spyOn(forecastAgent, 'forecastDemand').mockRejectedValue(new Error('Test error'));
+      vi.spyOn(forecastAgent, 'updateMetrics').mockImplementation(() => {});
 
       const request = {
         type: 'forecast_demand',
@@ -150,7 +150,7 @@ describe('ForecastAgent', () => {
         }
       ];
 
-      jest.spyOn(forecastAgent, 'getHistoricalSalesData').mockResolvedValue(mockHistoricalData);
+      vi.spyOn(forecastAgent, 'getHistoricalSalesData').mockResolvedValue(mockHistoricalData);
 
       const result = await forecastAgent.forecastDemand({ 
         restaurantId: 1, 
@@ -170,7 +170,7 @@ describe('ForecastAgent', () => {
     });
 
     test('should use default forecast days when not specified', async () => {
-      jest.spyOn(forecastAgent, 'getHistoricalSalesData').mockResolvedValue([]);
+      vi.spyOn(forecastAgent, 'getHistoricalSalesData').mockResolvedValue([]);
 
       const result = await forecastAgent.forecastDemand({ restaurantId: 1 });
 
@@ -185,7 +185,7 @@ describe('ForecastAgent', () => {
         { date: '2024-07-15', quantity: 35, month: 7 }
       ];
 
-      jest.spyOn(forecastAgent, 'getSeasonalSalesData').mockResolvedValue(mockSeasonalData);
+      vi.spyOn(forecastAgent, 'getSeasonalSalesData').mockResolvedValue(mockSeasonalData);
 
       const result = await forecastAgent.analyzeSeasonalTrends({ 
         restaurantId: 1, 
@@ -203,7 +203,7 @@ describe('ForecastAgent', () => {
     });
 
     test('should not include year-over-year analysis for insufficient data', async () => {
-      jest.spyOn(forecastAgent, 'getSeasonalSalesData').mockResolvedValue([]);
+      vi.spyOn(forecastAgent, 'getSeasonalSalesData').mockResolvedValue([]);
 
       const result = await forecastAgent.analyzeSeasonalTrends({ 
         restaurantId: 1, 
@@ -233,8 +233,8 @@ describe('ForecastAgent', () => {
         { itemId: 1, price: 12.99, cost: 4.50 }
       ];
 
-      jest.spyOn(forecastAgent, 'forecastDemand').mockResolvedValue(mockDemandForecast);
-      jest.spyOn(forecastAgent, 'getMenuPricing').mockResolvedValue(mockPricing);
+      vi.spyOn(forecastAgent, 'forecastDemand').mockResolvedValue(mockDemandForecast);
+      vi.spyOn(forecastAgent, 'getMenuPricing').mockResolvedValue(mockPricing);
 
       const result = await forecastAgent.predictRevenue({ 
         restaurantId: 1, 
@@ -268,8 +268,8 @@ describe('ForecastAgent', () => {
 
       const mockPricing = [{ itemId: 1, price: 10.00, cost: 3.00 }];
 
-      jest.spyOn(forecastAgent, 'forecastDemand').mockResolvedValue(mockDemandForecast);
-      jest.spyOn(forecastAgent, 'getMenuPricing').mockResolvedValue(mockPricing);
+      vi.spyOn(forecastAgent, 'forecastDemand').mockResolvedValue(mockDemandForecast);
+      vi.spyOn(forecastAgent, 'getMenuPricing').mockResolvedValue(mockPricing);
 
       // Test optimistic scenario
       const optimisticResult = await forecastAgent.predictRevenue({ 
@@ -297,7 +297,7 @@ describe('ForecastAgent', () => {
 
       const currentCapacity = { staff: 10, seating: 50 };
 
-      jest.spyOn(forecastAgent, 'forecastDemand').mockResolvedValue(mockDemandForecast);
+      vi.spyOn(forecastAgent, 'forecastDemand').mockResolvedValue(mockDemandForecast);
 
       const result = await forecastAgent.optimizeCapacity({ 
         restaurantId: 1, 
@@ -328,8 +328,8 @@ describe('ForecastAgent', () => {
         { itemId: 1, ingredients: [{ name: 'Ground Beef', quantityPer: 0.25 }] }
       ];
 
-      jest.spyOn(forecastAgent, 'forecastDemand').mockResolvedValue(mockDemandForecast);
-      jest.spyOn(forecastAgent, 'getRecipeIngredients').mockResolvedValue(mockRecipeIngredients);
+      vi.spyOn(forecastAgent, 'forecastDemand').mockResolvedValue(mockDemandForecast);
+      vi.spyOn(forecastAgent, 'getRecipeIngredients').mockResolvedValue(mockRecipeIngredients);
 
       const result = await forecastAgent.forecastIngredientNeeds({ 
         restaurantId: 1, 
@@ -470,7 +470,7 @@ describe('ForecastAgent Integration', () => {
 
   test('should handle complete workflow from demand forecast to revenue prediction', async () => {
     // Mock all dependencies for integration test
-    jest.spyOn(forecastAgent, 'getHistoricalSalesData').mockResolvedValue([
+    vi.spyOn(forecastAgent, 'getHistoricalSalesData').mockResolvedValue([
       {
         itemId: 1,
         itemName: 'Integration Test Item',
@@ -481,7 +481,7 @@ describe('ForecastAgent Integration', () => {
       }
     ]);
 
-    jest.spyOn(forecastAgent, 'getMenuPricing').mockResolvedValue([
+    vi.spyOn(forecastAgent, 'getMenuPricing').mockResolvedValue([
       { itemId: 1, price: 15.00, cost: 5.00 }
     ]);
 
@@ -510,8 +510,8 @@ describe('ForecastAgent Integration', () => {
   });
 
   test('should maintain state consistency across multiple requests', async () => {
-    jest.spyOn(forecastAgent, 'getHistoricalSalesData').mockResolvedValue([]);
-    jest.spyOn(forecastAgent, 'getSeasonalSalesData').mockResolvedValue([]);
+    vi.spyOn(forecastAgent, 'getHistoricalSalesData').mockResolvedValue([]);
+    vi.spyOn(forecastAgent, 'getSeasonalSalesData').mockResolvedValue([]);
 
     await forecastAgent.process({ type: 'forecast_demand', data: { restaurantId: 1 } });
     await forecastAgent.process({ type: 'analyze_seasonal_trends', data: { restaurantId: 1 } });
