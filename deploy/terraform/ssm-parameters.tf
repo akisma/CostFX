@@ -42,14 +42,37 @@ resource "aws_ssm_parameter" "jwt_secret" {
   }
 }
 
-# OpenAI API Key parameter (you'll need to set this manually)
+# Essential database configuration
+resource "aws_ssm_parameter" "db_ssl" {
+  name  = "/${var.app_name}/${var.environment}/db_ssl"
+  type  = "String"
+  value = "true"
+
+  tags = {
+    Name = "${var.app_name}-${var.environment}-db-ssl"
+  }
+}
+
+resource "aws_ssm_parameter" "node_env" {
+  name  = "/${var.app_name}/${var.environment}/node_env"
+  type  = "String"
+  value = var.environment == "dev" ? "development" : "production"
+
+  tags = {
+    Name = "${var.app_name}-${var.environment}-node-env"
+  }
+}
+
+# OpenAI API Key parameter (requires manual setup for security)
 resource "aws_ssm_parameter" "openai_api_key" {
   name  = "/${var.app_name}/${var.environment}/openai_api_key"
   type  = "SecureString"
   value = "REPLACE_WITH_YOUR_OPENAI_API_KEY"
 
   tags = {
-    Name = "${var.app_name}-${var.environment}-openai-api-key"
+    Name        = "${var.app_name}-${var.environment}-openai-api-key"
+    Environment = var.environment
+    Sensitive   = "true"
   }
 
   lifecycle {
@@ -57,24 +80,4 @@ resource "aws_ssm_parameter" "openai_api_key" {
   }
 }
 
-# Backend API URL for frontend (used in build process)
-resource "aws_ssm_parameter" "backend_api_url" {
-  name  = "/${var.app_name}/${var.environment}/backend_api_url"
-  type  = "String"
-  value = "https://${aws_lb.main.dns_name}/api/v1"
 
-  tags = {
-    Name = "${var.app_name}-${var.environment}-backend-api-url"
-  }
-}
-
-# SSL Certificate ARN parameter (for HTTPS configuration)
-resource "aws_ssm_parameter" "ssl_certificate_arn" {
-  name  = "/${var.app_name}/${var.environment}/ssl_certificate_arn"
-  type  = "String"
-  value = local.certificate_arn
-
-  tags = {
-    Name = "${var.app_name}-${var.environment}-ssl-certificate-arn"
-  }
-}

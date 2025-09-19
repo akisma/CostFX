@@ -11,7 +11,7 @@ const CostAnalysis = () => {
 
         <div className="card p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Cost Trends</h2>
-          <p className="text-gray-600">Historical cost trend analysis coming soon...</p>
+          <p className="text-gray-500">Historical cost trend analysis coming soon...</p>
         </div>
       </div>
     </div>

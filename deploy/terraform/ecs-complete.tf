@@ -103,11 +103,43 @@ resource "aws_ecs_task_definition" "backend" {
       environment = [
         {
           name  = "NODE_ENV"
-          value = "production"
+          value = var.environment == "dev" ? "development" : "production"
         },
         {
           name  = "PORT"
           value = "3001"
+        },
+        {
+          name  = "DB_SSL"
+          value = "true"
+        },
+        {
+          name  = "PGSSLMODE"
+          value = "require"
+        },
+        {
+          name  = "DB_POOL_MIN"
+          value = "2"
+        },
+        {
+          name  = "DB_POOL_MAX"
+          value = var.environment == "prod" ? "20" : "10"
+        },
+        {
+          name  = "DB_POOL_ACQUIRE_TIMEOUT"
+          value = "60000"
+        },
+        {
+          name  = "DB_POOL_IDLE_TIMEOUT"
+          value = "30000"
+        },
+        {
+          name  = "FRONTEND_URL"
+          value = "https://${aws_lb.main.dns_name}"
+        },
+        {
+          name  = "CORS_ORIGINS"
+          value = "https://${aws_lb.main.dns_name}"
         }
       ]
 

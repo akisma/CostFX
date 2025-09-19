@@ -209,7 +209,7 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG \
             -f deploy/docker/Dockerfile.frontend \
             --target production \
-            --build-arg VITE_API_URL="https://cost-fx.com/api/v1" .
+            --build-arg VITE_API_URL="https://www.cost-fx.com/api/v1" .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY_FRONTEND:$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "built=true" >> $GITHUB_OUTPUT

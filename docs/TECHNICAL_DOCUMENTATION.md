@@ -43,6 +43,9 @@ CostFX is a multi-agent AI system that automates restaurant operations to reduce
 ### Development Status (September 18, 2025)
 
 #### Recently Completed (Major Achievement)
+- ✅ **GitHub Actions OIDC Authentication**: Secure role-based AWS access eliminating access keys
+- ✅ **Infrastructure Health Resolution**: Fixed ECS container health checks and environment variables
+- ✅ **Container Stability**: All ECS services healthy with proper health check endpoints
 - ✅ **Complete Test Suite Overhaul**: Achieved 151/151 tests passing (100% success rate)
 - ✅ **InventoryAgent Complete Reconstruction**: Built from scratch with proper capabilities and methods
 - ✅ **Configuration Centralization**: Eliminated all hardcoded ports/URLs across codebase
@@ -66,6 +69,8 @@ CostFX is a multi-agent AI system that automates restaurant operations to reduce
 
 #### System Ready for Production
 - ✅ **All Core Systems Operational**: Backend, frontend, AI agents, testing, configuration
+- ✅ **Secure Authentication**: OIDC-based GitHub Actions with role-based AWS access
+- ✅ **Infrastructure Health**: ECS containers healthy with proper environment configuration
 - ✅ **Centralized Configuration**: Single source of truth for all ports, URLs, environment settings
 - ✅ **Complete Test Coverage**: 100% success rate ensures reliable deployments
 - ✅ **Maintainable Architecture**: Clean separation of concerns with proper mocking
@@ -656,6 +661,39 @@ export default defineConfig({
 ## Deployment Guide
 
 ### Recent Updates (September 2025)
+
+#### OIDC Authentication Implementation (September 18, 2025)
+- **Security Enhancement**: Eliminated AWS access keys from GitHub Actions workflows
+- **OIDC Provider**: Configured AWS OIDC provider for token.actions.githubusercontent.com
+- **IAM Role**: Created GitHubActionsRole-CostFX with least-privilege deployment permissions
+- **Workflow Updates**: Updated `.github/workflows/app-deploy.yml` to use role-based authentication
+- **Container Health**: Fixed ECS health check issues and environment variable configuration
+- **Infrastructure as Code**: All OIDC configuration managed through Terraform
+
+#### Key OIDC Configuration Details
+```yaml
+# GitHub Actions workflow OIDC configuration
+permissions:
+  id-token: write
+  contents: read
+
+- name: Configure AWS credentials
+  uses: aws-actions/configure-aws-credentials@v4
+  with:
+    role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+    role-session-name: github-actions-deploy
+    aws-region: us-west-2
+```
+
+**AWS IAM Role ARN**: `arn:aws:iam::568530517605:role/GitHubActionsRole-CostFX`
+**Trust Policy**: Configured for repository `akisma/CostFX` with branch restrictions
+**Permissions**: ECS, ECR, SSM, and CloudWatch access for deployments
+
+#### Infrastructure Health Resolution
+- **Health Check Fix**: Changed ECS health check from `/api/v1/` to `/health` endpoint
+- **Environment Variables**: Added missing OPENAI_API_KEY to ECS task definitions
+- **Container Stability**: All ECS services now healthy and responsive
+- **Load Balancer**: Health checks passing consistently across all targets
 
 #### Jest to Vitest Migration
 - **Migration Completed**: Backend testing migrated from Jest to Vitest for better ES modules support
