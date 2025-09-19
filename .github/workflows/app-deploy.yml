@@ -72,10 +72,6 @@ jobs:
       - name: Determine deployment
         id: check
         run: |
-          echo "🔍 Debug: backend=${{ steps.changes.outputs.backend }}"
-          echo "🔍 Debug: frontend=${{ steps.changes.outputs.frontend }}"
-          echo "🔍 Debug: env=${{ steps.changes.outputs.env }}"
-          echo "🔍 Debug: workflow=${{ steps.changes.outputs.workflow }}"
           if [[ "${{ steps.changes.outputs.backend }}" == "true" || "${{ steps.changes.outputs.frontend }}" == "true" || "${{ steps.changes.outputs.env }}" == "true" || "${{ steps.changes.outputs.workflow }}" == "true" ]]; then
             echo "should_deploy=true" >> $GITHUB_OUTPUT
             echo "🚀 App changes detected, will deploy"

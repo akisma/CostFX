@@ -3,7 +3,6 @@ import ForecastAgent from '../../src/agents/ForecastAgent.js';
 
 describe('ForecastAgent', () => {
   let forecastAgent;
-  
   beforeEach(() => {
     forecastAgent = new ForecastAgent();
     vi.clearAllMocks();
