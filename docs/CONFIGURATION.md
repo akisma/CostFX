@@ -175,3 +175,80 @@ The following files were updated to use centralized configuration:
 - `src/config/testConfig.js` - New shared test configuration
 
 This centralized approach makes the application much more maintainable and eliminates the need to hunt down hardcoded values across multiple files.
+
+---
+
+## AWS OIDC Authentication Configuration
+
+### Overview
+The project now uses OpenID Connect (OIDC) for secure GitHub Actions authentication with AWS, eliminating the need for long-lived AWS access keys.
+
+### OIDC Setup
+
+#### 1. AWS OIDC Provider
+**Created via Terraform**: `deploy/terraform/main.tf`
+```hcl
+resource "aws_iam_openid_connect_provider" "github_actions" {
+  url = "https://token.actions.githubusercontent.com"
+  client_id_list = ["sts.amazonaws.com"]
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+}
+```
+
+#### 2. IAM Role Configuration
+**Role Name**: `GitHubActionsRole-CostFX`
+**ARN**: `arn:aws:iam::568530517605:role/GitHubActionsRole-CostFX`
+
+**Trust Policy** (allows GitHub Actions from our repository):
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::568530517605:oidc-provider/token.actions.githubusercontent.com"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+          "token.actions.githubusercontent.com:sub": "repo:akisma/CostFX:ref:refs/heads/main"
+        }
+      }
+    }
+  ]
+}
+```
+
+#### 3. GitHub Actions Configuration
+**Required Secret**: `AWS_ROLE_ARN` = `arn:aws:iam::568530517605:role/GitHubActionsRole-CostFX`
+
+**Workflow Permissions**:
+```yaml
+permissions:
+  id-token: write
+  contents: read
+```
+
+**Authentication Step**:
+```yaml
+- name: Configure AWS credentials
+  uses: aws-actions/configure-aws-credentials@v4
+  with:
+    role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+    role-session-name: github-actions-deploy
+    aws-region: us-west-2
+```
+
+### Security Benefits
+- ✅ **No Long-lived Credentials**: No AWS access keys stored in GitHub
+- ✅ **Least Privilege**: Role has minimal required permissions
+- ✅ **Repository Scoped**: Trust policy restricts access to specific repository
+- ✅ **Audit Trail**: All actions logged through CloudTrail
+- ✅ **Token-based**: Short-lived tokens provide enhanced security
+
+### Troubleshooting OIDC
+- **Permission Errors**: Check that AWS_ROLE_ARN secret is configured in GitHub
+- **Trust Policy Issues**: Verify repository name and branch in trust policy conditions
+- **Token Issues**: Ensure workflow has `id-token: write` permissions
