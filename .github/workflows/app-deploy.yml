@@ -24,6 +24,10 @@ on:
       - 'package.json'
       - 'deploy/docker/**'
 
+permissions:
+  id-token: write
+  contents: read
+
 env:
   AWS_REGION: us-west-2
   ECR_REPOSITORY_BACKEND: costfx-dev-backend
@@ -62,11 +66,13 @@ jobs:
             env:
               - '.env*'
               - 'package.json'
+            workflow:
+              - '.github/workflows/**'
 
       - name: Determine deployment
         id: check
         run: |
-          if [[ "${{ steps.changes.outputs.backend }}" == "true" || "${{ steps.changes.outputs.frontend }}" == "true" || "${{ steps.changes.outputs.env }}" == "true" ]]; then
+          if [[ "${{ steps.changes.outputs.backend }}" == "true" || "${{ steps.changes.outputs.frontend }}" == "true" || "${{ steps.changes.outputs.env }}" == "true" || "${{ steps.changes.outputs.workflow }}" == "true" ]]; then
             echo "should_deploy=true" >> $GITHUB_OUTPUT
             echo "🚀 App changes detected, will deploy"
           else
@@ -168,9 +174,9 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -221,9 +227,9 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
 
       - name: Download current backend task definition
         if: needs.build.outputs.backend_built == 'true'
@@ -239,7 +245,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: backend-task-definition.json
-          container-name: costfx-dev-backend
+          container-name: backend
           image: ${{ needs.build.outputs.backend_image }}
 
       - name: Deploy backend to ECS
@@ -265,7 +271,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: frontend-task-definition.json
-          container-name: costfx-dev-frontend
+          container-name: frontend
           image: ${{ needs.build.outputs.frontend_image }}
 
       - name: Deploy frontend to ECS
@@ -286,9 +292,9 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
 
       - name: Health check backend
         if: needs.build.outputs.backend_built == 'true'

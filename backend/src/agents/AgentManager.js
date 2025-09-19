@@ -18,7 +18,7 @@ class AgentManager {
   }
 
   /**
-   * Register a new agent with the manager
+   * Register a new agent with the manager --
    */
   async registerAgent(agent) {
     if (!(agent instanceof BaseAgent)) {
