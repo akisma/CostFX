@@ -12,13 +12,15 @@ const rootDir = join(__dirname, '../../../');
 dotenv.config({ path: join(rootDir, '.env') });
 
 // Validate and get environment variables with proper types and defaults
+const databaseUrl = env.get('DATABASE_URL').asUrlString();
+
 const dbConfig = {
-  url: env.get('DATABASE_URL').required().asUrlString(),
+  url: databaseUrl,
   host: env.get('DB_HOST').default('localhost').asString(),
   port: env.get('DB_PORT').default(5432).asPortNumber(),
   database: env.get('POSTGRES_DB').default('restaurant_ai').asString(),
   username: env.get('POSTGRES_USER').default('postgres').asString(),
-  password: env.get('POSTGRES_PASSWORD').required().asString(),
+  password: env.get('POSTGRES_PASSWORD').asString(),
   ssl: env.get('DB_SSL').default('false').asBool(),
   sslMode: env.get('PGSSLMODE').default('disable').asEnum(['disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full']),
   pool: {
@@ -28,6 +30,11 @@ const dbConfig = {
     idle: env.get('DB_POOL_IDLE_TIMEOUT').default(30000).asIntPositive()
   }
 };
+
+// Validate that we have either DATABASE_URL or individual credentials
+if (!dbConfig.url && !dbConfig.password) {
+  throw new Error('Either DATABASE_URL or POSTGRES_PASSWORD must be provided');
+}
 
 // Environment-specific settings
 const nodeEnv = env.get('NODE_ENV').default('development').asEnum(['development', 'test', 'production']);
