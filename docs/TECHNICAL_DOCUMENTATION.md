@@ -40,9 +40,17 @@ CostFX is a multi-agent AI system that automates restaurant operations to reduce
 - ✅ **Configuration**: Centralized configuration system across entire application
 - ✅ **CI/CD**: GitHub Actions with separated app and infrastructure deployments
 
-### Development Status (September 18, 2025)
+### Development Status (September 19, 2025)
 
-#### Recently Completed (Major Achievement)
+#### Recently Completed - Production Issues Resolved ✅
+- ✅ **ForecastAgent Production Deployment**: Fixed mixed content security errors preventing HTTPS→HTTP API calls
+- ✅ **Frontend Build Configuration**: Corrected GitHub Actions workflow to use proper API URL (`https://www.cost-fx.com/api/v1`)
+- ✅ **Backend Environment Variables**: Enhanced database configuration flexibility for production ECS deployment
+- ✅ **ECS Task Stability**: Resolved 1486+ failed backend tasks caused by env-var validation conflicts
+- ✅ **Database Configuration Robustness**: Made POSTGRES_PASSWORD optional when DATABASE_URL is provided
+- ✅ **Production Debugging Methodology**: Systematic investigation using CloudWatch logs, ECS task analysis, and deployment validation
+
+#### Previous Achievements (September 18, 2025)
 - ✅ **GitHub Actions OIDC Authentication**: Secure role-based AWS access eliminating access keys
 - ✅ **Infrastructure Health Resolution**: Fixed ECS container health checks and environment variables
 - ✅ **Container Stability**: All ECS services healthy with proper health check endpoints
@@ -399,6 +407,71 @@ export const down = async (queryInterface, Sequelize) => {
 ---
 
 ## Technical Solutions
+
+### Production Deployment Issue Resolution (September 19, 2025)
+
+**Problem**: ForecastAgent failing in production with "Network Error" due to mixed content security policy and backend container failures.
+
+**Root Cause Analysis**:
+1. **Mixed Content Error**: Frontend built with incorrect API URL (`https://cost-fx.com/api/v1`) causing HTTPS→HTTP calls
+2. **Backend Environment Variables**: Enhanced env-var validation requiring `POSTGRES_PASSWORD` even when `DATABASE_URL` was provided
+3. **ECS Task Failures**: 1486+ failed backend tasks due to missing environment variable validation
+
+**Solutions Implemented**:
+
+#### 1. Frontend Build Configuration Fix
+**File**: `.github/workflows/app-deploy.yml`
+```yaml
+# BEFORE (incorrect)
+--build-arg VITE_API_URL="https://cost-fx.com/api/v1"
+
+# AFTER (correct)
+--build-arg VITE_API_URL="https://www.cost-fx.com/api/v1"
+```
+
+#### 2. Backend Database Configuration Enhancement
+**File**: `backend/src/config/database.js`
+```javascript
+// Enhanced to make POSTGRES_PASSWORD optional when DATABASE_URL is provided
+const databaseUrl = env.get('DATABASE_URL').asUrlString();
+
+const dbConfig = {
+  url: databaseUrl,
+  // Individual credentials only required if DATABASE_URL not provided
+  password: env.get('POSTGRES_PASSWORD').asString(), // No longer .required()
+  // ... other config
+};
+
+// Validation: require either DATABASE_URL or individual credentials
+if (!dbConfig.url && !dbConfig.password) {
+  throw new Error('Either DATABASE_URL or POSTGRES_PASSWORD must be provided');
+}
+```
+
+#### 3. Production Debugging Methodology
+**CloudWatch Log Analysis**:
+```bash
+# Identify failed tasks
+aws ecs describe-services --cluster costfx-dev --services costfx-dev-backend
+
+# Examine task failure reasons
+aws ecs describe-tasks --cluster costfx-dev --tasks <task-arn>
+
+# Check application logs
+aws logs get-log-events --log-group-name "/ecs/costfx-dev-backend" \
+  --log-stream-name "ecs/backend/<task-id>"
+```
+
+**Error Pattern Identified**:
+```javascript
+EnvVarError: env-var: "POSTGRES_PASSWORD" is a required variable, but it was not set
+```
+
+**Resolution Impact**:
+- ✅ Backend containers now start successfully with DATABASE_URL only
+- ✅ Frontend builds with correct HTTPS API URL preventing mixed content errors
+- ✅ Production ForecastAgent functionality restored
+- ✅ ECS deployment stability achieved (0 failed tasks after fix)
 
 ### Centralized Configuration Management
 
@@ -963,6 +1036,103 @@ resource "aws_cloudwatch_metric_alarm" "high_response_time" {
 ---
 
 ## Troubleshooting
+
+### Production Deployment Issues (September 19, 2025)
+
+#### ForecastAgent "Network Error" in Production
+
+**Symptoms**:
+- ✅ Local development works perfectly
+- ❌ Production shows "Failed to load demand forecast: Network Error"
+- ❌ Browser console shows mixed content security errors
+
+**Root Cause**: Frontend built with incorrect API URL causing HTTPS→HTTP requests
+
+**Investigation Steps**:
+```bash
+# 1. Check ECS service health
+aws ecs describe-services --cluster costfx-dev --services costfx-dev-frontend
+
+# 2. Examine CloudWatch logs
+aws logs get-log-events --log-group-name "/ecs/costfx-dev-frontend" \
+  --log-stream-name "latest-stream"
+
+# 3. Test API directly
+curl https://www.cost-fx.com/api/v1/health
+
+# 4. Check frontend build artifacts
+docker run --rm frontend:latest grep -r "cost-fx.com" /usr/share/nginx/html/
+```
+
+**Solution**: Update GitHub Actions workflow
+```yaml
+# File: .github/workflows/app-deploy.yml
+--build-arg VITE_API_URL="https://www.cost-fx.com/api/v1"  # Must include 'www'
+```
+
+#### Backend Container Failures (1486+ Failed Tasks)
+
+**Symptoms**:
+- ✅ Backend builds successfully
+- ❌ ECS tasks exit with code 1 immediately
+- ❌ High number of failed task attempts
+
+**Investigation Steps**:
+```bash
+# 1. Check failed tasks
+aws ecs describe-services --cluster costfx-dev --services costfx-dev-backend
+
+# 2. Examine most recent failed task
+aws ecs list-tasks --cluster costfx-dev --service-name costfx-dev-backend \
+  --desired-status STOPPED --max-items 1
+
+# 3. Check task definition environment variables
+aws ecs describe-task-definition --task-definition costfx-dev-backend:latest \
+  --query 'taskDefinition.containerDefinitions[0].{environment:environment,secrets:secrets}'
+
+# 4. Review CloudWatch logs for exit reason
+aws logs get-log-events --log-group-name "/ecs/costfx-dev-backend" \
+  --log-stream-name "ecs/backend/<failed-task-id>"
+```
+
+**Root Cause**: Enhanced env-var validation requiring `POSTGRES_PASSWORD` even when `DATABASE_URL` provided
+
+**Error Pattern**:
+```
+EnvVarError: env-var: "POSTGRES_PASSWORD" is a required variable, but it was not set
+```
+
+**Solution**: Enhanced database configuration flexibility
+```javascript
+// File: backend/src/config/database.js
+const databaseUrl = env.get('DATABASE_URL').asUrlString();
+const dbConfig = {
+  password: env.get('POSTGRES_PASSWORD').asString(), // Made optional
+  // ...
+};
+
+// Validation ensures either DATABASE_URL or individual credentials
+if (!dbConfig.url && !dbConfig.password) {
+  throw new Error('Either DATABASE_URL or POSTGRES_PASSWORD must be provided');
+}
+```
+
+#### Mixed Content Security Policy Errors
+
+**Symptoms**:
+- ❌ Browser blocks API requests from HTTPS frontend
+- ❌ DevTools shows "Mixed Content" warnings
+- ✅ Direct API calls work correctly
+
+**Root Cause**: Frontend trying to call HTTP endpoints from HTTPS page
+
+**Investigation**:
+```bash
+# Check what URL is baked into frontend build
+docker run --rm frontend:latest grep -r "elb.amazonaws.com" /usr/share/nginx/html/
+```
+
+**Solution**: Ensure frontend builds with HTTPS API URLs matching your domain
 
 ### Common Issues and Solutions
 

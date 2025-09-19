@@ -107,6 +107,53 @@ const API_URL = testConfig.backend.apiUrl;
 - `VITE_FRONTEND_URL` - Frontend URL
 - `VITE_BACKEND_URL` - Backend URL
 
+### Database Configuration (Enhanced September 19, 2025)
+
+The backend database configuration supports flexible environment variable setup for both development and production environments.
+
+**File**: `backend/src/config/database.js`
+
+#### Configuration Options
+
+**Option 1: Full DATABASE_URL (Recommended for Production)**
+```bash
+DATABASE_URL=postgresql://username:password@host:port/database
+```
+
+**Option 2: Individual Credentials (Development)**
+```bash
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=password
+POSTGRES_DB=restaurant_ai
+DB_HOST=localhost
+DB_PORT=5432
+```
+
+#### Environment Variable Requirements
+
+- **DATABASE_URL**: If provided, individual credentials become optional
+- **POSTGRES_PASSWORD**: Required only if DATABASE_URL is not provided
+- **SSL Configuration**: Automatic detection based on environment
+
+#### Production Deployment Compatibility
+
+The enhanced configuration automatically validates that either:
+1. `DATABASE_URL` is provided (AWS RDS/production setup), OR
+2. Individual database credentials are provided (local development)
+
+```javascript
+// Validation logic
+if (!dbConfig.url && !dbConfig.password) {
+  throw new Error('Either DATABASE_URL or POSTGRES_PASSWORD must be provided');
+}
+```
+
+This flexibility ensures compatibility with:
+- ✅ **Local Development**: Individual environment variables
+- ✅ **Docker Compose**: Individual environment variables  
+- ✅ **AWS ECS Production**: DATABASE_URL from SSM Parameter Store
+- ✅ **Testing Environments**: Both approaches supported
+
 ## Changing Ports
 
 To change the default ports:
