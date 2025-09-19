@@ -62,28 +62,76 @@ Agent Orchestrator (AgentManager + AgentService)
 
 ### 1. Agent System (Multi-Agent Architecture)
 
-#### 1.1 Inventory Analysis Agent
-**Purpose:** Manage purchasing, waste analysis, and stock optimization
+#### 1.1 Inventory Analysis Agent (Enhanced for Dave's Variance Analysis)
+**Purpose:** Comprehensive inventory management with period-over-period variance analysis by quantity and dollar value
 
-**Capabilities:**
+**Dave's Enhanced Requirements:**
+- **Date Range Analysis:** Complete inventory movement tracking between any two dates
+- **Quantity vs. Dollar Variance:** Dual-metric analysis to prioritize high-value discrepancies
+- **Hierarchical Category Analysis:** Multi-level categorization with detailed subcategory breakdowns
+- **Theoretical vs. Actual Usage:** Recipe-based theoretical consumption vs. actual inventory movement
+
+**Enhanced Capabilities:**
 - Calculate optimal order quantities using demand forecasting
+- **Comprehensive inventory variance analysis by date range**
+- **Multi-level category analysis (Primary → Secondary → Tertiary)**
+- **Theoretical vs. actual usage variance detection**
+- **High-value ingredient variance prioritization**
 - Identify ingredients approaching expiration
-- Analyze waste patterns by ingredient category
 - Generate low-stock alerts based on lead times
 
 **Key Functions:**
-```python
-def calculate_optimal_order_quantity(ingredient_id, forecast_period):
-    # Economic Order Quantity + safety stock calculation
-    pass
+```javascript
+// Enhanced Inventory Variance Analysis
+async function generateInventoryVarianceReport(restaurantId, startDate, endDate) {
+  return {
+    period: { startDate, endDate },
+    inventoryMovement: {
+      beginningInventory: { quantityByItem, dollarValueByItem },
+      purchases: { quantityByItem, dollarValueByItem },
+      transfers: { quantityByItem, dollarValueByItem },
+      waste: { quantityByItem, dollarValueByItem },
+      endingInventory: { quantityByItem, dollarValueByItem },
+      actualUsage: { quantityByItem, dollarValueByItem },
+      theoreticalUsage: { quantityByItem, dollarValueByItem },
+      variance: {
+        quantity: { byItem, prioritizedByVariance },
+        dollarValue: { byItem, prioritizedByVariance }
+      }
+    },
+    categoryAnalysis: {
+      primaryCategories: ['produce', 'meat', 'grocery'],
+      categoryBreakdown: {
+        produce: { items, variance, subcategories },
+        meat: {
+          subcategories: {
+            chicken: { items, variance, types: ['breast', 'thigh', 'whole'] },
+            beef: { items, variance, types: ['ribeye', 'strip', 'ground'] },
+            fish: { items, variance, types: ['salmon', 'tuna', 'white_fish'] }
+          }
+        },
+        grocery: { items, variance, subcategories }
+      }
+    },
+    alerts: {
+      highValueVariances: [], // Items with significant dollar variance
+      quantityDiscrepancies: [], // Items with large quantity variance but low dollar impact
+      theoreticalVsActualOutliers: [] // Items with unexplained usage patterns
+    }
+  };
+}
 
-def predict_spoilage_risk(ingredient_id, current_stock, usage_rate):
-    # Time-to-spoilage vs consumption rate analysis
-    pass
+// Hierarchical Category Management
+async function analyzeCategoryPerformance(restaurantId, category, subcategory = null) {
+  // Deep-dive analysis for specific categories
+  // Example: meat → beef → ribeye variance analysis
+}
 
-def analyze_waste_patterns(restaurant_id, time_period):
-    # Historical waste analysis with trend identification
-    pass
+// Theoretical Usage Calculation
+async function calculateTheoreticalUsage(restaurantId, startDate, endDate) {
+  // Calculate expected usage based on sales and recipes
+  // Compare against actual inventory movement
+}
 ```
 
 #### 1.2 Cost Optimization Agent
@@ -397,14 +445,133 @@ async forecastIngredientNeeds(data) {
 }
 ```
 
-#### 1.4 Recipe Management Agent
-**Purpose:** Standardize recipes and ensure consistency
+#### 1.6 Inventory Variance Management System (V1 PRIORITY - Dave's Requirements)
+**Purpose:** "I don't care if we are off 20 pounds of romaine at the end of the week, it's not that expensive. But 4oz of saffron is like $600 so I want to be able to sort by both [quantity and dollar value]." - Dave
 
-**Capabilities:**
-- Recipe scaling and conversion
-- Nutritional analysis integration
-- Consistency monitoring across locations
-- Recipe optimization suggestions
+**Dave's Core Requirements:**
+- **Date Range Analysis:** Complete inventory movement between any two dates
+- **Dual-Metric Variance:** Both quantity and dollar value variance tracking
+- **Hierarchical Categories:** Primary (produce/meat/grocery) → Secondary (chicken/beef/fish) → Tertiary (breast/thigh/ribeye)
+- **Beginning/Ending Inventory:** Clear period boundaries with snapshot accuracy
+- **Theoretical vs Actual Usage:** Recipe-based expected consumption vs real movement
+- **High-Value Priority:** Automatic flagging of expensive ingredient variances
+
+**V1 Capabilities:**
+- Period-based inventory analysis with configurable date ranges
+- Dual-metric variance analysis prioritizing by financial impact
+- Multi-level category breakdown with drill-down capability
+- Theoretical usage calculation based on sales and recipes
+- Automated variance investigation workflow
+- High-value ingredient monitoring with custom thresholds
+- Exception reporting with investigation tracking
+
+**Key Functions:**
+```javascript
+class InventoryVarianceAgent extends BaseAgent {
+  async generatePeriodAnalysis(restaurantId, startDate, endDate) {
+    return {
+      period: { startDate, endDate, daysInPeriod },
+      inventoryMovement: {
+        beginningInventory: {
+          totalItems: 450,
+          totalValue: 12750.00,
+          byCategory: {
+            produce: { items: 89, quantity: 234.5, value: 1250.00 },
+            meat: { 
+              items: 67, quantity: 156.2, value: 8900.00,
+              breakdown: {
+                chicken: { items: 23, quantity: 45.6, value: 1200.00 },
+                beef: { items: 28, quantity: 78.9, value: 6500.00 },
+                fish: { items: 16, quantity: 31.7, value: 1200.00 }
+              }
+            },
+            grocery: { items: 294, quantity: 567.8, value: 2600.00 }
+          }
+        },
+        purchases: { /* Same structure */ },
+        transfers: { /* Same structure */ },
+        waste: { /* Same structure */ },
+        endingInventory: { /* Same structure */ },
+        actualUsage: { /* Same structure */ },
+        theoreticalUsage: { /* Same structure */ }
+      },
+      varianceAnalysis: {
+        byQuantity: [
+          {
+            ingredient: "Romaine Lettuce",
+            category: "produce/leafy_greens/romaine",
+            quantityVariance: -22.5, // pounds
+            dollarVariance: -45.00,
+            priority: "low", // Low dollar impact
+            investigation: "not_required"
+          }
+        ],
+        byDollarValue: [
+          {
+            ingredient: "Saffron",
+            category: "grocery/spices/premium",
+            quantityVariance: -0.25, // oz  
+            dollarVariance: -150.00, // High impact!
+            priority: "critical",
+            investigation: "required"
+          }
+        ]
+      }
+    };
+  }
+  
+  async analyzeTheoreticalVsActual(restaurantId, startDate, endDate) {
+    // Calculate expected usage based on sales × recipe requirements
+    // Compare against actual inventory movement
+    // Flag unexplained variances for investigation
+  }
+  
+  async generateCategoryDrilldown(restaurantId, category, subcategory = null) {
+    // Hierarchical analysis: meat → beef → ribeye
+    // Variance trends by category level
+    // Cost impact analysis by category
+  }
+  
+  async flagHighValueVariances(restaurantId, dollarThreshold = 50) {
+    // Automatic identification of expensive ingredient variances
+    // Custom thresholds by ingredient type
+    // Investigation workflow triggering
+  }
+}
+```
+
+**Hierarchical Category Structure (Dave's Requirement):**
+```javascript
+const categoryHierarchy = {
+  produce: {
+    leafy_greens: ['romaine', 'spinach', 'arugula'],
+    root_vegetables: ['carrots', 'potatoes', 'onions'],
+    fruits: ['tomatoes', 'apples', 'citrus']
+  },
+  meat: {
+    chicken: ['breast', 'thigh', 'whole', 'wings'],
+    beef: ['ribeye', 'strip', 'ground', 'tenderloin'],
+    fish: ['salmon', 'tuna', 'white_fish', 'shellfish'],
+    pork: ['chops', 'belly', 'ground', 'tenderloin']
+  },
+  grocery: {
+    spices: ['premium', 'standard', 'bulk'],
+    oils: ['olive', 'vegetable', 'specialty'],
+    grains: ['rice', 'pasta', 'flour'],
+    canned_goods: ['tomatoes', 'beans', 'stocks']
+  }
+};
+```
+
+**Priority Matrix (Dave's Logic):**
+```javascript
+const variancePriorityMatrix = {
+  critical: { dollarImpact: '>$100', quantityImpact: 'any' },
+  high: { dollarImpact: '$50-$100', quantityImpact: '>20%' },
+  medium: { dollarImpact: '$25-$50', quantityImpact: '>10%' },
+  low: { dollarImpact: '<$25', quantityImpact: '<10%' }
+};
+```
 
 #### 1.5 Smart Recipe Generation Agent
 **Purpose:** Dynamically create recipes from available inventory to minimize waste
@@ -481,28 +648,77 @@ def create_utilization_schedule(restaurant_id, time_horizon=7):
 
 ### 2. Data Architecture
 
-#### 2.1 Primary Database (PostgreSQL)
-**Core Tables:**
+#### 2.1 Primary Database (PostgreSQL) - Enhanced for Dave's Variance Analysis
+**Core Tables (Enhanced Schema):**
 ```sql
 -- Restaurants
 restaurants (id, name, location, settings, created_at)
 
--- Ingredients
-ingredients (id, name, category, unit_type, avg_cost, shelf_life, supplier_id)
+-- Enhanced Ingredient Categories with Hierarchical Structure
+ingredient_categories (
+  id, name, parent_category_id, level, sort_order,
+  category_path -- Example: 'meat/beef/ribeye'
+)
 
--- Recipes
+-- Enhanced Ingredients with Category Hierarchy
+ingredients (
+  id, name, primary_category_id, secondary_category_id, tertiary_category_id,
+  unit_type, avg_cost, shelf_life, supplier_id, variance_threshold_quantity,
+  variance_threshold_dollar, high_value_flag
+)
+
+-- Recipes with Theoretical Usage Tracking
 recipes (id, name, restaurant_id, serving_size, prep_time, cook_time)
-recipe_ingredients (recipe_id, ingredient_id, quantity, unit, waste_factor)
+recipe_ingredients (
+  recipe_id, ingredient_id, quantity, unit, waste_factor,
+  theoretical_yield_percentage
+)
 
--- Inventory
-inventory_transactions (id, restaurant_id, ingredient_id, quantity, type, cost, date)
-current_inventory (restaurant_id, ingredient_id, quantity, last_updated)
+-- Enhanced Inventory Transactions for Variance Analysis
+inventory_transactions (
+  id, restaurant_id, ingredient_id, transaction_type,
+  quantity, unit_cost, total_cost, transaction_date,
+  batch_number, expiration_date, reference_number,
+  period_id, variance_reason, approved_by
+)
 
--- Sales
-sales_transactions (id, restaurant_id, recipe_id, quantity, price, timestamp)
+-- Period-based Inventory Snapshots
+inventory_periods (
+  id, restaurant_id, period_start, period_end,
+  status, created_by, locked_date
+)
 
--- Waste Tracking
-waste_logs (id, restaurant_id, ingredient_id, quantity, reason, date, cost_impact)
+-- Beginning/Ending Inventory by Period
+period_inventory_snapshots (
+  id, period_id, ingredient_id, quantity, unit_cost,
+  total_value, snapshot_type, variance_notes
+)
+
+-- Theoretical vs Actual Usage Analysis
+theoretical_usage_analysis (
+  id, period_id, ingredient_id, theoretical_quantity,
+  actual_quantity, variance_quantity, variance_percentage,
+  variance_dollar_value, explanation, investigation_status
+)
+
+-- Sales with Recipe Mapping for Theoretical Calculations
+sales_transactions (
+  id, restaurant_id, recipe_id, quantity, price, timestamp,
+  ingredient_consumption_calculated
+)
+
+-- Enhanced Waste Tracking with Variance Impact
+waste_logs (
+  id, restaurant_id, ingredient_id, quantity, reason,
+  date, cost_impact, variance_impact, prevention_opportunity
+)
+
+-- Variance Investigation Workflow
+variance_investigations (
+  id, period_id, ingredient_id, variance_type,
+  variance_amount, priority, assigned_to, status,
+  resolution_notes, resolved_date
+)
 ```
 
 #### 2.2 Vector Database (Pinecone)
@@ -893,13 +1109,269 @@ class POSDataSource extends RESTDataSource {
 
 ### 4. Frontend Dashboard
 
-#### 4.1 Core Views
+#### 4.1 Core Views (Enhanced for Dave's Requirements)
 - **Operations Dashboard:** Real-time inventory, today's prep requirements
 - **Cost Analysis:** Dish profitability, cost trends, savings opportunities
 - **Forecasting:** Demand predictions, ordering recommendations
 - **Waste Management:** Waste tracking, reduction opportunities
 - **Recipe Management:** Standardized recipes, scaling tools
 - **Smart Recipe Generator:** Expiring ingredient alerts, AI-generated recipes, utilization schedules
+- **🎯 Inventory Variance Dashboard:** Dave's comprehensive variance analysis system
+
+#### 4.2 Dave's Inventory Variance Dashboard (V1 PRIORITY)
+**Purpose:** "I don't care if we are off 20 pounds of romaine, but 4oz of saffron is like $600" - Dave
+
+**Core Interface Components:**
+
+**Period Selection & Configuration:**
+```jsx
+// Date range picker with preset options
+<PeriodSelector 
+  onPeriodChange={(start, end) => generateVarianceReport(start, end)}
+  presets={['This Week', 'Last Week', 'This Month', 'Custom Range']}
+  defaultPeriod="weekly"
+/>
+
+// Variance metric toggle
+<MetricToggle 
+  options={['quantity', 'dollar', 'both']}
+  onChange={setPriorityMetric}
+  default="dollar"
+/>
+```
+
+**Variance Analysis Grid:**
+```jsx
+const VarianceAnalysisGrid = () => {
+  return (
+    <div className="variance-dashboard">
+      {/* Executive Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <MetricCard
+          title="Total Variance"
+          value={`$${totalDollarVariance}`}
+          status={variance > threshold ? 'critical' : 'normal'}
+          priority={true}
+        />
+        <MetricCard
+          title="High-Value Items"
+          value={highValueVarianceCount}
+          subtitle="Need Investigation"
+          status="warning"
+        />
+        <MetricCard
+          title="Period Performance"
+          value={`${accuracyPercentage}%`}
+          subtitle="Inventory Accuracy"
+          status="positive"
+        />
+        <MetricCard
+          title="Theoretical vs Actual"
+          value={`${theoreticalVariancePercent}%`}
+          subtitle="Usage Variance"
+          status="neutral"
+        />
+      </div>
+
+      {/* Priority Variance Table */}
+      <VarianceTable 
+        data={sortedVarianceData}
+        sortBy={priorityMetric} // 'dollar' or 'quantity'
+        onInvestigate={handleVarianceInvestigation}
+      />
+    </div>
+  );
+};
+```
+
+**Hierarchical Category Breakdown:**
+```jsx
+const CategoryDrilldown = () => {
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [drilldownPath, setDrilldownPath] = useState([]);
+
+  return (
+    <div className="category-analysis">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb path={drilldownPath} onNavigate={handleBreadcrumbClick} />
+      
+      {/* Category Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Primary Categories */}
+        <CategoryCard
+          title="Produce"
+          totalVariance={-125.50}
+          itemCount={45}
+          status="low"
+          onClick={() => drillDown('produce')}
+        />
+        <CategoryCard
+          title="Meat"
+          totalVariance={-850.00}
+          itemCount={23}
+          status="critical"
+          onClick={() => drillDown('meat')}
+          breakdown={{
+            'Beef': -650.00,
+            'Chicken': -150.00,
+            'Fish': -50.00
+          }}
+        />
+        <CategoryCard
+          title="Grocery"
+          totalVariance={-450.00}
+          itemCount={67}
+          status="high"
+          onClick={() => drillDown('grocery')}
+        />
+      </div>
+
+      {/* Subcategory Details (when drilled down) */}
+      {selectedCategory === 'meat' && (
+        <SubcategoryGrid
+          category="meat"
+          subcategories={[
+            { name: 'Beef', variance: -650.00, items: ['Ribeye', 'Strip', 'Ground'] },
+            { name: 'Chicken', variance: -150.00, items: ['Breast', 'Thigh', 'Wings'] },
+            { name: 'Fish', variance: -50.00, items: ['Salmon', 'Tuna', 'Cod'] }
+          ]}
+          onItemSelect={handleItemSelection}
+        />
+      )}
+    </div>
+  );
+};
+```
+
+**Variance Investigation Workflow:**
+```jsx
+const VarianceInvestigation = ({ varianceItem, onResolve }) => {
+  const [investigationNotes, setInvestigationNotes] = useState('');
+  const [resolutionActions, setResolutionActions] = useState([]);
+
+  return (
+    <Modal title={`Investigate: ${varianceItem.ingredient}`}>
+      <div className="investigation-panel">
+        {/* Variance Details */}
+        <VarianceDetailCard 
+          ingredient={varianceItem.ingredient}
+          quantityVariance={varianceItem.quantityVariance}
+          dollarVariance={varianceItem.dollarVariance}
+          priority={varianceItem.priority}
+          historicalData={varianceItem.history}
+        />
+
+        {/* Possible Causes */}
+        <PossibleCauses 
+          suggestions={[
+            'Portion size inconsistency',
+            'Prep waste higher than expected',
+            'Theft or unauthorized usage',
+            'Supplier delivery discrepancy',
+            'Recipe modification not documented'
+          ]}
+          onSelectCause={handleCauseSelection}
+        />
+
+        {/* Investigation Notes */}
+        <NotesEditor 
+          value={investigationNotes}
+          onChange={setInvestigationNotes}
+          placeholder="Document investigation findings..."
+        />
+
+        {/* Resolution Actions */}
+        <ActionPlan 
+          actions={resolutionActions}
+          onAddAction={addResolutionAction}
+          onComplete={handleInvestigationComplete}
+        />
+      </div>
+    </Modal>
+  );
+};
+```
+
+**Theoretical vs Actual Usage Analysis:**
+```jsx
+const TheoreticalVsActualView = () => {
+  return (
+    <div className="theoretical-analysis">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Variance Chart */}
+        <div className="card p-6">
+          <h3 className="text-lg font-semibold mb-4">Usage Variance Trends</h3>
+          <VarianceChart 
+            data={theoreticalVsActualData}
+            xAxis="date"
+            yAxis={['theoretical', 'actual']}
+            variance="calculated"
+          />
+        </div>
+
+        {/* Top Variance Items */}
+        <div className="card p-6">
+          <h3 className="text-lg font-semibold mb-4">Highest Usage Variances</h3>
+          <VarianceList 
+            items={topVarianceItems}
+            showTheoretical={true}
+            showActual={true}
+            onInvestigate={handleUsageInvestigation}
+          />
+        </div>
+      </div>
+
+      {/* Detailed Usage Breakdown */}
+      <div className="card p-6 mt-6">
+        <h3 className="text-lg font-semibold mb-4">Recipe-Based Usage Analysis</h3>
+        <RecipeUsageTable 
+          recipes={recipeUsageData}
+          showVariance={true}
+          allowDrillDown={true}
+        />
+      </div>
+    </div>
+  );
+};
+```
+
+**High-Value Alerts Dashboard:**
+```jsx
+const HighValueAlerts = () => {
+  const [alertThreshold, setAlertThreshold] = useState(50); // $50 default
+  
+  return (
+    <div className="high-value-alerts">
+      {/* Alert Configuration */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold">High-Value Variance Alerts</h2>
+        <ThresholdSelector 
+          value={alertThreshold}
+          onChange={setAlertThreshold}
+          presets={[25, 50, 100, 200]}
+          label="Alert Threshold ($)"
+        />
+      </div>
+
+      {/* Critical Alerts */}
+      <AlertGrid 
+        alerts={highValueAlerts}
+        threshold={alertThreshold}
+        prioritizeBy="dollarValue"
+        onAcknowledge={handleAlertAcknowledge}
+        onInvestigate={handleAlertInvestigate}
+      />
+
+      {/* Alert History */}
+      <AlertHistory 
+        alerts={historicalAlerts}
+        showResolved={true}
+        filterBy="highValue"
+      />
+    </div>
+  );
+};
+```
 
 #### 4.2 Smart Recipe Generation Interface
 
@@ -1523,6 +1995,24 @@ POST /api/v1/waste/voice-log                  // Voice waste entry
 POST /api/v1/waste/prep-factors               // Prep waste factor management
 GET  /api/v1/waste/cost-impact                // Waste cost calculations
 
+// NEW: Dave's Inventory Variance Management APIs
+POST /api/v1/inventory/variance/period-analysis    // Generate period variance report
+GET  /api/v1/inventory/variance/categories         // Hierarchical category breakdown
+POST /api/v1/inventory/variance/theoretical-usage  // Theoretical vs actual analysis
+GET  /api/v1/inventory/variance/high-value-alerts  // High-dollar variance alerts
+POST /api/v1/inventory/periods/create             // Create inventory period
+PUT  /api/v1/inventory/periods/:id/close          // Close and lock inventory period
+GET  /api/v1/inventory/periods/:id/snapshot       // Get period inventory snapshot
+POST /api/v1/inventory/variance/investigate       // Log variance investigation
+PUT  /api/v1/inventory/variance/:id/resolve       // Mark variance resolved
+
+// Enhanced Inventory Endpoints (Existing + Dave's Enhancements)
+GET  /api/v1/inventory/levels                     // Current stock levels (enhanced)
+POST /api/v1/inventory/transactions               // Log inventory transactions
+GET  /api/v1/inventory/categories                 // Hierarchical category structure
+POST /api/v1/inventory/theoretical-calculation   // Calculate theoretical usage
+GET  /api/v1/inventory/variance-thresholds       // Get/set variance alert thresholds
+
 // Manual Override System
 POST /api/v1/overrides/log                    // Log manual corrections
 POST /api/v1/overrides/apply                  // Apply override with learning
@@ -1535,7 +2025,86 @@ POST /api/v1/agents/forecast/trends           // Seasonal analysis (support pric
 POST /api/v1/agents/forecast/ingredients      // Ingredient forecasting (enhance ordering)
 ```
 
-## V1 Success Metrics (Dave's Value + Existing Forecast ROI)
+**Dave's Inventory Variance API Details:**
+```javascript
+// Period-based variance analysis
+POST /api/v1/inventory/variance/period-analysis
+{
+  "restaurantId": 1,
+  "startDate": "2024-08-01",
+  "endDate": "2024-08-07",
+  "includeCategories": ["produce", "meat", "grocery"],
+  "varianceMetrics": ["quantity", "dollar"],
+  "prioritizeBy": "dollar" // or "quantity"
+}
+
+// Response structure
+{
+  "period": { "startDate": "2024-08-01", "endDate": "2024-08-07" },
+  "inventoryMovement": {
+    "beginningInventory": { "totalValue": 12750.00, "byCategory": {...} },
+    "purchases": { "totalValue": 3500.00, "byCategory": {...} },
+    "transfers": { "totalValue": 200.00, "byCategory": {...} },
+    "waste": { "totalValue": 450.00, "byCategory": {...} },
+    "endingInventory": { "totalValue": 13200.00, "byCategory": {...} },
+    "actualUsage": { "totalValue": 2800.00, "byCategory": {...} },
+    "theoreticalUsage": { "totalValue": 2950.00, "byCategory": {...} }
+  },
+  "varianceAnalysis": {
+    "byQuantity": [
+      {
+        "ingredient": "Romaine Lettuce",
+        "category": "produce/leafy_greens/romaine",
+        "quantityVariance": -22.5,
+        "dollarVariance": -45.00,
+        "priority": "low"
+      }
+    ],
+    "byDollarValue": [
+      {
+        "ingredient": "Saffron", 
+        "category": "grocery/spices/premium",
+        "quantityVariance": -0.25,
+        "dollarVariance": -150.00,
+        "priority": "critical"
+      }
+    ]
+  },
+  "categoryBreakdown": {
+    "meat": {
+      "totalVariance": -450.00,
+      "subcategories": {
+        "beef": { "variance": -300.00, "items": [...] },
+        "chicken": { "variance": -100.00, "items": [...] },
+        "fish": { "variance": -50.00, "items": [...] }
+      }
+    }
+  },
+  "investigationRequired": [
+    {
+      "ingredient": "Saffron",
+      "reason": "High dollar variance exceeds threshold",
+      "priority": "critical",
+      "estimatedLoss": 150.00
+    }
+  ]
+}
+
+// Hierarchical category analysis
+GET /api/v1/inventory/variance/categories?restaurantId=1&category=meat&subcategory=beef
+{
+  "category": "meat",
+  "subcategory": "beef",
+  "tertiaryOptions": ["ribeye", "strip", "ground", "tenderloin"],
+  "varianceData": {
+    "ribeye": { "quantityVariance": -2.5, "dollarVariance": -125.00 },
+    "strip": { "quantityVariance": -1.8, "dollarVariance": -89.00 }
+  },
+  "drilldownAvailable": true
+}
+```
+
+## V1 Success Metrics (Dave's Value + Existing Forecast ROI + Inventory Variance Management)
 
 ### Enhanced Success Metrics with Forecast Agent
 **Automation Efficiency:**
@@ -1550,11 +2119,23 @@ POST /api/v1/agents/forecast/ingredients      // Ingredient forecasting (enhance
 - Purchasing Optimization: 5-10% cost savings through price + demand intelligence
 - **Labor Cost Optimization: 12% reduction in overstaffing (existing capability)**
 
+**🎯 Dave's Inventory Variance Management Success Metrics:**
+- **High-Value Variance Detection:** 100% identification of variances >$50
+- **Investigation Efficiency:** Reduce investigation time from 30 minutes to 5 minutes per high-value variance
+- **Accuracy Improvement:** 25% reduction in unexplained variances within 3 months
+- **Priority Focus:** 95% of investigation effort directed at items with highest dollar impact
+- **Theoretical vs Actual Tracking:** 90% accuracy in predicting actual usage vs recipe requirements
+- **Category Analysis Effectiveness:** Drill-down capability to tertiary level (meat → beef → ribeye)
+- **Period Comparison Accuracy:** 100% ability to compare any date range periods
+- **Cost Recovery:** Identify $500-1000 monthly in previously untracked high-value variances
+
 **Predictive Intelligence (Existing + Enhanced):**
 - **Sales Forecasting: Support demand planning for voice-created recipes**
 - **Seasonal Intelligence: Enhance Dave's price trend analysis** 
 - **Capacity Planning: Integrate labor forecasting with Dave's operational needs**
 - **Ingredient Forecasting: Combine with invoice price data for optimal ordering**
+- **🎯 Variance Prediction: Forecast expected variances based on historical patterns**
+- **🎯 High-Value Monitoring: Proactive alerts for ingredients approaching variance thresholds**
 
 ## V1 Technical Deliverables (Complete System)
 
@@ -2391,4 +2972,80 @@ Expiration Management:
 - Advanced ML models for demand forecasting
 - Voice-activated kitchen assistant expansion
 
-This technical specification provides a comprehensive roadmap for building your restaurant operations AI system while allowing flexibility for adjustments as Dave's data collection reveals additional requirements or opportunities.
+## Summary: Dave's Enhanced Inventory Variance Management System
+
+Based on Dave's specific requirements for inventory management, we've enhanced the technical specification to include a comprehensive **Inventory Variance Management System** that addresses his core needs:
+
+### Dave's Key Requirements Addressed:
+
+**1. Date Range Analysis** ✅
+- Complete inventory movement tracking between any two dates
+- Period-based snapshots with beginning/ending inventory calculations
+- Historical comparison capabilities across multiple time periods
+
+**2. Dual-Metric Variance Analysis** ✅
+- Both quantity and dollar value variance tracking
+- Intelligent prioritization: "I don't care if we are off 20 pounds of romaine at the end of the week, it's not that expensive. But 4oz of saffron is like $600"
+- Configurable thresholds for high-value ingredient monitoring
+
+**3. Hierarchical Category Breakdown** ✅
+- Primary categories: Produce, Meat, Grocery
+- Secondary categories: Meat → Chicken, Beef, Fish
+- Tertiary categories: Beef → Ribeye, Strip, Ground, Tenderloin
+- "The more we can break every group down the better metrics it can analyze"
+
+**4. Comprehensive Inventory Movement Tracking** ✅
+- Beginning Inventory (by period)
+- Purchases (tracked from invoice scanning)
+- Transfers (between locations/departments)
+- Waste (with voice logging integration)
+- Ending Inventory (calculated and verified)
+- Actual Usage (consumption tracking)
+- Theoretical Usage (recipe-based calculations)
+- Variance Analysis (quantity and dollar impact)
+
+### Technical Implementation Highlights:
+
+**Enhanced Database Schema:**
+- Hierarchical ingredient categorization with unlimited drill-down
+- Period-based inventory snapshots for accurate variance calculation
+- Theoretical vs actual usage analysis with investigation workflow
+- High-value variance monitoring with automatic alert generation
+
+**Advanced API Endpoints:**
+- Period analysis with configurable date ranges
+- Category drill-down with real-time variance calculation
+- Investigation workflow management
+- High-value variance alerting system
+
+**Intelligent Frontend Dashboard:**
+- Priority-based variance tables (sortable by quantity or dollar impact)
+- Interactive category hierarchy with breadcrumb navigation
+- Investigation workflow with root cause analysis
+- Executive summary cards focusing on high-impact variances
+
+### Integration with Existing Forecast Agent:
+
+Dave's variance system enhances the existing production-ready Forecast Agent by:
+- **Demand Forecasting:** Using variance patterns to improve accuracy
+- **Revenue Prediction:** Incorporating actual vs theoretical usage in cost calculations
+- **Seasonal Analysis:** Correlating variance patterns with seasonal trends
+- **Ingredient Forecasting:** Optimizing order quantities based on actual consumption patterns
+
+### Expected ROI for Dave:
+
+**Immediate Benefits:**
+- **Monthly Cost Recovery:** $500-1000 in previously untracked high-value variances
+- **Investigation Efficiency:** Reduce variance investigation time by 80%
+- **Focus Optimization:** Direct 95% of attention to high-dollar impact items
+
+**Long-term Value:**
+- **Accuracy Improvement:** 25% reduction in unexplained variances within 3 months
+- **Operational Excellence:** Complete visibility into inventory movement with automated alerts
+- **Data-Driven Decisions:** Make purchasing and menu decisions based on actual consumption patterns
+
+This enhanced system transforms inventory management from reactive problem-solving to proactive variance prevention, exactly addressing Dave's need to "not care about 20 pounds of romaine" while ensuring that "4oz of saffron" variances never go unnoticed.
+
+---
+
+*This technical specification now provides a complete roadmap for implementing Dave's inventory variance management requirements while leveraging the existing production-ready infrastructure and Forecast Agent capabilities.*
