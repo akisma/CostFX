@@ -1,8 +1,10 @@
+/* eslint-disable camelcase */
+
 // Migration: Create inventory_items table
 // Date: 2024-08-24
 // Description: Core inventory items for restaurant inventory management
 
-exports.up = async function(pgm) {
+export const up = async function(pgm) {
   // Create category enum type
   pgm.createType('inventory_category', ['produce', 'meat', 'dairy', 'dry_goods', 'beverages', 'other']);
 
@@ -107,7 +109,7 @@ exports.up = async function(pgm) {
   pgm.createIndex('inventory_items', ['restaurant_id', 'is_active']);
 };
 
-exports.down = async function(pgm) {
+export const down = async function(pgm) {
   pgm.dropTable('inventory_items');
   pgm.dropType('inventory_category');
 };

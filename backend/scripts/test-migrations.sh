@@ -38,9 +38,13 @@ test_query() {
 
 # Test migration tracking
 echo -e "${BLUE}📊 Migration Tracking Tests:${NC}"
-test_query "Migration count" "SELECT COUNT(*) FROM pgmigrations;" "2"
+test_query "Migration count" "SELECT COUNT(*) FROM pgmigrations;" "8"
 test_query "Ingredient categories migration exists" "SELECT COUNT(*) FROM pgmigrations WHERE name = '1726790000001_create-ingredient-categories';" "1"
 test_query "Inventory periods migration exists" "SELECT COUNT(*) FROM pgmigrations WHERE name = '1726790000002_create-inventory-periods';" "1"
+test_query "Suppliers migration exists" "SELECT COUNT(*) FROM pgmigrations WHERE name = '1726790000010_create-suppliers';" "1"
+test_query "Inventory items migration exists" "SELECT COUNT(*) FROM pgmigrations WHERE name = '1726790000011_create-inventory-items';" "1"
+test_query "Inventory transactions migration exists" "SELECT COUNT(*) FROM pgmigrations WHERE name = '1726790000012_create-inventory-transactions';" "1"
+test_query "Period snapshots migration exists" "SELECT COUNT(*) FROM pgmigrations WHERE name = '1726790000013_create-period-inventory-snapshots';" "1"
 
 echo ""
 
@@ -48,6 +52,10 @@ echo ""
 echo -e "${BLUE}🗃️  Table Creation Tests:${NC}"
 test_query "ingredient_categories table exists" "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'ingredient_categories';" "1"
 test_query "inventory_periods table exists" "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'inventory_periods';" "1"
+test_query "suppliers table exists" "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'suppliers';" "1"
+test_query "inventory_items table exists" "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'inventory_items';" "1"
+test_query "inventory_transactions table exists" "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'inventory_transactions';" "1"
+test_query "period_inventory_snapshots table exists" "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'period_inventory_snapshots';" "1"
 
 echo ""
 
@@ -80,6 +88,10 @@ echo ""
 echo -e "${BLUE}🔗 Constraints and Indexes Tests:${NC}"
 test_query "ingredient_categories indexes (at least 3)" "SELECT CASE WHEN COUNT(*) >= 3 THEN 1 ELSE 0 END FROM pg_indexes WHERE tablename = 'ingredient_categories';" "1"
 test_query "inventory_periods indexes (at least 4)" "SELECT CASE WHEN COUNT(*) >= 4 THEN 1 ELSE 0 END FROM pg_indexes WHERE tablename = 'inventory_periods';" "1"
+test_query "suppliers indexes (at least 2)" "SELECT CASE WHEN COUNT(*) >= 2 THEN 1 ELSE 0 END FROM pg_indexes WHERE tablename = 'suppliers';" "1"
+test_query "inventory_items indexes (at least 8)" "SELECT CASE WHEN COUNT(*) >= 8 THEN 1 ELSE 0 END FROM pg_indexes WHERE tablename = 'inventory_items';" "1"
+test_query "inventory_transactions indexes (at least 10)" "SELECT CASE WHEN COUNT(*) >= 10 THEN 1 ELSE 0 END FROM pg_indexes WHERE tablename = 'inventory_transactions';" "1"
+test_query "period_inventory_snapshots indexes (at least 8)" "SELECT CASE WHEN COUNT(*) >= 8 THEN 1 ELSE 0 END FROM pg_indexes WHERE tablename = 'period_inventory_snapshots';" "1"
 
 echo ""
 
@@ -113,8 +125,11 @@ echo ""
 echo -e "${GREEN}🎉 Migration validation completed!${NC}"
 echo ""
 echo "ℹ️  Summary:"
+echo "  • Database tables: 8 core tables created (suppliers, inventory_items, inventory_transactions, period_inventory_snapshots, etc.)"
 echo "  • ltree extension: Enabled for hierarchical categories"
 echo "  • Ingredient categories: 6 items with proper hierarchy"
 echo "  • Inventory periods: 3 periods (2 weekly, 1 monthly)"
 echo "  • Dave's use case: Romaine (low value) and Saffron (high value) ready"
 echo "  • Period management: Active periods for variance analysis"
+echo "  • Core schema: Full foundation for restaurant inventory management"
+echo "  • Variance tracking: Enhanced with period linkage and approval workflows"

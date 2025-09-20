@@ -271,8 +271,8 @@ jobs:
           cd backend
           npm ci
           
-          # Get database URL from AWS SSM
-          export DATABASE_URL=$(aws ssm get-parameter --name "/costfx/dev/database/url" --with-decryption --query 'Parameter.Value' --output text)
+          # Get database URL from AWS SSM (correct parameter name)
+          export DATABASE_URL=$(aws ssm get-parameter --name "/costfx/dev/database_url" --with-decryption --query 'Parameter.Value' --output text)
           
           echo "Running migrations with node-pg-migrate..."
           npm run migrate:up

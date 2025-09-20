@@ -1,8 +1,10 @@
+/* eslint-disable camelcase */
+
 // Migration: Create suppliers table
 // Date: 2024-08-24
 // Description: Core supplier management for restaurant inventory system
 
-exports.up = async function(pgm) {
+export const up = async function(pgm) {
   // Create status enum type
   pgm.createType('supplier_status', ['active', 'inactive', 'pending']);
 
@@ -86,7 +88,7 @@ exports.up = async function(pgm) {
   pgm.createIndex('suppliers', 'status');
 };
 
-exports.down = async function(pgm) {
+export const down = async function(pgm) {
   pgm.dropTable('suppliers');
   pgm.dropType('supplier_status');
 };

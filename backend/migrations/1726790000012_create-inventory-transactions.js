@@ -1,8 +1,10 @@
+/* eslint-disable camelcase */
+
 // Migration: Create inventory_transactions table
 // Date: 2024-08-24
 // Description: Core inventory transaction tracking for restaurant inventory management
 
-exports.up = async function(pgm) {
+export const up = async function(pgm) {
   // Create transaction type enum
   pgm.createType('transaction_type', ['purchase', 'usage', 'waste', 'adjustment', 'transfer']);
 
@@ -85,7 +87,7 @@ exports.up = async function(pgm) {
   pgm.createIndex('inventory_transactions', ['inventory_item_id', 'transaction_date']);
 };
 
-exports.down = async function(pgm) {
+export const down = async function(pgm) {
   pgm.dropTable('inventory_transactions');
   pgm.dropType('transaction_type');
 };
