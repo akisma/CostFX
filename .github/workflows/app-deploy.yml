@@ -257,6 +257,28 @@ jobs:
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
 
+      - name: Run database migrations
+        if: needs.build.outputs.backend_built == 'true'
+        run: |
+          echo "🗃️ Running database migrations..."
+          
+          # Setup Node.js for running migrations
+          echo "Setting up Node.js environment..."
+          curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+          
+          # Install dependencies and run migrations
+          cd backend
+          npm ci
+          
+          # Get database URL from AWS SSM
+          export DATABASE_URL=$(aws ssm get-parameter --name "/costfx/dev/database/url" --with-decryption --query 'Parameter.Value' --output text)
+          
+          echo "Running migrations with node-pg-migrate..."
+          npm run migrate:up
+          
+          echo "✅ Database migrations completed successfully!"
+
       - name: Download current frontend task definition
         if: needs.build.outputs.frontend_built == 'true'
         run: |

@@ -35,7 +35,7 @@ CostFX is a multi-agent AI system that automates restaurant operations to reduce
 - ✅ **Cost Agent**: Active with recipe costing and margin analysis
 - ✅ **Backend Infrastructure**: Express.js API with agent orchestration
 - ✅ **Frontend Dashboard**: React with Redux state management
-- ✅ **Database**: PostgreSQL with Sequelize ORM
+- ✅ **Database**: PostgreSQL with node-pg-migrate (hierarchical categories with ltree)
 - ✅ **Testing**: Complete Vitest-based test suites (151/151 tests passing - 100% success)
 - ✅ **Configuration**: Centralized configuration system across entire application
 - ✅ **CI/CD**: GitHub Actions with separated app and infrastructure deployments
@@ -43,6 +43,10 @@ CostFX is a multi-agent AI system that automates restaurant operations to reduce
 ### Development Status (September 19, 2025)
 
 #### Recently Completed - Production Issues Resolved ✅
+- ✅ **Database Migration System Modernization**: Migrated from sequelize-cli to node-pg-migrate for ES module compatibility
+- ✅ **Dave's Inventory Variance System**: Implemented hierarchical ingredient categorization and period-based variance analysis
+- ✅ **Migration Testing Framework**: Comprehensive validation suite ensures migration success in development and production
+- ✅ **PostgreSQL ltree Integration**: Enabled hierarchical queries for ingredient category management
 - ✅ **ForecastAgent Production Deployment**: Fixed mixed content security errors preventing HTTPS→HTTP API calls
 - ✅ **Frontend Build Configuration**: Corrected GitHub Actions workflow to use proper API URL (`https://www.cost-fx.com/api/v1`)
 - ✅ **Backend Environment Variables**: Enhanced database configuration flexibility for production ECS deployment
@@ -166,6 +170,94 @@ class BaseAgent {
 - Restaurant → InventoryItems (1:many)
 - InventoryItem → InventoryTransactions (1:many)
 - Supplier → InventoryItems (many:many)
+
+#### Enhanced Dave's Inventory Management (September 2025)
+
+**New Tables for Variance Analysis:**
+
+**ingredient_categories** - Hierarchical categorization using PostgreSQL ltree
+- Supports Dave's requirement: "I don't care if we are off 20 pounds of romaine, but 4oz of saffron is like $600"
+- Path examples: `produce.leafy_greens.romaine`, `spices.premium.saffron`
+- Enables category-level variance thresholds and alerts
+
+**inventory_periods** - Period-based inventory management
+- Support for weekly, monthly, and custom periods
+- Lifecycle tracking: draft → active → closed → locked
+- Snapshot completion tracking for beginning/ending inventory
+- Variance analysis completion status
+
+### Database Migration System
+
+**Migration Tool**: node-pg-migrate (ES module compatible, PostgreSQL-optimized)
+
+#### Running Migrations
+
+**Local Development:**
+```bash
+# Apply all pending migrations
+npm run migrate:up
+
+# Roll back last migration
+npm run migrate:down 1
+
+# Create new migration
+npm run migrate:create migration-name
+```
+
+**Production Deployment:**
+- Migrations run automatically during GitHub Actions deployment
+- ECS task execution: `npm run migrate:up`
+- Deploy script: `./deploy.sh --migrate-only`
+
+#### Testing Migration Success
+
+**Quick Validation:**
+```bash
+# Comprehensive test suite (RECOMMENDED)
+npm run migrate:test
+
+# Or run manually
+./backend/scripts/test-migrations.sh
+```
+
+**Manual Verification:**
+```bash
+# Check migration tracking
+docker-compose exec -T db psql -U postgres -d restaurant_ai -c \
+  "SELECT name, run_on FROM pgmigrations ORDER BY run_on;"
+
+# Verify hierarchical categories
+docker-compose exec -T db psql -U postgres -d restaurant_ai -c \
+  "SELECT name, path FROM ingredient_categories WHERE path <@ 'produce';"
+
+# Test ltree functionality  
+docker-compose exec -T db psql -U postgres -d restaurant_ai -c \
+  "SELECT COUNT(*) FROM ingredient_categories WHERE path ~ '*.saffron';"
+
+# Check inventory periods
+docker-compose exec -T db psql -U postgres -d restaurant_ai -c \
+  "SELECT period_name, status, period_type FROM inventory_periods;"
+```
+
+**What the Tests Validate:**
+- ✅ **Migration Tracking**: 2 migrations in `pgmigrations` table
+- ✅ **Table Structure**: `ingredient_categories` and `inventory_periods` exist
+- ✅ **ltree Extension**: PostgreSQL ltree enabled for hierarchical queries
+- ✅ **Hierarchical Data**: 6 ingredient categories with proper hierarchy
+- ✅ **Period Management**: 3 inventory periods (2 weekly, 1 monthly)
+- ✅ **Dave's Use Cases**: Romaine (low-value) vs Saffron (high-value) hierarchy ready
+- ✅ **Indexes & Constraints**: Performance optimizations and data integrity
+
+**Production Testing:**
+- GitHub Actions automatically runs migrations during deployment
+- Health checks verify application startup after migration
+- Rollback capability available via `npm run migrate:down`
+
+**Migration Success Indicators:**
+- All tests pass in `npm run migrate:test`
+- Database contains expected tables and data
+- ltree extension enabled for hierarchical queries
+- Application starts successfully after migration
 
 ### API Structure
 

@@ -1,0 +1,11 @@
+{
+  "migrationStorageTableName": "pgmigrations",
+  "migrationsDir": "migrations",
+  "checkOrder": true,
+  "verbose": true,
+  "direction": "up",
+  "count": "max",
+  "timestamp": true,
+  "migrationFilenameFormat": "utc",
+  "migrationFileLanguage": "js"
+}
