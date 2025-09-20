@@ -260,26 +260,83 @@ jobs:
       - name: Run database migrations
         if: needs.build.outputs.backend_built == 'true'
         run: |
-          echo "🗃️ Running database migrations..."
+          echo "� Running database migrations via ECS RunTask..."
           
-          # Setup Node.js for running migrations
-          echo "Setting up Node.js environment..."
-          curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-          sudo apt-get install -y nodejs
+          # Create a one-time task definition for migrations
+          MIGRATION_TASK_DEF=$(cat <<EOF
+          {
+            "family": "costfx-dev-migrations",
+            "networkMode": "awsvpc",
+            "requiresCompatibilities": ["FARGATE"],
+            "cpu": "256",
+            "memory": "512",
+            "executionRoleArn": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/costfx-dev-ecs-task-execution-role",
+            "containerDefinitions": [
+              {
+                "name": "migration",
+                "image": "${{ needs.build.outputs.backend_image }}",
+                "command": ["npm", "run", "migrate:production"],
+                "environment": [
+                  {
+                    "name": "NODE_ENV",
+                    "value": "production"
+                  }
+                ],
+                "secrets": [
+                  {
+                    "name": "DATABASE_URL",
+                    "valueFrom": "/costfx/dev/database_url"
+                  }
+                ],
+                "logConfiguration": {
+                  "logDriver": "awslogs",
+                  "options": {
+                    "awslogs-group": "/ecs/costfx-dev-migrations",
+                    "awslogs-region": "us-west-2",
+                    "awslogs-stream-prefix": "ecs"
+                  }
+                }
+              }
+            ]
+          }
+          EOF
+          )
           
-          # Install dependencies and run migrations
-          cd backend
-          npm ci
+          # Register the migration task definition
+          echo "📝 Registering migration task definition..."
+          TASK_DEF_ARN=$(echo "$MIGRATION_TASK_DEF" | aws ecs register-task-definition --cli-input-json file:///dev/stdin --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "Task definition registered: $TASK_DEF_ARN"
           
-          # Get database URL from AWS SSM and run migrations
-          echo "Retrieving database URL from SSM..."
-          DATABASE_URL=$(aws ssm get-parameter --name "/costfx/dev/database_url" --with-decryption --query 'Parameter.Value' --output text)
-          echo "Database URL retrieved successfully (showing first 20 chars): ${DATABASE_URL:0:20}..."
+          # Create CloudWatch log group if it doesn't exist
+          aws logs create-log-group --log-group-name "/ecs/costfx-dev-migrations" --region us-west-2 || echo "Log group already exists"
           
-          echo "Running migrations with node-pg-migrate..."
-          DATABASE_URL="$DATABASE_URL" npm run migrate:up
+          # Run the migration task
+          echo "🚀 Starting migration task..."
+          TASK_ARN=$(aws ecs run-task \
+            --cluster costfx-dev \
+            --task-definition costfx-dev-migrations \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$(aws ec2 describe-subnets --filters Name=tag:Name,Values=costfx-dev-vpc-private-us-west-2a --query 'Subnets[0].SubnetId' --output text),$(aws ec2 describe-subnets --filters Name=tag:Name,Values=costfx-dev-vpc-private-us-west-2b --query 'Subnets[0].SubnetId' --output text)],securityGroups=[$(aws ec2 describe-security-groups --filters Name=tag:Name,Values=costfx-dev-ecs-backend-sg --query 'SecurityGroups[0].GroupId' --output text)]}" \
+            --query 'tasks[0].taskArn' --output text)
           
-          echo "✅ Database migrations completed successfully!"
+          echo "Migration task started: $TASK_ARN"
+          
+          # Wait for the task to complete
+          echo "⏳ Waiting for migration task to complete..."
+          aws ecs wait tasks-stopped --cluster costfx-dev --tasks $TASK_ARN
+          
+          # Check the exit code
+          EXIT_CODE=$(aws ecs describe-tasks --cluster costfx-dev --tasks $TASK_ARN --query 'tasks[0].containers[0].exitCode' --output text)
+          
+          if [ "$EXIT_CODE" = "0" ]; then
+            echo "✅ Database migrations completed successfully!"
+          else
+            echo "❌ Database migrations failed with exit code: $EXIT_CODE"
+            # Get the logs for debugging
+            echo "📋 Migration logs:"
+            aws logs get-log-events --log-group-name "/ecs/costfx-dev-migrations" --log-stream-name "ecs/migration/$(echo $TASK_ARN | cut -d'/' -f3)" --query 'events[*].message' --output text || echo "Could not retrieve logs"
+            exit 1
+          fi
 
       - name: Download current frontend task definition
         if: needs.build.outputs.frontend_built == 'true'

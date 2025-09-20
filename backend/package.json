@@ -19,6 +19,7 @@
     "migrate:up": "node-pg-migrate up",
     "migrate:down": "node-pg-migrate down",
     "migrate:create": "node-pg-migrate create",
+    "migrate:production": "node scripts/run-migrations.js",
     "migrate:test": "./scripts/test-migrations.sh",
     "db:seed": "node scripts/seed-data.js",
     "db:setup": "npm run db:migrate && npm run db:seed",
