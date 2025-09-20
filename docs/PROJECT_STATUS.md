@@ -43,12 +43,13 @@
 - ✅ **Test Suite**: 100% passing tests with proper mocking and configuration
 
 ### **Recent Updates (September 19, 2025)**
-- ✅ **Production ForecastAgent Fix**: Resolved mixed content security errors and backend environment variable issues
-- ✅ **Frontend API Configuration**: Fixed GitHub Actions workflow to build frontend with correct HTTPS API URL (`https://www.cost-fx.com/api/v1`)
-- ✅ **Backend Database Configuration**: Enhanced env-var validation to work with both DATABASE_URL and individual credentials
-- ✅ **ECS Deployment Resolution**: Fixed backend container failures (1486+ failed tasks) caused by missing POSTGRES_PASSWORD validation
-- ✅ **Environment Variable Flexibility**: Made POSTGRES_PASSWORD optional when DATABASE_URL is provided for production compatibility
-- ✅ **Production Debugging**: Comprehensive investigation using CloudWatch logs, ECS task analysis, and systematic troubleshooting
+- ✅ **Database Schema Enhancement**: Implemented Dave's inventory variance system with 8 core tables (suppliers, inventory_items, inventory_transactions, period_inventory_snapshots, etc.)
+- ✅ **Migration System Completion**: Successfully deployed 8 migrations with hierarchical categories, period management, and variance tracking
+- ✅ **OIDC Deployment Fix**: Resolved critical SSM parameter access denial by adding missing permissions to GitHubActionsRole-CostFX
+- ✅ **SSM Parameter Path Fix**: Corrected GitHub Actions workflow from `/costfx/dev/database/url` to `/costfx/dev/database_url`
+- ✅ **Production Database Connection**: Fixed migration connection errors by properly retrieving DATABASE_URL from AWS SSM
+- ✅ **IAM Policy Update**: Added SSM permissions (`ssm:GetParameter`, `ssm:GetParameters`) to CostFX-Deployment-Policy v2
+- ✅ **Deployment Validation**: Verified database URL retrieval and connection to production RDS PostgreSQL instance
 
 ### **Previous Updates (September 18, 2025)**
 - ✅ **OIDC Authentication**: Complete GitHub Actions OIDC implementation with secure role-based AWS access

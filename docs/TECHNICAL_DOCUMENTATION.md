@@ -1411,6 +1411,58 @@ aws logs tail /costfx/backend --follow
 - ⚠️ Some tests need implementation alignment (expected during development)
 - 🎯 Ready for continued development with stable testing foundation
 
+## AWS Deployment Troubleshooting
+
+### SSM Parameter Access Issues
+
+**Problem**: GitHub Actions deployment fails with SSM access denied error:
+```
+An error occurred (AccessDeniedException) when calling the GetParameter operation: 
+User: arn:aws:sts::568530517605:assumed-role/GitHubActionsRole-CostFX/GitHubActions 
+is not authorized to perform: ssm:GetParameter
+```
+
+**Solution**: Update IAM policy for GitHubActionsRole-CostFX to include SSM permissions:
+```bash
+# Add to CostFX-Deployment-Policy
+{
+  "Sid": "SSMParameterAccess",
+  "Effect": "Allow",
+  "Action": ["ssm:GetParameter", "ssm:GetParameters"],
+  "Resource": ["arn:aws:ssm:us-west-2:568530517605:parameter/costfx/dev/*"]
+}
+```
+
+**Applied Fix (Sep 19, 2025)**:
+```bash
+aws iam create-policy-version \
+  --policy-arn arn:aws:iam::568530517605:policy/CostFX-Deployment-Policy \
+  --policy-document file://updated-policy.json \
+  --set-as-default
+```
+
+### Database Migration Connection Failures
+
+**Problem**: Migrations fail with localhost connection errors during deployment.
+
+**Root Cause**: Wrong SSM parameter path in GitHub Actions workflow
+- ❌ Used: `/costfx/dev/database/url` 
+- ✅ Correct: `/costfx/dev/database_url`
+
+**Solution**: Update `.github/workflows/app-deploy.yml`:
+```yaml
+export DATABASE_URL=$(aws ssm get-parameter --name "/costfx/dev/database_url" --with-decryption --query 'Parameter.Value' --output text)
+```
+
+**Verification Commands**:
+```bash
+# List available parameters
+aws ssm get-parameters-by-path --path "/costfx/dev" --query 'Parameters[].Name'
+
+# Test database URL retrieval
+aws ssm get-parameter --name "/costfx/dev/database_url" --with-decryption --query 'Parameter.Value' --output text
+```
+
 ---
 
 *This documentation follows the Diátaxis framework for systematic technical documentation, organizing content by user needs: tutorials for learning, how-to guides for solving problems, reference for information, and explanation for understanding.*

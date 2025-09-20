@@ -164,6 +164,16 @@ My insights on better approaches are valued - please ask for them!
 "The current approach works, but I notice [observation].
 Would you like me to [specific improvement]?"
 
+## Recent Critical Fixes (Sep 19, 2025)
+
+### AWS Deployment Issues Resolved:
+- **SSM Access Denied**: Fixed GitHubActionsRole-CostFX missing SSM permissions
+- **Database Connection**: Corrected SSM parameter path from `/costfx/dev/database/url` to `/costfx/dev/database_url`
+- **Migration Failures**: Resolved localhost connection errors in production deployments
+- **IAM Policy**: Updated CostFX-Deployment-Policy to v2 with SSM permissions
+
+**Lesson**: Always verify IAM permissions match the resources accessed by deployment workflows. Test SSM parameter access locally before deployment.
+
 ## Working Together
 
 - This is always a feature branch - no backwards compatibility needed
