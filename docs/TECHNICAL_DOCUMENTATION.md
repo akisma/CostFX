@@ -240,8 +240,8 @@ docker-compose exec -T db psql -U postgres -d restaurant_ai -c \
 ```
 
 **What the Tests Validate:**
-- ✅ **Migration Tracking**: 2 migrations in `pgmigrations` table
-- ✅ **Table Structure**: `ingredient_categories` and `inventory_periods` exist
+- ✅ **Migration Tracking**: 5 migrations in `pgmigrations` table (suppliers, inventory-items, inventory-transactions, ingredient-categories, inventory-periods)
+- ✅ **Table Structure**: Core tables (suppliers, inventory_items, inventory_transactions) and Dave's enhancements (ingredient_categories, inventory_periods)
 - ✅ **ltree Extension**: PostgreSQL ltree enabled for hierarchical queries
 - ✅ **Hierarchical Data**: 6 ingredient categories with proper hierarchy
 - ✅ **Period Management**: 3 inventory periods (2 weekly, 1 monthly)
@@ -467,17 +467,18 @@ npm run migrate:rollback
 
 #### Migration Template
 ```javascript
-// backend/src/migrations/YYYYMMDD-create-new-table.js
-export const up = async (queryInterface, Sequelize) => {
-  await queryInterface.createTable('NewTable', {
+// backend/migrations/YYYYMMDD-create-new-table.js
+exports.up = async function(pgm) {
+  pgm.createTable('new_table', {
     id: {
-      allowNull: false,
-      autoIncrement: true,
+      type: 'serial',
       primaryKey: true,
-      type: Sequelize.INTEGER
+      notNull: true
     },
     name: {
-      type: Sequelize.STRING,
+      type: 'varchar',
+      notNull: true
+    },
       allowNull: false
     },
     createdAt: {
