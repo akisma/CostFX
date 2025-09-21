@@ -16,8 +16,8 @@ resource "aws_ecs_task_definition" "migration" {
       name  = "migration"
       image = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-${var.environment}-backend:PLACEHOLDER"
       
-      # Override the default command to run migrations
-      command = ["npm", "run", "migrate:up"]
+      # Override the default command to run migrations with dev reset (TEMPORARY - remove for production)
+      command = ["npm", "run", "migrate:reset-dev"]
       
       environment = [
         {

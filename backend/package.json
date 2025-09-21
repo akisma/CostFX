@@ -18,6 +18,7 @@
     "migrate": "node-pg-migrate",
     "migrate:up": "node-pg-migrate up",
     "migrate:down": "node-pg-migrate down",
+    "migrate:reset-dev": "echo 'RESETTING DEV DATABASE MIGRATION STATE...' && psql $DATABASE_URL -c 'DELETE FROM pgmigrations;' 2>/dev/null || echo 'No pgmigrations table found (OK for fresh DB)' && npm run migrate:up",
     "migrate:create": "node-pg-migrate create",
     "migrate:test": "./scripts/test-migrations.sh",
     "db:seed": "node scripts/seed-data.js",
