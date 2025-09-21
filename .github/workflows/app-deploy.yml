@@ -319,10 +319,21 @@ jobs:
             echo "📋 Migration logs:"
             for i in {1..5}; do
               echo "Attempt $i: Checking log stream ecs/migration/$TASK_ID"
-              if aws logs get-log-events \
+              LOG_OUTPUT=$(aws logs get-log-events \
                 --log-group-name "/ecs/costfx-dev-migration" \
                 --log-stream-name "ecs/migration/$TASK_ID" \
-                --query 'events[*].message' --output text 2>/dev/null; then
+                --query 'events[*].message' --output text 2>/dev/null)
+              
+              if [ $? -eq 0 ] && [ -n "$LOG_OUTPUT" ]; then
+                # Output logs in chunks to avoid truncation
+                echo "$LOG_OUTPUT" | tail -50
+                echo "📋 Full log summary - last 50 lines shown above"
+                
+                # Also check for specific error patterns
+                if echo "$LOG_OUTPUT" | grep -i "error\|failed\|exception" > /dev/null; then
+                  echo "🔍 Error patterns found in logs:"
+                  echo "$LOG_OUTPUT" | grep -i "error\|failed\|exception" | tail -10
+                fi
                 break
               else
                 echo "Log stream not ready, waiting 5 seconds..."
