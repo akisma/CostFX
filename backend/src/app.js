@@ -11,7 +11,7 @@ import settings from './config/settings.js';
 
 const app = express();
 
-// Security middleware
+// Security middleware --
 app.use(helmet());
 app.use(cors({
   origin: settings.corsOrigins,
