@@ -1,0 +1,8 @@
+{
+  "migrationsDir": "migrations",
+  "migrationsTable": "pgmigrations",
+  "migrationFilenameFormat": "utc",
+  "migrationFileLanguage": "js",
+  "checkOrder": true,
+  "verbose": true
+}
