@@ -299,6 +299,10 @@ jobs:
           echo "⏳ Waiting for migration task to complete..."
           aws ecs wait tasks-stopped --cluster costfx-dev --tasks $TASK_ARN
           
+          # Extract task ID from ARN for log stream name
+          TASK_ID=$(echo $TASK_ARN | rev | cut -d'/' -f1 | rev)
+          echo "📋 Task ID: $TASK_ID"
+          
           # Check the exit code
           EXIT_CODE=$(aws ecs describe-tasks --cluster costfx-dev --tasks $TASK_ARN --query 'tasks[0].containers[0].exitCode' --output text)
           
@@ -306,12 +310,30 @@ jobs:
             echo "✅ Database migrations completed successfully!"
           else
             echo "❌ Database migrations failed with exit code: $EXIT_CODE"
-            # Get the logs for debugging
+            
+            # Wait a bit for CloudWatch logs to be available
+            echo "⏳ Waiting for logs to be available..."
+            sleep 10
+            
+            # Get the logs for debugging with retry logic
             echo "📋 Migration logs:"
-            aws logs get-log-events \
-              --log-group-name "/ecs/costfx-dev-migration" \
-              --log-stream-name "ecs/migration/$TASK_ID" \
-              --query 'events[*].message' --output text || echo "Could not retrieve logs"
+            for i in {1..5}; do
+              echo "Attempt $i: Checking log stream ecs/migration/$TASK_ID"
+              if aws logs get-log-events \
+                --log-group-name "/ecs/costfx-dev-migration" \
+                --log-stream-name "ecs/migration/$TASK_ID" \
+                --query 'events[*].message' --output text 2>/dev/null; then
+                break
+              else
+                echo "Log stream not ready, waiting 5 seconds..."
+                sleep 5
+              fi
+            done || echo "Could not retrieve logs after 5 attempts"
+            
+            # Also show task details for debugging
+            echo "📋 Task details:"
+            aws ecs describe-tasks --cluster costfx-dev --tasks $TASK_ARN --query 'tasks[0].containers[0]' || echo "Could not get task details"
+            
             exit 1
           fi
 
