@@ -127,25 +127,7 @@ export const up = async (pgm) => {
     WHERE status IN ('active', 'closed', 'locked')
   `);
 
-  // Add some sample periods for testing Dave's scenarios
-  pgm.sql(`
-    INSERT INTO inventory_periods 
-    (restaurant_id, period_name, period_start, period_end, status, period_type, 
-     beginning_snapshot_completed, ending_snapshot_completed, variance_analysis_completed,
-     notes, created_by, closed_by, closed_at, created_at, updated_at) VALUES
-    (1, 'Week 38 2025', '2025-09-15', '2025-09-21', 'closed', 'weekly',
-     true, true, true,
-     'Normal week - good for baseline comparison', 'system', 'dave_manager',
-     '2025-09-22 08:00:00'::timestamp, '2025-09-14 12:00:00'::timestamp, '2025-09-22 08:00:00'::timestamp),
-    (1, 'Week 39 2025', '2025-09-22', '2025-09-28', 'active', 'weekly',
-     true, false, false,
-     'Current week - high saffron usage expected for special menu', 'dave_manager', null,
-     null, '2025-09-21 16:00:00'::timestamp, '2025-09-21 16:00:00'::timestamp),
-    (1, 'September 2025', '2025-09-01', '2025-09-30', 'active', 'monthly',
-     true, false, false,
-     'Monthly analysis for executive reporting', 'system', null,
-     null, '2025-08-31 23:00:00'::timestamp, '2025-09-01 00:00:00'::timestamp);
-  `);
+  // Note: Sample data removed - should be added via API after restaurant records exist
 };
 
 export const down = async (pgm) => {
