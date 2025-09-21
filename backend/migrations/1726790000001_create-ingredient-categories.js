@@ -1,9 +1,8 @@
 /* eslint-disable camelcase */
 
-export const noTransaction = true;
-
 export const up = async (pgm) => {
-  // Enable ltree extension for hierarchical paths
+  // Enable ltree extension for hierarchical paths - must be outside transaction
+  pgm.noTransaction = true;
   pgm.sql('CREATE EXTENSION IF NOT EXISTS ltree;');
 
   // Create ingredient_categories table with hierarchical support
@@ -74,6 +73,7 @@ export const down = async (pgm) => {
   // Drop the table first
   pgm.dropTable('ingredient_categories');
   
-  // Drop the extension (only if no other tables use it)
+  // Drop the extension (only if no other tables use it) - must be outside transaction
+  pgm.noTransaction = true;
   pgm.sql('DROP EXTENSION IF EXISTS ltree;');
 };
