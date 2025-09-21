@@ -1,5 +1,7 @@
 /* eslint-disable camelcase */
 
+export const noTransaction = true;
+
 export const up = async (pgm) => {
   // Enable ltree extension for hierarchical paths
   pgm.sql('CREATE EXTENSION IF NOT EXISTS ltree;');
