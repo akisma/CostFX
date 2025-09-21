@@ -4,5 +4,10 @@
   "migrationFilenameFormat": "utc",
   "migrationFileLanguage": "js",
   "checkOrder": true,
-  "verbose": true
+  "verbose": true,
+  "noLock": false,
+  "dryRun": false,
+  "singleTransaction": false,
+  "createSchema": true,
+  "createMigrationsSchema": true
 }

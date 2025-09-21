@@ -274,9 +274,20 @@ jobs:
           echo "📝 Updating migration task definition with new image..."
           aws ecs describe-task-definition --task-definition costfx-dev-migration --query 'taskDefinition' > migration-task-def.json
           
+          # Verify the task definition was retrieved successfully
+          if [ ! -s migration-task-def.json ]; then
+            echo "❌ Failed to retrieve migration task definition"
+            exit 1
+          fi
+          
           # Update the image in the task definition
           NEW_IMAGE="${{ needs.build.outputs.backend_image }}"
+          echo "🏷️ Using image: $NEW_IMAGE"
           jq --arg image "$NEW_IMAGE" '.containerDefinitions[0].image = $image' migration-task-def.json > updated-migration-task-def.json
+          
+          # Verify the image was updated
+          UPDATED_IMAGE=$(jq -r '.containerDefinitions[0].image' updated-migration-task-def.json)
+          echo "✅ Task definition updated with image: $UPDATED_IMAGE"
           
           # Remove unnecessary fields and register updated task definition
           jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .placementConstraints, .compatibilities, .registeredAt, .registeredBy)' updated-migration-task-def.json > final-migration-task-def.json
@@ -295,51 +306,116 @@ jobs:
           
           echo "Migration task started: $TASK_ARN"
           
-          # Wait for the task to complete
-          echo "⏳ Waiting for migration task to complete..."
-          aws ecs wait tasks-stopped --cluster costfx-dev --tasks $TASK_ARN
+          # Wait for the task to complete with timeout
+          echo "⏳ Waiting for migration task to complete (timeout: 10 minutes)..."
+          WAIT_START=$(date +%s)
+          TIMEOUT=600  # 10 minutes
+          
+          while true; do
+            CURRENT_TIME=$(date +%s)
+            ELAPSED=$((CURRENT_TIME - WAIT_START))
+            
+            if [ $ELAPSED -gt $TIMEOUT ]; then
+              echo "❌ Migration task timed out after $TIMEOUT seconds"
+              exit 1
+            fi
+            
+            TASK_STATUS=$(aws ecs describe-tasks --cluster costfx-dev --tasks $TASK_ARN --query 'tasks[0].lastStatus' --output text)
+            echo "📊 Task status: $TASK_STATUS (elapsed: ${ELAPSED}s)"
+            
+            if [ "$TASK_STATUS" = "STOPPED" ]; then
+              echo "✅ Migration task completed"
+              break
+            fi
+            
+            sleep 10
+          done
           
           # Extract task ID from ARN for log stream name
           TASK_ID=$(echo $TASK_ARN | rev | cut -d'/' -f1 | rev)
           echo "📋 Task ID: $TASK_ID"
           
-          # Check the exit code
+          # Check the exit code and provide detailed error reporting
           EXIT_CODE=$(aws ecs describe-tasks --cluster costfx-dev --tasks $TASK_ARN --query 'tasks[0].containers[0].exitCode' --output text)
+          STOP_REASON=$(aws ecs describe-tasks --cluster costfx-dev --tasks $TASK_ARN --query 'tasks[0].stoppedReason' --output text)
+          
+          echo "📊 Migration task details:"
+          echo "  Exit Code: $EXIT_CODE"
+          echo "  Stop Reason: $STOP_REASON"
+          echo "  Task ARN: $TASK_ARN"
           
           if [ "$EXIT_CODE" = "0" ]; then
             echo "✅ Database migrations completed successfully!"
-          else
-            echo "❌ Database migrations failed with exit code: $EXIT_CODE"
             
-            # Wait a bit for CloudWatch logs to be available
-            echo "⏳ Waiting for logs to be available..."
-            sleep 10
-            
-            # Get the logs for debugging with retry logic
-            echo "📋 Migration logs:"
-            for i in {1..5}; do
-              echo "Attempt $i: Checking log stream ecs/migration/$TASK_ID"
+            # Show successful migration summary
+            echo "📋 Retrieving migration success logs..."
+            for i in {1..3}; do
               LOG_OUTPUT=$(aws logs get-log-events \
                 --log-group-name "/ecs/costfx-dev-migration" \
                 --log-stream-name "ecs/migration/$TASK_ID" \
                 --query 'events[*].message' --output text 2>/dev/null)
               
               if [ $? -eq 0 ] && [ -n "$LOG_OUTPUT" ]; then
-                # Output logs in chunks to avoid truncation
-                echo "$LOG_OUTPUT" | tail -50
-                echo "📋 Full log summary - last 50 lines shown above"
-                
-                # Also check for specific error patterns
-                if echo "$LOG_OUTPUT" | grep -i "error\|failed\|exception" > /dev/null; then
-                  echo "🔍 Error patterns found in logs:"
-                  echo "$LOG_OUTPUT" | grep -i "error\|failed\|exception" | tail -10
-                fi
+                echo "📝 Migration summary (last 20 lines):"
+                echo "$LOG_OUTPUT" | tail -20
                 break
               else
-                echo "Log stream not ready, waiting 5 seconds..."
+                echo "⏳ Waiting for logs to be available (attempt $i/3)..."
                 sleep 5
               fi
-            done || echo "Could not retrieve logs after 5 attempts"
+            done
+          else
+            echo "❌ Database migrations failed!"
+            echo "🔍 Exit Code: $EXIT_CODE"
+            echo "🔍 Stop Reason: $STOP_REASON"
+            
+            # Enhanced error reporting and log retrieval
+            echo "⏳ Waiting for error logs to be available..."
+            sleep 15
+            
+            # Get comprehensive error logs with multiple retry attempts
+            echo "📋 Migration error logs:"
+            for i in {1..5}; do
+              echo "🔍 Attempt $i: Checking log stream ecs/migration/$TASK_ID"
+              LOG_OUTPUT=$(aws logs get-log-events \
+                --log-group-name "/ecs/costfx-dev-migration" \
+                --log-stream-name "ecs/migration/$TASK_ID" \
+                --query 'events[*].message' --output text 2>/dev/null)
+              
+              if [ $? -eq 0 ] && [ -n "$LOG_OUTPUT" ]; then
+                echo "📝 Full migration logs:"
+                echo "$LOG_OUTPUT"
+                echo "----------------------------------------"
+                
+                # Extract specific error patterns
+                echo "🚨 Error analysis:"
+                if echo "$LOG_OUTPUT" | grep -i "error\|failed\|exception\|denied\|timeout" > /dev/null; then
+                  echo "❌ Found error patterns:"
+                  echo "$LOG_OUTPUT" | grep -i "error\|failed\|exception\|denied\|timeout" | head -10
+                else
+                  echo "ℹ️ No obvious error patterns found in logs"
+                fi
+                
+                # Check for common migration issues
+                if echo "$LOG_OUTPUT" | grep -i "permission denied\|access denied" > /dev/null; then
+                  echo "� Possible permission issue detected"
+                elif echo "$LOG_OUTPUT" | grep -i "connection\|timeout\|network" > /dev/null; then
+                  echo "🌐 Possible network/connection issue detected"
+                elif echo "$LOG_OUTPUT" | grep -i "syntax\|migration\|column" > /dev/null; then
+                  echo "🗃️ Possible database schema issue detected"
+                fi
+                
+                break
+              else
+                echo "⏳ Log stream not ready, waiting 5 seconds..."
+                sleep 5
+              fi
+            done
+            
+            if [ $i -eq 5 ]; then
+              echo "❌ Could not retrieve logs after 5 attempts"
+              echo "🔍 This may indicate the task failed to start or write logs"
+            fi
             
             # Also show task details for debugging
             echo "📋 Task details:"
