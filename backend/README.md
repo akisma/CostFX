@@ -8,3 +8,4 @@
     - DATABASE_URL includes ssl=true or sslmode=require
     - NODE_ENV=production as a fallback
   - Terraform stores an SSM DATABASE_URL with ssl=true and a URL-encoded password.
+# Trigger deployment
