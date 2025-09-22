@@ -28,6 +28,14 @@ resource "aws_ecs_task_definition" "migration" {
         {
           name  = "NODE_ENV"
           value = "production"
+        },
+        {
+          name  = "DB_SSL"
+          value = "true"
+        },
+        {
+          name  = "PGSSLMODE"
+          value = "no-verify"
         }
       ]
 
