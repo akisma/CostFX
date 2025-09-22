@@ -87,10 +87,10 @@ resource "aws_ecs_task_definition" "backend" {
 
       healthCheck = {
         command     = ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"]
-        interval    = 30
-        timeout     = 5
-        retries     = 3
-        startPeriod = 60
+        interval    = 60
+        timeout     = 10
+        retries     = 5
+        startPeriod = 120
       }
 
       logConfiguration = {
