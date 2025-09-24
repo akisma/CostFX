@@ -9,11 +9,11 @@ class InventoryPeriod extends Model {
       as: 'restaurant'
     });
     
-    // Future associations for related tables (when implemented)
-    // InventoryPeriod.hasMany(models.PeriodInventorySnapshot, {
-    //   foreignKey: 'periodId',
-    //   as: 'snapshots'
-    // });
+    // Associations for snapshot system (Task 3)
+    InventoryPeriod.hasMany(models.PeriodInventorySnapshot, {
+      foreignKey: 'periodId',
+      as: 'snapshots'
+    });
     
     // InventoryPeriod.hasMany(models.VarianceInvestigation, {
     //   foreignKey: 'periodId',
