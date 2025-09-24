@@ -18,7 +18,7 @@ const settings = {
 
   // Database
   databaseUrl: process.env.DATABASE_URL,
-  redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
+  redisUrl: process.env.REDIS_URL, // No default - only use if explicitly set
 
   // Authentication
   jwtSecret: process.env.JWT_SECRET,
