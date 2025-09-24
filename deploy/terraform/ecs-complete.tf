@@ -74,7 +74,9 @@ resource "aws_ecs_task_definition" "backend" {
   container_definitions = jsonencode([
     {
       name  = "backend"
-      image = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-${var.environment}-backend:latest"
+      # Use SHA-tagged image if provided, fallback to latest for initial deployment
+      # GitHub Actions workflow dynamically updates this during deployment
+      image = var.backend_image != "" ? var.backend_image : "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-${var.environment}-backend:latest"
       
       portMappings = [
         {
@@ -85,10 +87,10 @@ resource "aws_ecs_task_definition" "backend" {
 
       healthCheck = {
         command     = ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"]
-        interval    = 30
-        timeout     = 5
-        retries     = 3
-        startPeriod = 60
+        interval    = 60
+        timeout     = 10
+        retries     = 5
+        startPeriod = 120
       }
 
       logConfiguration = {
@@ -177,7 +179,9 @@ resource "aws_ecs_task_definition" "frontend" {
   container_definitions = jsonencode([
     {
       name  = "frontend"
-      image = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-${var.environment}-frontend:latest"
+      # Use SHA-tagged image if provided, fallback to latest for initial deployment
+      # GitHub Actions workflow dynamically updates this during deployment
+      image = var.frontend_image != "" ? var.frontend_image : "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-${var.environment}-frontend:latest"
       
       portMappings = [
         {
@@ -220,12 +224,22 @@ resource "aws_ecs_task_definition" "frontend" {
 # CloudWatch Log Groups
 resource "aws_cloudwatch_log_group" "backend" {
   name              = "/ecs/${var.app_name}-${var.environment}-backend"
-  retention_in_days = 7
+  retention_in_days = 30
+  
+  tags = {
+    Name = "${var.app_name}-${var.environment}-backend-logs"
+    Purpose = "Application logs for debugging and monitoring"
+  }
 }
 
 resource "aws_cloudwatch_log_group" "frontend" {
   name              = "/ecs/${var.app_name}-${var.environment}-frontend"
-  retention_in_days = 7
+  retention_in_days = 30
+  
+  tags = {
+    Name = "${var.app_name}-${var.environment}-frontend-logs"
+    Purpose = "Application logs for debugging and monitoring"
+  }
 }
 
 # Backend ECS Service

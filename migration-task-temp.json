@@ -1,0 +1,35 @@
+{
+  "family": "costfx-dev-migration-temp",
+  "taskRoleArn": "arn:aws:iam::568530517605:role/costfx-dev-ecs-task-execution-role",
+  "executionRoleArn": "arn:aws:iam::568530517605:role/costfx-dev-ecs-task-execution-role",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [
+    {
+      "name": "migration",
+      "image": "568530517605.dkr.ecr.us-west-2.amazonaws.com/costfx-dev-backend:0b7fda833c5436a8df052ce1bc6b19fa9d901a69",
+      "essential": true,
+      "command": ["npm", "run", "migrate:reset-dev"],
+      "environment": [
+        {"name": "NODE_ENV", "value": "production"}
+      ],
+      "secrets": [
+        {"name": "DATABASE_URL", "valueFrom": "/costfx/dev/database_url"},
+        {"name": "JWT_SECRET", "valueFrom": "/costfx/dev/jwt_secret"},
+        {"name": "OPENAI_API_KEY", "valueFrom": "/costfx/dev/openai_api_key"},
+        {"name": "DB_SSL", "valueFrom": "/costfx/dev/db_ssl"},
+        {"name": "NODE_ENV_SSM", "valueFrom": "/costfx/dev/node_env"}
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/costfx-dev-migration",
+          "awslogs-region": "us-west-2",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

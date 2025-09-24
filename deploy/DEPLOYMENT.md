@@ -1,6 +1,12 @@
-# CostFX AWS ECS Deployment
+# CostFX Deployment Guide
 
-This directory contains the complete infrastructure and deployment configuration for deploying CostFX to AWS ECS with separate frontend and backend containers.
+This document outlines the deployment process for the CostFX application.
+
+## Recent Updates (September 2025)
+
+- ✅ Added ECS-based database migration system
+- ✅ Updated GitHub Actions with proper IAM permissions for EC2 networking
+- ✅ Implemented Dave's inventory variance system with 8 database migrations
 
 ## 🏗️ Architecture
 

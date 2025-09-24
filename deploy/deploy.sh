@@ -32,6 +32,7 @@ OPTIONS:
     --setup-infra          Deploy infrastructure only (Terraform)
     --frontend-only        Rebuild and redeploy frontend only
     --update-ssm-only      Update SSM parameters only
+    --migrate-only         Run database migrations only
     --full                 Full deployment (default)
 
 EXAMPLES:
@@ -39,6 +40,7 @@ EXAMPLES:
     ./deploy.sh --frontend-only    # Rebuild frontend with correct API URL
     ./deploy.sh --setup-infra      # Deploy infrastructure only
     ./deploy.sh --update-ssm-only  # Update SSM parameters only
+    ./deploy.sh --migrate-only     # Run database migrations only
 
 ENVIRONMENT VARIABLES:
     AWS_REGION      AWS region (default: us-west-2)
@@ -68,6 +70,10 @@ parse_args() {
                 ;;
             --update-ssm-only)
                 OPERATION="ssm"
+                shift
+                ;;
+            --migrate-only)
+                OPERATION="migrate"
                 shift
                 ;;
             --full)
@@ -156,6 +162,7 @@ deploy_full() {
     rebuild_frontend_with_correct_api_url
     update_services
     wait_for_deployment
+    run_database_migrations
     show_app_url
     
     echo ""
@@ -169,13 +176,48 @@ show_infrastructure_outputs() {
     terraform -chdir=terraform output 2>/dev/null || echo_warning "No Terraform outputs available"
 }
 
+# Run database migrations on deployed backend
+run_database_migrations() {
+    echo_info "🗃️  Running database migrations..."
+    
+    # Get running backend task ID
+    local task_arn=$(aws ecs list-tasks \
+        --cluster "$APP_NAME-$ENVIRONMENT-cluster" \
+        --service-name "$APP_NAME-$ENVIRONMENT-backend" \
+        --region "$AWS_REGION" \
+        --query 'taskArns[0]' --output text 2>/dev/null)
+    
+    if [ "$task_arn" = "None" ] || [ -z "$task_arn" ]; then
+        echo_warning "⚠️  No running backend tasks found. Migrations will run on next container start."
+        return 0
+    fi
+    
+    echo_info "Running migrations on task: $(basename $task_arn)"
+    
+    # Execute migration command using node-pg-migrate
+    aws ecs execute-command \
+        --cluster "$APP_NAME-$ENVIRONMENT-cluster" \
+        --task "$task_arn" \
+        --container backend \
+        --command "npm run migrate:up" \
+        --interactive \
+        --region "$AWS_REGION" || {
+        echo_warning "⚠️  Migration command failed or ECS Exec not enabled. Check backend logs."
+        echo_info "💡 Manual migration command:"
+        echo "   aws ecs execute-command --cluster $APP_NAME-$ENVIRONMENT-cluster --task $task_arn --container backend --command 'npm run migrate:up' --interactive --region $AWS_REGION"
+        return 0
+    }
+    
+    echo_success "✅ Database migrations completed!"
+}
+
 # Show next steps
 show_next_steps() {
     echo_info "Next steps:"
     echo "  1. Update OpenAI API key in SSM Parameter Store:"
     echo "     aws ssm put-parameter --name '/$APP_NAME/$ENVIRONMENT/openai_api_key' --value 'your_api_key' --type SecureString --overwrite"
-    echo "  2. Run database migrations (if needed)"
-    echo "  3. Verify application is working correctly"
+    echo "  2. Verify database migrations completed successfully"
+    echo "  3. Check application is working correctly"
 }
 
 # Main function
@@ -191,6 +233,9 @@ main() {
             ;;
         "ssm")
             update_ssm_only
+            ;;
+        "migrate")
+            run_database_migrations
             ;;
         "full")
             deploy_full

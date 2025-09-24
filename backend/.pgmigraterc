@@ -1,0 +1,8 @@
+{
+  "migrationPattern": "./migrations/*",
+  "driver": "pg",
+  "databaseUrl": "postgresql://postgres:password@localhost:5432/restaurant_ai",
+  "schema": "public",
+  "migrationsTable": "pgmigrations",
+  "dir": "migrations"
+}

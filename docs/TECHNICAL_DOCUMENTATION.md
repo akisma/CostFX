@@ -35,7 +35,7 @@ CostFX is a multi-agent AI system that automates restaurant operations to reduce
 - ✅ **Cost Agent**: Active with recipe costing and margin analysis
 - ✅ **Backend Infrastructure**: Express.js API with agent orchestration
 - ✅ **Frontend Dashboard**: React with Redux state management
-- ✅ **Database**: PostgreSQL with Sequelize ORM
+- ✅ **Database**: PostgreSQL with node-pg-migrate (hierarchical categories with ltree)
 - ✅ **Testing**: Complete Vitest-based test suites (151/151 tests passing - 100% success)
 - ✅ **Configuration**: Centralized configuration system across entire application
 - ✅ **CI/CD**: GitHub Actions with separated app and infrastructure deployments
@@ -43,6 +43,10 @@ CostFX is a multi-agent AI system that automates restaurant operations to reduce
 ### Development Status (September 19, 2025)
 
 #### Recently Completed - Production Issues Resolved ✅
+- ✅ **Database Migration System Modernization**: Migrated from sequelize-cli to node-pg-migrate for ES module compatibility
+- ✅ **Dave's Inventory Variance System**: Implemented hierarchical ingredient categorization and period-based variance analysis
+- ✅ **Migration Testing Framework**: Comprehensive validation suite ensures migration success in development and production
+- ✅ **PostgreSQL ltree Integration**: Enabled hierarchical queries for ingredient category management
 - ✅ **ForecastAgent Production Deployment**: Fixed mixed content security errors preventing HTTPS→HTTP API calls
 - ✅ **Frontend Build Configuration**: Corrected GitHub Actions workflow to use proper API URL (`https://www.cost-fx.com/api/v1`)
 - ✅ **Backend Environment Variables**: Enhanced database configuration flexibility for production ECS deployment
@@ -167,6 +171,94 @@ class BaseAgent {
 - InventoryItem → InventoryTransactions (1:many)
 - Supplier → InventoryItems (many:many)
 
+#### Enhanced Dave's Inventory Management (September 2025)
+
+**New Tables for Variance Analysis:**
+
+**ingredient_categories** - Hierarchical categorization using PostgreSQL ltree
+- Supports Dave's requirement: "I don't care if we are off 20 pounds of romaine, but 4oz of saffron is like $600"
+- Path examples: `produce.leafy_greens.romaine`, `spices.premium.saffron`
+- Enables category-level variance thresholds and alerts
+
+**inventory_periods** - Period-based inventory management
+- Support for weekly, monthly, and custom periods
+- Lifecycle tracking: draft → active → closed → locked
+- Snapshot completion tracking for beginning/ending inventory
+- Variance analysis completion status
+
+### Database Migration System
+
+**Migration Tool**: node-pg-migrate (ES module compatible, PostgreSQL-optimized)
+
+#### Running Migrations
+
+**Local Development:**
+```bash
+# Apply all pending migrations
+npm run migrate:up
+
+# Roll back last migration
+npm run migrate:down 1
+
+# Create new migration
+npm run migrate:create migration-name
+```
+
+**Production Deployment:**
+- Migrations run automatically during GitHub Actions deployment
+- ECS task execution: `npm run migrate:up`
+- Deploy script: `./deploy.sh --migrate-only`
+
+#### Testing Migration Success
+
+**Quick Validation:**
+```bash
+# Comprehensive test suite (RECOMMENDED)
+npm run migrate:test
+
+# Or run manually
+./backend/scripts/test-migrations.sh
+```
+
+**Manual Verification:**
+```bash
+# Check migration tracking
+docker-compose exec -T db psql -U postgres -d restaurant_ai -c \
+  "SELECT name, run_on FROM pgmigrations ORDER BY run_on;"
+
+# Verify hierarchical categories
+docker-compose exec -T db psql -U postgres -d restaurant_ai -c \
+  "SELECT name, path FROM ingredient_categories WHERE path <@ 'produce';"
+
+# Test ltree functionality  
+docker-compose exec -T db psql -U postgres -d restaurant_ai -c \
+  "SELECT COUNT(*) FROM ingredient_categories WHERE path ~ '*.saffron';"
+
+# Check inventory periods
+docker-compose exec -T db psql -U postgres -d restaurant_ai -c \
+  "SELECT period_name, status, period_type FROM inventory_periods;"
+```
+
+**What the Tests Validate:**
+- ✅ **Migration Tracking**: 5 migrations in `pgmigrations` table (suppliers, inventory-items, inventory-transactions, ingredient-categories, inventory-periods)
+- ✅ **Table Structure**: Core tables (suppliers, inventory_items, inventory_transactions) and Dave's enhancements (ingredient_categories, inventory_periods)
+- ✅ **ltree Extension**: PostgreSQL ltree enabled for hierarchical queries
+- ✅ **Hierarchical Data**: 6 ingredient categories with proper hierarchy
+- ✅ **Period Management**: 3 inventory periods (2 weekly, 1 monthly)
+- ✅ **Dave's Use Cases**: Romaine (low-value) vs Saffron (high-value) hierarchy ready
+- ✅ **Indexes & Constraints**: Performance optimizations and data integrity
+
+**Production Testing:**
+- GitHub Actions automatically runs migrations during deployment
+- Health checks verify application startup after migration
+- Rollback capability available via `npm run migrate:down`
+
+**Migration Success Indicators:**
+- All tests pass in `npm run migrate:test`
+- Database contains expected tables and data
+- ltree extension enabled for hierarchical queries
+- Application starts successfully after migration
+
 ### API Structure
 
 #### Agent Endpoints
@@ -191,8 +283,8 @@ class BaseAgent {
 #### Prerequisites
 - Node.js 18+
 - PostgreSQL 14+
-- Redis (optional, for caching)
-- Docker (for containerization)
+- Redis (optional, currently bypassed for development speed)
+- Docker (for containerization and PostgreSQL)
 
 #### Quick Start
 ```bash
@@ -211,19 +303,29 @@ npm run dev
 #### Environment Configuration
 Create `.env` files in both `backend/` and `frontend/` directories:
 
-**Backend `.env`:**
+**Root `.env`:**
 ```env
 NODE_ENV=development
-PORT=5000
-DATABASE_URL=postgresql://username:password@localhost:5432/costfx_dev
-REDIS_URL=redis://localhost:6379
+PORT=3001
+DATABASE_URL=postgresql://username:password@localhost:5432/restaurant_ai
+# REDIS_URL=redis://localhost:6379  # Disabled for development speed
 JWT_SECRET=your-jwt-secret
+OPENAI_API_KEY=your-openai-key
 ```
 
-**Frontend `.env`:**
-```env
-VITE_API_URL=http://localhost:5000/api/v1
-VITE_NODE_ENV=development
+**Current Development Configuration (September 2025)**:
+- **PostgreSQL**: Required, runs via `docker-compose up -d db`
+- **Redis**: Bypassed for faster development startup
+- **Ports**: Backend (3001), Frontend (3000)
+- **SSL**: Disabled for local PostgreSQL connection
+
+**To Enable Redis** (if needed):
+```bash
+# Uncomment REDIS_URL in .env
+REDIS_URL=redis://localhost:6379
+
+# Start Redis container
+docker-compose up -d redis
 ```
 
 ### Adding New AI Agents
@@ -375,17 +477,18 @@ npm run migrate:rollback
 
 #### Migration Template
 ```javascript
-// backend/src/migrations/YYYYMMDD-create-new-table.js
-export const up = async (queryInterface, Sequelize) => {
-  await queryInterface.createTable('NewTable', {
+// backend/migrations/YYYYMMDD-create-new-table.js
+exports.up = async function(pgm) {
+  pgm.createTable('new_table', {
     id: {
-      allowNull: false,
-      autoIncrement: true,
+      type: 'serial',
       primaryKey: true,
-      type: Sequelize.INTEGER
+      notNull: true
     },
     name: {
-      type: Sequelize.STRING,
+      type: 'varchar',
+      notNull: true
+    },
       allowNull: false
     },
     createdAt: {
@@ -554,6 +657,121 @@ export const testConfig = {
 - **Result**: 46/46 integration tests passing
 
 **Final Achievement**: 151/151 tests passing (100% success rate)
+
+### ECS Deployment Performance & Container Stability (September 24, 2025)
+
+**Problem**: ECS deployments taking 18+ minutes and eventually failing after 30 minutes with "Resource is not in the state servicesStable" error.
+
+**Root Cause Analysis**:
+1. **Aggressive Health Checks**: 30-second intervals with 5-second timeouts causing premature failures
+2. **Container Startup Issues**: `PGSSLMODE="no-verify"` invalid for stricter env-var validation in recent code
+3. **SSL Configuration Mismatch**: Application validation requiring valid PostgreSQL SSL modes
+
+**Solutions Implemented**:
+
+#### 1. Health Check Optimization
+**File**: `deploy/terraform/ecs-complete.tf`
+```terraform
+health_check {
+  enabled             = true
+  healthy_threshold   = 2
+  interval            = 60    # Increased from 30s
+  matcher             = "200"
+  path                = "/api/v1/"
+  port                = "traffic-port"
+  protocol            = "HTTP"
+  timeout             = 10    # Increased from 5s
+  unhealthy_threshold = 5     # Increased from 3
+}
+```
+
+#### 2. SSL Configuration Fix
+**File**: `deploy/terraform/ecs-complete.tf`
+```terraform
+# BEFORE (invalid)
+{
+  name  = "PGSSLMODE"
+  value = "no-verify"  # Invalid enum value
+}
+
+# AFTER (valid)
+{
+  name  = "PGSSLMODE" 
+  value = "require"    # Valid PostgreSQL SSL mode
+}
+```
+
+**Resolution Impact**:
+- ✅ **Deployment Time**: Reduced from 18+ minutes to ~2 minutes
+- ✅ **Container Stability**: No more startup crashes due to invalid PGSSLMODE
+- ✅ **Health Check Reliability**: Extended timeouts prevent false positives
+- ✅ **Production Stability**: Both services running 2/2 tasks healthy
+
+### Redis Configuration Management for Development Speed
+
+**Problem**: Local development experiencing Redis connection errors (`ECONNREFUSED`) slowing down `npm run dev` startup.
+
+**Root Cause**: Default Redis URL in settings causing client creation even when Redis not needed for development.
+
+**Solution**: Implemented graceful Redis bypass system:
+
+#### 1. Settings Configuration Update
+**File**: `backend/src/config/settings.js`
+```javascript
+// BEFORE (always creates Redis client)
+redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
+
+// AFTER (only when explicitly set)
+redisUrl: process.env.REDIS_URL, // No default - only use if explicitly set
+```
+
+#### 2. Environment Configuration
+**File**: `.env`
+```bash
+# BEFORE (active)
+REDIS_URL=redis://localhost:6379
+
+# AFTER (disabled for development speed)
+# REDIS_URL=redis://localhost:6379  # Disabled for development speed
+```
+
+#### 3. Graceful Degradation Logic
+**File**: `backend/src/config/redis.js`
+```javascript
+const redis = REDIS_URL ? createClient({ url: REDIS_URL }) : null;
+
+export async function connectRedis() {
+  if (!redis) {
+    logger.info('ℹ️ REDIS_URL not set; skipping Redis connection');
+    return;
+  }
+  // ... connection logic
+}
+```
+
+**Re-enabling Redis**:
+
+**Development**:
+```bash
+# Uncomment in .env
+REDIS_URL=redis://localhost:6379
+
+# Start Redis container
+docker-compose up -d redis
+```
+
+**Production**:
+```bash
+# Uncomment resources in deploy/terraform/database.tf
+# Uncomment aws_ssm_parameter.redis_url in deploy/terraform/ssm-parameters.tf
+terraform apply
+```
+
+**Benefits**:
+- ✅ **Fast Development Startup**: No Redis connection delays
+- ✅ **Graceful Degradation**: Application runs without caching
+- ✅ **Easy Re-enabling**: Simple configuration changes
+- ✅ **Production Ready**: Redis infrastructure remains available
 
 ### ES Modules + Jest Configuration
 
@@ -1281,6 +1499,123 @@ docker exec -it <container-id> /bin/sh
 aws logs tail /costfx/backend --follow
 ```
 
+### ECS Deployment Issues (September 24, 2025)
+
+#### Slow ECS Deployments (18+ minutes)
+
+**Problem**: ECS service deployments taking excessive time and timing out after 30 minutes with "Resource is not in the state servicesStable" error.
+
+**Root Causes**:
+1. **Aggressive Health Checks**: 30-second intervals with 5-second timeouts
+2. **Container Startup Issues**: Invalid `PGSSLMODE` values causing application crashes
+3. **Task Definition Changes**: New container images with stricter validation
+
+**Investigation Commands**:
+```bash
+# Check deployment status
+aws ecs describe-services --cluster costfx-dev --services costfx-dev-backend costfx-dev-frontend
+
+# Check task definition differences
+aws ecs describe-task-definition --task-definition costfx-dev-backend:38  # Working version
+aws ecs describe-task-definition --task-definition costfx-dev-backend:39  # Failing version
+
+# Check container logs
+aws logs get-log-events --log-group-name /ecs/costfx-dev-backend \
+  --log-stream-name $(aws logs describe-log-streams --log-group-name /ecs/costfx-dev-backend \
+    --order-by LastEventTime --descending --max-items 1 --query 'logStreams[0].logStreamName' --output text)
+```
+
+**Solutions Applied**:
+1. **Health Check Optimization**: Extended intervals (30s→60s), timeouts (5s→10s), retries (3→5)
+2. **SSL Configuration Fix**: Changed `PGSSLMODE` from `"no-verify"` to `"require"`
+3. **Application Validation**: Updated env-var configuration to accept valid PostgreSQL SSL modes
+
+**Result**: Deployment time reduced from 18+ minutes to ~2 minutes ✅
+
+#### Container Startup Failures
+
+**Symptoms**:
+```
+EnvVarError: env-var: "PGSSLMODE" is not one of the allowed values. 
+Allowed values: ['disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full']
+```
+
+**Investigation**:
+```bash
+# Compare working vs failing task definitions
+aws ecs describe-task-definition --task-definition costfx-dev-backend:38 \
+  --query 'taskDefinition.containerDefinitions[0].environment[?name==`PGSSLMODE`]'
+
+# Check stopped tasks for error details
+aws ecs describe-tasks --cluster costfx-dev --tasks $(aws ecs list-tasks \
+  --cluster costfx-dev --desired-status STOPPED --max-items 1 --query 'taskArns[0]' --output text)
+```
+
+**Solution**: Updated Terraform configuration with valid SSL mode:
+```terraform
+{
+  name  = "PGSSLMODE"
+  value = "require"  # Valid PostgreSQL SSL mode for AWS RDS
+}
+```
+
+### Redis Development Environment Issues
+
+#### Redis Connection Errors in Development
+
+**Problem**: Local `npm run dev` showing Redis connection errors:
+```
+{"code":"ECONNREFUSED","level":"error","message":"Redis Client Error:","service":"restaurant-ai-backend"}
+```
+
+**Root Cause**: Redis client being created with default URL even when not needed for development.
+
+**Investigation**:
+```bash
+# Check if Redis URL is set
+echo "REDIS_URL: $REDIS_URL"
+grep REDIS_URL .env
+
+# Test current configuration
+node -e "import('./backend/src/config/settings.js').then(m => console.log('Redis URL:', m.default.redisUrl))"
+node -e "import('./backend/src/config/redis.js').then(m => console.log('Redis client:', m.redis ? 'created' : 'null'))"
+```
+
+**Solution**: Disabled Redis for development speed:
+```bash
+# Comment out Redis URL in .env
+# REDIS_URL=redis://localhost:6379  # Disabled for development speed
+
+# Verify bypass works
+npm run dev  # Should show: "ℹ️ REDIS_URL not set; skipping Redis connection"
+```
+
+**Re-enabling Redis when needed**:
+```bash
+# Development
+echo "REDIS_URL=redis://localhost:6379" >> .env
+docker-compose up -d redis
+
+# Production (uncomment in Terraform)
+# deploy/terraform/database.tf - Redis resources
+# deploy/terraform/ssm-parameters.tf - Redis URL parameter
+terraform apply
+```
+
+#### Redis Container Management
+
+**Commands**:
+```bash
+# Check Redis status
+docker-compose ps redis
+docker exec costfx-redis-1 redis-cli ping
+
+# Start/stop Redis for development
+docker-compose up -d redis    # Start
+docker-compose stop redis     # Stop
+docker-compose logs redis     # Check logs
+```
+
 ---
 
 ## Change Log
@@ -1317,6 +1652,58 @@ aws logs tail /costfx/backend --follow
 - ✅ Mock-based testing eliminates database dependencies in app deployment
 - ⚠️ Some tests need implementation alignment (expected during development)
 - 🎯 Ready for continued development with stable testing foundation
+
+## AWS Deployment Troubleshooting
+
+### SSM Parameter Access Issues
+
+**Problem**: GitHub Actions deployment fails with SSM access denied error:
+```
+An error occurred (AccessDeniedException) when calling the GetParameter operation: 
+User: arn:aws:sts::568530517605:assumed-role/GitHubActionsRole-CostFX/GitHubActions 
+is not authorized to perform: ssm:GetParameter
+```
+
+**Solution**: Update IAM policy for GitHubActionsRole-CostFX to include SSM permissions:
+```bash
+# Add to CostFX-Deployment-Policy
+{
+  "Sid": "SSMParameterAccess",
+  "Effect": "Allow",
+  "Action": ["ssm:GetParameter", "ssm:GetParameters"],
+  "Resource": ["arn:aws:ssm:us-west-2:568530517605:parameter/costfx/dev/*"]
+}
+```
+
+**Applied Fix (Sep 19, 2025)**:
+```bash
+aws iam create-policy-version \
+  --policy-arn arn:aws:iam::568530517605:policy/CostFX-Deployment-Policy \
+  --policy-document file://updated-policy.json \
+  --set-as-default
+```
+
+### Database Migration Connection Failures
+
+**Problem**: Migrations fail with localhost connection errors during deployment.
+
+**Root Cause**: Wrong SSM parameter path in GitHub Actions workflow
+- ❌ Used: `/costfx/dev/database/url` 
+- ✅ Correct: `/costfx/dev/database_url`
+
+**Solution**: Update `.github/workflows/app-deploy.yml`:
+```yaml
+export DATABASE_URL=$(aws ssm get-parameter --name "/costfx/dev/database_url" --with-decryption --query 'Parameter.Value' --output text)
+```
+
+**Verification Commands**:
+```bash
+# List available parameters
+aws ssm get-parameters-by-path --path "/costfx/dev" --query 'Parameters[].Name'
+
+# Test database URL retrieval
+aws ssm get-parameter --name "/costfx/dev/database_url" --with-decryption --query 'Parameter.Value' --output text
+```
 
 ---
 

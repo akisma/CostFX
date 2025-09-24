@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import ForecastChart from '../../src/components/forecast/ForecastChart'
 
+//blah
 describe('ForecastChart Component', () => {
   describe('Data Structure Handling', () => {
     it('should handle empty data gracefully', () => {

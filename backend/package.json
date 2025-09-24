@@ -15,7 +15,12 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src/ tests/",
     "lint:fix": "eslint src/ tests/ --fix",
-    "db:migrate": "node scripts/init-db.js",
+    "migrate": "echo '🔍 Starting migration with verbose logging...' && node-pg-migrate",
+    "migrate:up": "echo '⬆️ Running UP migrations...' && echo \"Database URL: ${DATABASE_URL:0:30}...\" && node-pg-migrate up",
+    "migrate:down": "echo '⬇️ Running DOWN migrations...' && node-pg-migrate down",
+    "migrate:reset-dev": "echo '🔄 RESETTING DEV DATABASE MIGRATION STATE...' && echo \"Target DB: ${DATABASE_URL:0:50}...\" && psql $DATABASE_URL -c 'DELETE FROM pgmigrations; SELECT COUNT(*) as remaining_migrations FROM pgmigrations;' 2>/dev/null || echo '📝 No pgmigrations table found (OK for fresh DB)' && echo '⬆️ Running fresh migrations...' && npm run migrate:up",
+    "migrate:create": "node-pg-migrate create",
+    "migrate:test": "./scripts/test-migrations.sh",
     "db:seed": "node scripts/seed-data.js",
     "db:setup": "npm run db:migrate && npm run db:seed",
     "setup": "npm run db:setup && npm run test:setup"
@@ -42,7 +47,8 @@
     "redis": "^4.7.0",
     "sequelize": "^6.37.3",
     "uuid": "^10.0.0",
-    "winston": "^3.14.2"
+    "winston": "^3.14.2",
+    "node-pg-migrate": "^8.0.3"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^2.0.0",
