@@ -1,9 +1,8 @@
-import { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
-import UsageCalculationService from '../../src/services/UsageCalculationService.js';
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 
-// Mock the database models for integration testing
-const mockSequelize = {
-  models: {
+// Mock all external dependencies
+vi.mock('../../src/config/database.js', () => {
+  const mockModels = {
     InventoryPeriod: {
       findByPk: vi.fn(),
       findAll: vi.fn(),
@@ -32,22 +31,33 @@ const mockSequelize = {
     Restaurant: {
       create: vi.fn()
     }
-  }
-};
+  };
 
-// Mock the database import
-vi.mock('../../src/config/database.js', () => ({
-  default: mockSequelize
-}));
+  return {
+    default: {
+      models: mockModels,
+      Sequelize: {
+        Op: {
+          between: 'between',
+          in: 'in',
+          gte: 'gte',
+          lte: 'lte'
+        }
+      }
+    }
+  };
+});
 
-describe('UsageCalculationService', () => {
+// Import after mocking
+const { default: UsageCalculationService } = await import('../../src/services/UsageCalculationService.js');
+
+describe('UsageCalculationService Integration', () => {
   let service;
-  let testRestaurant;
-  let testPeriod;
-  let testItems;
-  let testSnapshots;
 
-  // Test data setup
+  beforeEach(() => {
+    vi.clearAllMocks();
+    service = new UsageCalculationService();
+  });
   beforeAll(async () => {
     // Setup test data objects
     testRestaurant = {

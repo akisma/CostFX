@@ -3,11 +3,7 @@ import sequelize from '../config/database.js';
 
 class Restaurant extends Model {
   static associate(models) {
-    // Define associations
-    Restaurant.hasMany(models.Recipe, {
-      foreignKey: 'restaurantId',
-      as: 'recipes'
-    });
+    // Define associations with existing models
     Restaurant.hasMany(models.InventoryItem, {
       foreignKey: 'restaurantId',
       as: 'inventoryItems'
@@ -16,22 +12,32 @@ class Restaurant extends Model {
       foreignKey: 'restaurantId',
       as: 'inventoryTransactions'
     });
-    Restaurant.hasMany(models.Sales, {
+    Restaurant.hasMany(models.InventoryPeriod, {
       foreignKey: 'restaurantId',
-      as: 'sales'
+      as: 'inventoryPeriods'
     });
+    // Future associations when models are implemented
+    // Restaurant.hasMany(models.Recipe, {
+    //   foreignKey: 'restaurantId',
+    //   as: 'recipes'
+    // });
+    // Restaurant.hasMany(models.Sales, {
+    //   foreignKey: 'restaurantId',
+    //   as: 'sales'
+    // });
   }
 
   // Instance methods
-  async getActiveRecipes() {
-    const { Recipe } = sequelize.models;
-    return await Recipe.findAll({
-      where: { 
-        restaurantId: this.id,
-        isActive: true 
-      }
-    });
-  }
+  // Future method when Recipe model is implemented
+  // async getActiveRecipes() {
+  //   const { Recipe } = sequelize.models;
+  //   return await Recipe.findAll({
+  //     where: { 
+  //       restaurantId: this.id,
+  //       isActive: true 
+  //     }
+  //   });
+  // }
 
   async getCurrentInventoryValue() {
     // TODO: Implement inventory value calculation

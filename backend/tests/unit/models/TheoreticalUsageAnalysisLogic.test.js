@@ -89,24 +89,48 @@ describe('TheoreticalUsageAnalysis Business Logic', () => {
       },
 
       canBeResolved() {
+        // Check if investigation can be marked as resolved
         return ['investigating', 'escalated'].includes(this.investigationStatus) && 
-               this.investigatedBy && 
-               this.investigationNotes;
+               !!this.investigatedBy && 
+               !!this.investigationNotes;
       },
 
-      get displayVariance() {
-        const quantity = parseFloat(this.varianceQuantity) || 0;
-        const percentage = this.variancePercentage;
-        const dollarValue = parseFloat(this.varianceDollarValue) || 0;
+
+    };
+
+    // Bind methods and getters to test objects
+    Object.assign(saffronAnalysis, testMethods);
+    Object.assign(romaineAnalysis, testMethods);
+    
+    // Add getters separately (Object.assign doesn't copy getters)
+    Object.defineProperty(saffronAnalysis, 'displayVariance', {
+      get() {
+        const quantity = parseFloat(this.varianceQuantity);
+        const percentage = parseFloat(this.variancePercentage);
+        const dollarValue = parseFloat(this.varianceDollarValue);
         
         return {
-          quantity: `${quantity > 0 ? '+' : ''}${quantity}`,
-          percentage: percentage ? `${percentage > 0 ? '+' : ''}${percentage.toFixed(2)}%` : 'N/A',
-          dollar: `${dollarValue > 0 ? '+' : ''}$${Math.abs(dollarValue).toFixed(2)}`
+          quantity: isNaN(quantity) ? '0' : `${quantity > 0 ? '+' : ''}${quantity}`,
+          percentage: isNaN(percentage) ? 'N/A' : `${percentage > 0 ? '+' : ''}${percentage.toFixed(2)}%`,
+          dollar: isNaN(dollarValue) ? '$0.00' : `+$${Math.abs(dollarValue).toFixed(2)}`
         };
-      },
-
-      get investigationSummary() {
+      }
+    });
+    Object.defineProperty(romaineAnalysis, 'displayVariance', {
+      get() {
+        const quantity = parseFloat(this.varianceQuantity);
+        const percentage = parseFloat(this.variancePercentage);
+        const dollarValue = parseFloat(this.varianceDollarValue);
+        
+        return {
+          quantity: isNaN(quantity) ? '0' : `${quantity > 0 ? '+' : ''}${quantity}`,
+          percentage: isNaN(percentage) ? 'N/A' : `${percentage > 0 ? '+' : ''}${percentage.toFixed(2)}%`,
+          dollar: isNaN(dollarValue) ? '$0.00' : `+$${Math.abs(dollarValue).toFixed(2)}`
+        };
+      }
+    });
+    Object.defineProperty(saffronAnalysis, 'investigationSummary', {
+      get() {
         return {
           status: this.investigationStatus,
           assignedTo: this.assignedTo,
@@ -115,11 +139,18 @@ describe('TheoreticalUsageAnalysis Business Logic', () => {
           hasExplanation: !!this.explanation
         };
       }
-    };
-
-    // Bind methods to test objects
-    Object.assign(saffronAnalysis, testMethods);
-    Object.assign(romaineAnalysis, testMethods);
+    });
+    Object.defineProperty(romaineAnalysis, 'investigationSummary', {
+      get() {
+        return {
+          status: this.investigationStatus,
+          assignedTo: this.assignedTo,
+          daysInProgress: this.getDaysInInvestigation(),
+          canResolve: this.canBeResolved(),
+          hasExplanation: !!this.explanation
+        };
+      }
+    });
   });
 
   describe('Dave\'s Core Business Logic', () => {
@@ -338,6 +369,19 @@ describe('TheoreticalUsageAnalysis Business Logic', () => {
           varianceDollarValue: '-75.0'
         });
         Object.assign(shortage, testMethods);
+        Object.defineProperty(shortage, 'displayVariance', {
+          get() {
+            const quantity = parseFloat(this.varianceQuantity);
+            const percentage = parseFloat(this.variancePercentage);
+            const dollarValue = parseFloat(this.varianceDollarValue);
+            
+            return {
+              quantity: isNaN(quantity) ? '0' : `${quantity > 0 ? '+' : ''}${quantity}`,
+              percentage: isNaN(percentage) ? 'N/A' : `${percentage > 0 ? '+' : ''}${percentage.toFixed(2)}%`,
+              dollar: isNaN(dollarValue) ? '$0.00' : `+$${Math.abs(dollarValue).toFixed(2)}`
+            };
+          }
+        });
 
         const display = shortage.displayVariance;
         expect(display.quantity).toBe('-0.5');
@@ -350,6 +394,19 @@ describe('TheoreticalUsageAnalysis Business Logic', () => {
           variancePercentage: null
         });
         Object.assign(noPercentage, testMethods);
+        Object.defineProperty(noPercentage, 'displayVariance', {
+          get() {
+            const quantity = parseFloat(this.varianceQuantity);
+            const percentage = parseFloat(this.variancePercentage);
+            const dollarValue = parseFloat(this.varianceDollarValue);
+            
+            return {
+              quantity: isNaN(quantity) ? '0' : `${quantity > 0 ? '+' : ''}${quantity}`,
+              percentage: isNaN(percentage) ? 'N/A' : `${percentage > 0 ? '+' : ''}${percentage.toFixed(2)}%`,
+              dollar: isNaN(dollarValue) ? '$0.00' : `+$${Math.abs(dollarValue).toFixed(2)}`
+            };
+          }
+        });
 
         const display = noPercentage.displayVariance;
         expect(display.percentage).toBe('N/A');
@@ -374,6 +431,17 @@ describe('TheoreticalUsageAnalysis Business Logic', () => {
           explanation: 'Preliminary findings'
         });
         Object.assign(activeInvestigation, testMethods);
+        Object.defineProperty(activeInvestigation, 'investigationSummary', {
+          get() {
+            return {
+              status: this.investigationStatus,
+              assignedTo: this.assignedTo,
+              daysInProgress: this.getDaysInInvestigation(),
+              canResolve: this.canBeResolved(),
+              hasExplanation: !!this.explanation
+            };
+          }
+        });
 
         const summary = activeInvestigation.investigationSummary;
         expect(summary.status).toBe('investigating');

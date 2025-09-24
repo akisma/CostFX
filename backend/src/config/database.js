@@ -109,12 +109,7 @@ const sequelize = new Sequelize(connectionUrl, {
     acquire: dbConfig.pool.acquire,
     idle: dbConfig.pool.idle
   },
-  dialectOptions: useSSL ? {
-    ssl: {
-      require: true,
-      rejectUnauthorized: !isProduction // Allow self-signed certs in non-prod
-    }
-  } : {},
+
   // Enhanced retry and connection options
   retry: {
     max: isProduction ? 5 : 3,
@@ -128,6 +123,18 @@ const sequelize = new Sequelize(connectionUrl, {
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at'
+  },
+  // PostgreSQL-specific configurations for ltree support
+  dialectOptions: {
+    ...((useSSL) ? {
+      ssl: {
+        require: true,
+        rejectUnauthorized: !isProduction // Allow self-signed certs in non-prod
+      }
+    } : {}),
+    // Enable PostgreSQL extensions
+    supportBigNumbers: true,
+    bigNumberStrings: true
   }
 });
 

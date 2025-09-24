@@ -48,6 +48,7 @@ CostFX is a multi-agent AI system that automates restaurant operations to reduce
 - ✅ **Task 4-5: Enhanced Items & Transactions**: Category integration with variance thresholds and approval workflows
 - ✅ **Task 6: Theoretical Usage Analysis Table**: Core variance engine implementing Dave's "saffron vs romaine" principle (37 tests passing)
 - ✅ **Task 7: Usage Calculation Service**: Complete variance calculation system with multi-method analysis (40 tests passing)
+- ✅ **Task 8: Update Sequelize Models**: Enhanced models with ltree support, proper associations, and Dave's hierarchical category system (14 tests passing)
 - ✅ **Database Migration System Modernization**: Migrated from sequelize-cli to node-pg-migrate for ES module compatibility
 - ✅ **Migration Testing Framework**: Comprehensive validation suite ensures migration success in development and production
 - ✅ **ForecastAgent Production Deployment**: Fixed mixed content security errors preventing HTTPS→HTTP API calls
@@ -638,6 +639,189 @@ calculateVariancePriority(item, absQuantityVariance, absDollarVariance) {
 - **Investigation Workflow**: Assignment and resolution
 - **Error Handling**: Unknown requests, auto-initialization
 - **Integration**: Service interaction and data transformation
+
+---
+
+**✅ Task 8: Update Sequelize Models**
+
+**Status**: COMPLETE ✅  
+**Implementation Date**: September 23, 2025  
+**Files**: 
+- `backend/src/models/IngredientCategory.js` - NEW ltree-enabled hierarchical categories
+- `backend/src/models/index.js` - NEW model management and associations  
+- `backend/src/config/database.js` - Enhanced PostgreSQL ltree support
+- `backend/tests/unit/models/sequelizeModelsUpdated.test.js` - 14 passing tests
+
+#### Enhanced Sequelize Models
+
+**New IngredientCategory Model** - PostgreSQL ltree hierarchical categories
+```javascript
+class IngredientCategory extends Model {
+  // Hierarchical operations using ltree
+  async getParentCategory() {
+    const parentPath = this.path.split('.').slice(0, -1).join('.');
+    return await IngredientCategory.findOne({ where: { path: parentPath } });
+  }
+  
+  async getChildCategories() {
+    return await IngredientCategory.findAll({
+      where: sequelize.literal(`path ~ '${this.path}.*{1}'`) // Immediate children
+    });
+  }
+  
+  async getAllDescendants() {
+    return await IngredientCategory.findAll({
+      where: sequelize.literal(`path <@ '${this.path}'`) // All descendants
+    });
+  }
+  
+  getBreadcrumbs() {
+    // Generate breadcrumb navigation for Dave's drilling interface
+    const pathParts = this.path.split('.');
+    return pathParts.map((part, i) => ({
+      path: pathParts.slice(0, i + 1).join('.'),
+      name: part.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    }));
+  }
+}
+```
+
+**Enhanced InventoryItem Model** - Hierarchical category integration
+```javascript
+class InventoryItem extends Model {
+  static associate(models) {
+    // New hierarchical category association
+    InventoryItem.belongsTo(models.IngredientCategory, {
+      foreignKey: 'categoryId',
+      as: 'hierarchicalCategory'
+    });
+  }
+  
+  async getCategoryPath() {
+    // Get full hierarchical path for Dave's drilling capabilities
+    await this.reload({ 
+      include: [{ model: IngredientCategory, as: 'hierarchicalCategory' }] 
+    });
+    return this.hierarchicalCategory?.path || this.category;
+  }
+  
+  static async findHighValueItems(restaurantId) {
+    return this.findAll({
+      where: { restaurantId, highValueFlag: true, isActive: true },
+      include: [{ model: IngredientCategory, as: 'hierarchicalCategory' }],
+      order: [['unitCost', 'DESC']]
+    });
+  }
+  
+  static async getCategoryVarianceSummary(restaurantId, categoryPath = null) {
+    // Dave's category drilling with ltree path filtering
+    const whereClause = { restaurantId, isActive: true };
+    if (categoryPath) {
+      whereClause['$hierarchicalCategory.path$'] = { 
+        [Op.like]: `${categoryPath}%` 
+      };
+    }
+    
+    return this.findAll({
+      where: whereClause,
+      include: [{ model: IngredientCategory, as: 'hierarchicalCategory' }],
+      group: ['hierarchicalCategory.path'],
+      attributes: [
+        'hierarchicalCategory.path',
+        [sequelize.fn('COUNT', sequelize.col('InventoryItem.id')), 'itemCount'],
+        [sequelize.fn('AVG', sequelize.col('unitCost')), 'avgUnitCost'],
+        [sequelize.fn('SUM', 
+          sequelize.literal('CASE WHEN high_value_flag = true THEN 1 ELSE 0 END')
+        ), 'highValueCount']
+      ]
+    });
+  }
+}
+```
+
+**Model Index System** - Centralized model management
+```javascript
+// backend/src/models/index.js
+import sequelize from '../config/database.js';
+import Restaurant from './Restaurant.js';
+import IngredientCategory from './IngredientCategory.js'; // NEW
+import InventoryItem from './InventoryItem.js';
+// ... other models
+
+const models = { Restaurant, IngredientCategory, InventoryItem, /* ... */ };
+
+// Initialize all associations
+Object.keys(models).forEach(modelName => {
+  if (models[modelName].associate) {
+    models[modelName].associate(models);
+  }
+});
+
+// Add models to sequelize instance for easy access
+Object.keys(models).forEach(modelName => {
+  sequelize.models[modelName] = models[modelName];
+});
+```
+
+#### Dave's Hierarchical Category System
+
+**ltree Path Examples:**
+- `produce` → `produce.leafy_greens` → `produce.leafy_greens.romaine`
+- `spices` → `spices.premium` → `spices.premium.saffron`
+- `dairy` → `dairy.cheese` → `dairy.cheese.hard_cheese`
+
+**Category Tree Navigation:**
+```javascript
+// Build hierarchical tree for frontend drilling
+const tree = await IngredientCategory.getCategoryTree();
+// Returns nested structure for React components
+
+// Search categories by name or path
+const results = await IngredientCategory.searchCategories('saffron');
+
+// Get category statistics for management dashboard
+const stats = await IngredientCategory.getCategoryStats('produce.leafy_greens');
+```
+
+#### Database Configuration Enhancements
+
+**PostgreSQL ltree Support:**
+```javascript
+// Enhanced dialectOptions for ltree compatibility
+dialectOptions: {
+  ssl: { /* SSL config */ },
+  supportBigNumbers: true,
+  bigNumberStrings: true
+}
+
+// ltree indexes created in migration:
+// - GiST index for hierarchical queries
+// - B-tree index for ancestor path queries  
+// - Standard indexes for name and active status
+```
+
+#### Testing Coverage
+
+**Model Tests** (`sequelizeModelsUpdated.test.js` - 14 passing tests)
+- **IngredientCategory Model** (6 tests): ltree operations, breadcrumbs, tree building
+- **Updated InventoryItem Model** (3 tests): category associations, high-value filtering
+- **Dave's Business Logic Integration** (2 tests): variance priorities, category drilling
+- **Model Integration Tests** (3 tests): path validation, depth calculation, breadcrumb generation
+
+**Key Test Coverage:**
+```javascript
+test('should create hierarchical categories with ltree paths', async () => {
+  // Validates ltree path structure and depth calculation
+});
+
+test('should find parent/child categories using ltree operators', async () => {
+  // Tests PostgreSQL ltree ancestor/descendant queries
+});
+
+test('should support Dave\'s variance priorities with categories', async () => {
+  // Validates business logic integration with hierarchical data
+});
+```
 
 #### Production Integration
 

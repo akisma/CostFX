@@ -17,15 +17,15 @@ class InventoryTransaction extends Model {
       foreignKey: 'periodId',
       as: 'inventoryPeriod'
     });
-    // Association for approval tracking
-    InventoryTransaction.belongsTo(models.User, {
-      foreignKey: 'approvedBy',
-      as: 'approver'
-    });
-    InventoryTransaction.belongsTo(models.User, {
-      foreignKey: 'userId',
-      as: 'user'
-    });
+    // Association for approval tracking (User model not yet implemented)
+    // InventoryTransaction.belongsTo(models.User, {
+    //   foreignKey: 'approvedBy',
+    //   as: 'approver'
+    // });
+    // InventoryTransaction.belongsTo(models.User, {
+    //   foreignKey: 'userId',
+    //   as: 'user'
+    // });
   }
 
   // Instance methods

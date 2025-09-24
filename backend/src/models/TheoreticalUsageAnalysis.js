@@ -12,15 +12,15 @@ class TheoreticalUsageAnalysis extends Model {
       foreignKey: 'inventoryItemId',
       as: 'inventoryItem'
     });
-    // Investigation workflow associations
-    TheoreticalUsageAnalysis.belongsTo(models.User, {
-      foreignKey: 'assignedTo',
-      as: 'assignee'
-    });
-    TheoreticalUsageAnalysis.belongsTo(models.User, {
-      foreignKey: 'investigatedBy',
-      as: 'investigator'
-    });
+    // Investigation workflow associations (User model not yet implemented)
+    // TheoreticalUsageAnalysis.belongsTo(models.User, {
+    //   foreignKey: 'assignedTo',
+    //   as: 'assignee'
+    // });
+    // TheoreticalUsageAnalysis.belongsTo(models.User, {
+    //   foreignKey: 'investigatedBy',
+    //   as: 'investigator'
+    // });
   }
 
   // Instance methods for Dave's business logic
