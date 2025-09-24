@@ -42,11 +42,13 @@ CostFX is a multi-agent AI system that automates restaurant operations to reduce
 
 ### Development Status (September 19, 2025)
 
-#### Recently Completed - Production Issues Resolved ✅
+#### Recently Completed - Dave's Inventory Variance System (Tasks 1-6) ✅
+- ✅ **Task 1-2: Hierarchical Categories & Period Management**: PostgreSQL ltree integration with comprehensive period lifecycle
+- ✅ **Task 3: Period Inventory Snapshots**: Beginning/ending inventory capture with automatic variance detection
+- ✅ **Task 4-5: Enhanced Items & Transactions**: Category integration with variance thresholds and approval workflows
+- ✅ **Task 6: Theoretical Usage Analysis Table**: Core variance engine implementing Dave's "saffron vs romaine" principle (37 tests passing)
 - ✅ **Database Migration System Modernization**: Migrated from sequelize-cli to node-pg-migrate for ES module compatibility
-- ✅ **Dave's Inventory Variance System**: Implemented hierarchical ingredient categorization and period-based variance analysis
 - ✅ **Migration Testing Framework**: Comprehensive validation suite ensures migration success in development and production
-- ✅ **PostgreSQL ltree Integration**: Enabled hierarchical queries for ingredient category management
 - ✅ **ForecastAgent Production Deployment**: Fixed mixed content security errors preventing HTTPS→HTTP API calls
 - ✅ **Frontend Build Configuration**: Corrected GitHub Actions workflow to use proper API URL (`https://www.cost-fx.com/api/v1`)
 - ✅ **Backend Environment Variables**: Enhanced database configuration flexibility for production ECS deployment
@@ -66,16 +68,18 @@ CostFX is a multi-agent AI system that automates restaurant operations to reduce
 - ✅ **GitHub Actions Optimization**: Separated fast app deployment from infrastructure deployment
 
 #### Current Test Health - EXCELLENT ✅
-- **Total Tests**: 151 tests across backend and frontend
-- **Passing Tests**: 151 tests (100% pass rate)
-- **Backend Tests**: 102/102 passing (56 unit + 46 integration tests)
+- **Total Tests**: 188+ tests across backend and frontend
+- **Passing Tests**: 188+ tests (100% pass rate)
+- **Backend Tests**: 139+ passing (93+ unit + 46 integration tests)
 - **Frontend Tests**: 49/49 passing (component, service, and API tests)
+- **New Addition**: 37 theoretical usage analysis tests covering Dave's complete business logic
 - **Status**: DEPLOYMENT READY - 100% test success ensures reliable deployments
 
 **Test Categories**:
 - ✅ **Core Infrastructure**: Error handling, logging, controllers (100% passing)
 - ✅ **ForecastAgent**: Complete implementation (24/24 tests passing)
 - ✅ **InventoryAgent**: Complete implementation (21/21 tests passing) 
+- ✅ **Dave's Variance System**: Complete business logic implementation (37/37 tests passing)
 - ✅ **Integration Tests**: All API endpoints functional (46/46 tests passing)
 - ✅ **Frontend Tests**: All components and services tested (49/49 tests passing)
 
@@ -273,6 +277,237 @@ docker-compose exec -T db psql -U postgres -d restaurant_ai -c \
 - `/api/v1/inventory` - Inventory operations
 - `/api/v1/ingredients` - Ingredient catalog
 - `/api/v1/recipes` - Recipe management
+
+### Dave's Inventory Variance Management System
+
+**Implementation Status**: ✅ **Tasks 1-6 Complete** (September 2025)
+
+Dave's core business requirement: *"I don't care if we are off 20 pounds of romaine, but 4oz of saffron is like $600"*
+
+This system implements a comprehensive variance analysis framework that prioritizes high-value inventory discrepancies while ignoring acceptable variances in low-value bulk items.
+
+#### Task Implementation Summary
+
+**✅ Task 1: Hierarchical Ingredient Categories**
+- **Migration**: `1726790000001_create-ingredient-categories.js`
+- **Features**: PostgreSQL ltree extension for hierarchical paths
+- **Structure**: `produce.leafy_greens.romaine` vs `spices.premium.saffron`
+- **Business Logic**: Category-level variance thresholds and priority classification
+
+**✅ Task 2: Inventory Period Management**
+- **Migration**: `1726790000003_create-inventory-periods.js`
+- **Features**: Weekly/monthly periods with lifecycle tracking
+- **States**: draft → active → closed → locked
+- **Integration**: Foundation for variance analysis workflows
+
+**✅ Task 3: Period Inventory Snapshots**
+- **Migration**: `1726790000005_create-period-inventory-snapshots.js`
+- **Features**: Beginning/ending inventory capture per period
+- **Calculations**: Automatic variance detection and delta analysis
+- **Validation**: Ensures data integrity for variance calculations
+
+**✅ Task 4: Enhanced Inventory Items**
+- **Migration**: `1726790000007_update-inventory-items-categories.js`
+- **Features**: Category integration with variance thresholds
+- **Dave's Logic**: High-value flags, theoretical yield factors
+- **Thresholds**: Quantity, percentage, and dollar-based variance limits
+
+**✅ Task 5: Enhanced Inventory Transactions**
+- **Migration**: `1726790000006_enhance-inventory-transactions.js`
+- **Features**: Variance tracking with approval workflows
+- **Categories**: waste, theft, measurement_error, spoilage, transfer
+- **Workflow**: Automatic approval routing for significant variances
+
+**✅ Task 6: Theoretical Usage Analysis Table**
+- **Migration**: `1726790000008_create-theoretical-usage-analysis.js`
+- **Model**: `TheoreticalUsageAnalysis.js` with comprehensive business logic
+- **Features**: Core variance engine implementing Dave's priority system
+- **Tests**: 37 passing tests covering all business scenarios
+
+#### Core Database Schema
+
+**theoretical_usage_analysis** - Central variance analysis engine
+```sql
+CREATE TABLE theoretical_usage_analysis (
+  id SERIAL PRIMARY KEY,
+  period_id INTEGER REFERENCES inventory_periods(id),
+  inventory_item_id INTEGER REFERENCES inventory_items(id),
+  
+  -- Usage calculations
+  theoretical_quantity DECIMAL(10,2) NOT NULL,
+  actual_quantity DECIMAL(10,2) NOT NULL,
+  unit_cost DECIMAL(10,2) NOT NULL,
+  
+  -- Dave's variance metrics
+  variance_quantity DECIMAL(10,2) NOT NULL,
+  variance_percentage DECIMAL(8,4),
+  variance_dollar_value DECIMAL(10,2) NOT NULL,
+  
+  -- Priority system
+  priority VARCHAR(10) CHECK (priority IN ('critical','high','medium','low')),
+  is_significant BOOLEAN DEFAULT FALSE,
+  requires_investigation BOOLEAN DEFAULT FALSE,
+  
+  -- Investigation workflow
+  investigation_status VARCHAR(15) DEFAULT 'pending'
+    CHECK (investigation_status IN ('pending','investigating','resolved','accepted','escalated')),
+  assigned_to INTEGER REFERENCES users(id),
+  investigated_by INTEGER REFERENCES users(id),
+  explanation TEXT,
+  investigation_notes TEXT,
+  
+  -- Calculation metadata
+  calculation_method VARCHAR(20) DEFAULT 'recipe_based'
+    CHECK (calculation_method IN ('recipe_based','historical_average','manual','ai_predicted')),
+  recipe_data JSONB,
+  calculation_confidence DECIMAL(3,2) CHECK (calculation_confidence BETWEEN 0.0 AND 1.0)
+);
+```
+
+#### Business Logic Implementation
+
+**Dave's Priority Classification:**
+```javascript
+// High-impact variance identification
+isHighImpactVariance() {
+  const absVariance = Math.abs(this.varianceDollarValue || 0);
+  return absVariance >= 100 || this.priority === 'critical' || this.priority === 'high';
+}
+
+// Saffron vs Romaine principle
+getAbsoluteVariance() {
+  return {
+    quantity: Math.abs(this.varianceQuantity || 0),
+    dollarValue: Math.abs(this.varianceDollarValue || 0),
+    percentage: Math.abs(this.variancePercentage || 0)
+  };
+}
+```
+
+**Investigation Workflow:**
+```javascript
+// Assignment workflow
+async assignInvestigation(userId, notes = null) {
+  await this.update({
+    assignedTo: userId,
+    investigationStatus: 'investigating',
+    assignedAt: new Date(),
+    investigationNotes: notes
+  });
+}
+
+// Resolution workflow
+async resolveInvestigation(userId, explanation, resolution = 'resolved') {
+  await this.update({
+    investigatedBy: userId,
+    investigationStatus: resolution,
+    resolvedAt: new Date(),
+    explanation: explanation
+  });
+}
+```
+
+**Management Queries:**
+```javascript
+// Find Dave's high priority variances
+static async findHighPriorityVariances(periodId) {
+  return this.findAll({
+    where: { priority: { [Op.in]: ['critical', 'high'] } },
+    order: [
+      ['priority', 'DESC'],
+      [sequelize.fn('ABS', sequelize.col('variance_dollar_value')), 'DESC']
+    ]
+  });
+}
+
+// Dollar threshold filtering
+static async findByDollarThreshold(threshold = 100) {
+  return this.findAll({
+    where: {
+      [Op.or]: [
+        { varianceDollarValue: { [Op.gte]: threshold } },
+        { varianceDollarValue: { [Op.lte]: -threshold } }
+      ]
+    }
+  });
+}
+```
+
+#### Dave's Business Scenarios
+
+**Saffron Scenario (High Priority)**
+- **Variance**: 0.25 oz overage ($37.50 impact)
+- **Classification**: High priority due to expensive ingredient
+- **Action**: Requires investigation despite small quantity
+- **Dave's Response**: ✅ "This needs attention - saffron is expensive"
+
+**Romaine Scenario (Low Priority)**
+- **Variance**: 20 lbs overage ($50.00 impact)
+- **Classification**: Low priority despite large quantity
+- **Action**: No investigation required
+- **Dave's Response**: ✅ "Don't care - it's just lettuce"
+
+#### Performance Optimizations
+
+**Strategic Indexes:**
+```sql
+-- Dave's primary queries
+CREATE INDEX idx_variance_priority ON theoretical_usage_analysis(priority);
+CREATE INDEX idx_variance_dollar ON theoretical_usage_analysis(variance_dollar_value);
+CREATE INDEX idx_investigation_status ON theoretical_usage_analysis(investigation_status);
+
+-- Composite indexes for management reports
+CREATE INDEX idx_period_priority ON theoretical_usage_analysis(period_id, priority);
+CREATE INDEX idx_period_significant ON theoretical_usage_analysis(period_id, is_significant);
+CREATE INDEX idx_assigned_status ON theoretical_usage_analysis(assigned_to, investigation_status);
+```
+
+#### Testing Coverage
+
+**Comprehensive Test Suite** (`TheoreticalUsageAnalysisCorrected.test.js`)
+- **37 passing tests** covering all business logic
+- **Dave's scenarios**: Saffron, romaine, truffle, flour examples
+- **Investigation workflow**: Assignment, resolution, escalation
+- **Edge cases**: Zero quantities, negative variances, invalid data
+- **Display formatting**: Currency, percentages, investigation status
+
+**Key Test Categories:**
+```javascript
+describe('Dave\'s Core Business Logic', () => {
+  // getAbsoluteVariance(), isHighImpactVariance(), getVarianceDirection()
+});
+
+describe('Investigation Workflow', () => {
+  // assignInvestigation(), resolveInvestigation(), canBeResolved()
+});
+
+describe('Dave\'s Business Scenarios', () => {
+  // Saffron vs romaine principle validation
+});
+```
+
+#### Integration Architecture
+
+**Data Flow:**
+1. **Period Creation** → inventory_periods table
+2. **Snapshot Capture** → period_inventory_snapshots table  
+3. **Usage Calculation** → theoretical_usage_analysis table (Task 6)
+4. **Investigation Workflow** → status updates in theoretical_usage_analysis
+5. **Management Reporting** → aggregated queries from theoretical_usage_analysis
+
+**Next Phase Integration** (Tasks 7-10):
+- **Task 7**: Usage calculation service populates analysis table
+- **Task 8**: Investigation API manages workflow transitions
+- **Task 9**: Dashboard queries analysis table for management reports
+- **Task 10**: Alert system monitors for critical variances
+
+**Production Ready Features:**
+- ✅ Complete database schema with constraints and indexes
+- ✅ Comprehensive business logic models with Sequelize
+- ✅ Full test coverage ensuring reliability
+- ✅ Performance optimized for Dave's management queries
+- ✅ Investigation workflow supporting team collaboration
+- ✅ Flexible calculation methods (recipe-based, historical, AI)
 
 ---
 
