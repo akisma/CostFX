@@ -117,7 +117,7 @@ resource "aws_ecs_task_definition" "backend" {
         },
         {
           name  = "PGSSLMODE"
-          value = "no-verify"
+          value = "require"
         },
         {
           name  = "DB_POOL_MIN"
