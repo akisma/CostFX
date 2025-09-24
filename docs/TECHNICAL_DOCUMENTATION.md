@@ -283,8 +283,8 @@ docker-compose exec -T db psql -U postgres -d restaurant_ai -c \
 #### Prerequisites
 - Node.js 18+
 - PostgreSQL 14+
-- Redis (optional, for caching)
-- Docker (for containerization)
+- Redis (optional, currently bypassed for development speed)
+- Docker (for containerization and PostgreSQL)
 
 #### Quick Start
 ```bash
@@ -303,19 +303,29 @@ npm run dev
 #### Environment Configuration
 Create `.env` files in both `backend/` and `frontend/` directories:
 
-**Backend `.env`:**
+**Root `.env`:**
 ```env
 NODE_ENV=development
-PORT=5000
-DATABASE_URL=postgresql://username:password@localhost:5432/costfx_dev
-REDIS_URL=redis://localhost:6379
+PORT=3001
+DATABASE_URL=postgresql://username:password@localhost:5432/restaurant_ai
+# REDIS_URL=redis://localhost:6379  # Disabled for development speed
 JWT_SECRET=your-jwt-secret
+OPENAI_API_KEY=your-openai-key
 ```
 
-**Frontend `.env`:**
-```env
-VITE_API_URL=http://localhost:5000/api/v1
-VITE_NODE_ENV=development
+**Current Development Configuration (September 2025)**:
+- **PostgreSQL**: Required, runs via `docker-compose up -d db`
+- **Redis**: Bypassed for faster development startup
+- **Ports**: Backend (3001), Frontend (3000)
+- **SSL**: Disabled for local PostgreSQL connection
+
+**To Enable Redis** (if needed):
+```bash
+# Uncomment REDIS_URL in .env
+REDIS_URL=redis://localhost:6379
+
+# Start Redis container
+docker-compose up -d redis
 ```
 
 ### Adding New AI Agents
@@ -647,6 +657,121 @@ export const testConfig = {
 - **Result**: 46/46 integration tests passing
 
 **Final Achievement**: 151/151 tests passing (100% success rate)
+
+### ECS Deployment Performance & Container Stability (September 24, 2025)
+
+**Problem**: ECS deployments taking 18+ minutes and eventually failing after 30 minutes with "Resource is not in the state servicesStable" error.
+
+**Root Cause Analysis**:
+1. **Aggressive Health Checks**: 30-second intervals with 5-second timeouts causing premature failures
+2. **Container Startup Issues**: `PGSSLMODE="no-verify"` invalid for stricter env-var validation in recent code
+3. **SSL Configuration Mismatch**: Application validation requiring valid PostgreSQL SSL modes
+
+**Solutions Implemented**:
+
+#### 1. Health Check Optimization
+**File**: `deploy/terraform/ecs-complete.tf`
+```terraform
+health_check {
+  enabled             = true
+  healthy_threshold   = 2
+  interval            = 60    # Increased from 30s
+  matcher             = "200"
+  path                = "/api/v1/"
+  port                = "traffic-port"
+  protocol            = "HTTP"
+  timeout             = 10    # Increased from 5s
+  unhealthy_threshold = 5     # Increased from 3
+}
+```
+
+#### 2. SSL Configuration Fix
+**File**: `deploy/terraform/ecs-complete.tf`
+```terraform
+# BEFORE (invalid)
+{
+  name  = "PGSSLMODE"
+  value = "no-verify"  # Invalid enum value
+}
+
+# AFTER (valid)
+{
+  name  = "PGSSLMODE" 
+  value = "require"    # Valid PostgreSQL SSL mode
+}
+```
+
+**Resolution Impact**:
+- ✅ **Deployment Time**: Reduced from 18+ minutes to ~2 minutes
+- ✅ **Container Stability**: No more startup crashes due to invalid PGSSLMODE
+- ✅ **Health Check Reliability**: Extended timeouts prevent false positives
+- ✅ **Production Stability**: Both services running 2/2 tasks healthy
+
+### Redis Configuration Management for Development Speed
+
+**Problem**: Local development experiencing Redis connection errors (`ECONNREFUSED`) slowing down `npm run dev` startup.
+
+**Root Cause**: Default Redis URL in settings causing client creation even when Redis not needed for development.
+
+**Solution**: Implemented graceful Redis bypass system:
+
+#### 1. Settings Configuration Update
+**File**: `backend/src/config/settings.js`
+```javascript
+// BEFORE (always creates Redis client)
+redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
+
+// AFTER (only when explicitly set)
+redisUrl: process.env.REDIS_URL, // No default - only use if explicitly set
+```
+
+#### 2. Environment Configuration
+**File**: `.env`
+```bash
+# BEFORE (active)
+REDIS_URL=redis://localhost:6379
+
+# AFTER (disabled for development speed)
+# REDIS_URL=redis://localhost:6379  # Disabled for development speed
+```
+
+#### 3. Graceful Degradation Logic
+**File**: `backend/src/config/redis.js`
+```javascript
+const redis = REDIS_URL ? createClient({ url: REDIS_URL }) : null;
+
+export async function connectRedis() {
+  if (!redis) {
+    logger.info('ℹ️ REDIS_URL not set; skipping Redis connection');
+    return;
+  }
+  // ... connection logic
+}
+```
+
+**Re-enabling Redis**:
+
+**Development**:
+```bash
+# Uncomment in .env
+REDIS_URL=redis://localhost:6379
+
+# Start Redis container
+docker-compose up -d redis
+```
+
+**Production**:
+```bash
+# Uncomment resources in deploy/terraform/database.tf
+# Uncomment aws_ssm_parameter.redis_url in deploy/terraform/ssm-parameters.tf
+terraform apply
+```
+
+**Benefits**:
+- ✅ **Fast Development Startup**: No Redis connection delays
+- ✅ **Graceful Degradation**: Application runs without caching
+- ✅ **Easy Re-enabling**: Simple configuration changes
+- ✅ **Production Ready**: Redis infrastructure remains available
 
 ### ES Modules + Jest Configuration
 
@@ -1372,6 +1497,123 @@ docker exec -it <container-id> /bin/sh
 
 # Check ECS task logs
 aws logs tail /costfx/backend --follow
+```
+
+### ECS Deployment Issues (September 24, 2025)
+
+#### Slow ECS Deployments (18+ minutes)
+
+**Problem**: ECS service deployments taking excessive time and timing out after 30 minutes with "Resource is not in the state servicesStable" error.
+
+**Root Causes**:
+1. **Aggressive Health Checks**: 30-second intervals with 5-second timeouts
+2. **Container Startup Issues**: Invalid `PGSSLMODE` values causing application crashes
+3. **Task Definition Changes**: New container images with stricter validation
+
+**Investigation Commands**:
+```bash
+# Check deployment status
+aws ecs describe-services --cluster costfx-dev --services costfx-dev-backend costfx-dev-frontend
+
+# Check task definition differences
+aws ecs describe-task-definition --task-definition costfx-dev-backend:38  # Working version
+aws ecs describe-task-definition --task-definition costfx-dev-backend:39  # Failing version
+
+# Check container logs
+aws logs get-log-events --log-group-name /ecs/costfx-dev-backend \
+  --log-stream-name $(aws logs describe-log-streams --log-group-name /ecs/costfx-dev-backend \
+    --order-by LastEventTime --descending --max-items 1 --query 'logStreams[0].logStreamName' --output text)
+```
+
+**Solutions Applied**:
+1. **Health Check Optimization**: Extended intervals (30s→60s), timeouts (5s→10s), retries (3→5)
+2. **SSL Configuration Fix**: Changed `PGSSLMODE` from `"no-verify"` to `"require"`
+3. **Application Validation**: Updated env-var configuration to accept valid PostgreSQL SSL modes
+
+**Result**: Deployment time reduced from 18+ minutes to ~2 minutes ✅
+
+#### Container Startup Failures
+
+**Symptoms**:
+```
+EnvVarError: env-var: "PGSSLMODE" is not one of the allowed values. 
+Allowed values: ['disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full']
+```
+
+**Investigation**:
+```bash
+# Compare working vs failing task definitions
+aws ecs describe-task-definition --task-definition costfx-dev-backend:38 \
+  --query 'taskDefinition.containerDefinitions[0].environment[?name==`PGSSLMODE`]'
+
+# Check stopped tasks for error details
+aws ecs describe-tasks --cluster costfx-dev --tasks $(aws ecs list-tasks \
+  --cluster costfx-dev --desired-status STOPPED --max-items 1 --query 'taskArns[0]' --output text)
+```
+
+**Solution**: Updated Terraform configuration with valid SSL mode:
+```terraform
+{
+  name  = "PGSSLMODE"
+  value = "require"  # Valid PostgreSQL SSL mode for AWS RDS
+}
+```
+
+### Redis Development Environment Issues
+
+#### Redis Connection Errors in Development
+
+**Problem**: Local `npm run dev` showing Redis connection errors:
+```
+{"code":"ECONNREFUSED","level":"error","message":"Redis Client Error:","service":"restaurant-ai-backend"}
+```
+
+**Root Cause**: Redis client being created with default URL even when not needed for development.
+
+**Investigation**:
+```bash
+# Check if Redis URL is set
+echo "REDIS_URL: $REDIS_URL"
+grep REDIS_URL .env
+
+# Test current configuration
+node -e "import('./backend/src/config/settings.js').then(m => console.log('Redis URL:', m.default.redisUrl))"
+node -e "import('./backend/src/config/redis.js').then(m => console.log('Redis client:', m.redis ? 'created' : 'null'))"
+```
+
+**Solution**: Disabled Redis for development speed:
+```bash
+# Comment out Redis URL in .env
+# REDIS_URL=redis://localhost:6379  # Disabled for development speed
+
+# Verify bypass works
+npm run dev  # Should show: "ℹ️ REDIS_URL not set; skipping Redis connection"
+```
+
+**Re-enabling Redis when needed**:
+```bash
+# Development
+echo "REDIS_URL=redis://localhost:6379" >> .env
+docker-compose up -d redis
+
+# Production (uncomment in Terraform)
+# deploy/terraform/database.tf - Redis resources
+# deploy/terraform/ssm-parameters.tf - Redis URL parameter
+terraform apply
+```
+
+#### Redis Container Management
+
+**Commands**:
+```bash
+# Check Redis status
+docker-compose ps redis
+docker exec costfx-redis-1 redis-cli ping
+
+# Start/stop Redis for development
+docker-compose up -d redis    # Start
+docker-compose stop redis     # Stop
+docker-compose logs redis     # Check logs
 ```
 
 ---

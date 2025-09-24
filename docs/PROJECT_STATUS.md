@@ -2,7 +2,7 @@
 
 *Current project state, completed phases, and next steps for the Restaurant Operations AI System*
 
-**Last Updated**: September 19, 2025  
+**Last Updated**: September 24, 2025  
 **Current Branch**: feature/inventory
 
 ---
@@ -32,22 +32,49 @@
 - 🚧 **In Progress**: Period Management Tables (Task 2)
 - 📋 **Planned**: 28 additional tasks across database, API, frontend, and testing phases
 
+### **🔧 Redis Configuration Status**
+**Current State**: **BYPASSED in Development** for faster startup times
+
+- ✅ **Development**: Redis disabled via commented `# REDIS_URL=redis://localhost:6379` in `.env`
+- ✅ **Production**: Redis infrastructure ready but temporarily disabled in Terraform
+- ✅ **Graceful Degradation**: Application runs without caching, no connection errors
+- ✅ **Re-enable Instructions**: Documented in TECHNICAL_DOCUMENTATION.md
+
+**To Re-enable Redis**:
+- **Development**: Uncomment `REDIS_URL=redis://localhost:6379` in `.env` and run `docker-compose up -d redis`
+- **Production**: Uncomment Redis resources in `deploy/terraform/database.tf` and `deploy/terraform/ssm-parameters.tf`
+
 ### **Development Environment Status**
 - ✅ **NPM Workspace**: Multi-package repository with shared dependencies
 - ✅ **Hot Reload**: Functional for both React frontend and Node.js backend
 - ✅ **API Connectivity**: Backend/frontend communication verified
 - ✅ **Database**: PostgreSQL with migrations and seeders working
+- ✅ **Redis**: Bypassed for development speed (no connection errors)
 - ✅ **Docker**: Both Dockerfiles corrected and building successfully
 - ✅ **Build Process**: Frontend builds in 1.92s, backend passes Vitest tests
 - ✅ **CI/CD Pipeline**: Dual-workflow deployment strategy operational
 - ✅ **Test Suite**: 100% passing tests with proper mocking and configuration
 
-### **Recent Updates (September 19, 2025)**
-- ✅ **Database Schema Enhancement**: Implemented Dave's inventory variance system with 8 core tables (suppliers, inventory_items, inventory_transactions, period_inventory_snapshots, etc.)
-- ✅ **Migration System Completion**: Successfully deployed 8 migrations with hierarchical categories, period management, and variance tracking
-- ✅ **OIDC Deployment Fix**: Resolved critical SSM parameter access denial by adding missing permissions to GitHubActionsRole-CostFX
-- ✅ **SSM Parameter Path Fix**: Corrected GitHub Actions workflow from `/costfx/dev/database/url` to `/costfx/dev/database_url`
-- ✅ **Production Database Connection**: Fixed migration connection errors by properly retrieving DATABASE_URL from AWS SSM
+### **Recent Updates (September 24, 2025)**
+
+#### **🚀 ECS Deployment Performance & Stability Fixes**
+- ✅ **ECS Deployment Speed**: Fixed 18+ minute deployment times down to ~2 minutes
+- ✅ **Container Startup Issues**: Resolved `PGSSLMODE="no-verify"` validation errors causing container crashes
+- ✅ **Health Check Optimization**: Extended health check intervals (30s→60s), timeout (5s→10s), retries (3→5)
+- ✅ **SSL Configuration**: Updated to `PGSSLMODE="require"` for AWS RDS compatibility with env-var validation
+- ✅ **Production Stability**: Both backend/frontend services now ACTIVE with 2/2 tasks running healthy
+
+#### **⚡ Development Environment Optimization**
+- ✅ **Redis Bypass**: Disabled Redis in development for faster startup (documented below)
+- ✅ **Local Development**: Fixed `npm run dev` Redis connection errors
+- ✅ **Configuration Management**: Proper environment variable handling for dev vs prod
+
+#### **Previous Updates (September 19, 2025)**
+- ✅ **Database Schema Enhancement**: Implemented Dave's inventory variance system with 8 core tables
+- ✅ **Migration System Completion**: Successfully deployed 8 migrations with hierarchical categories
+- ✅ **OIDC Deployment Fix**: Resolved critical SSM parameter access denial by adding missing permissions
+- ✅ **SSM Parameter Path Fix**: Corrected GitHub Actions workflow parameter paths
+- ✅ **Production Database Connection**: Fixed migration connection errors
 - ✅ **IAM Policy Update**: Added SSM permissions (`ssm:GetParameter`, `ssm:GetParameters`) to CostFX-Deployment-Policy v2
 - ✅ **Deployment Validation**: Verified database URL retrieval and connection to production RDS PostgreSQL instance
 
