@@ -22,6 +22,21 @@
 - **Development Environment**: `npm run dev` - **FULLY OPERATIONAL** ✅
 - **Production Deployment**: ForecastAgent mixed content & backend configuration issues - **RESOLVED** ✅
 
+**NEXT THING TO TACKLE!!!!**
+We need to downgrade our AWS services, it's costing a fortune. we are ONLY in development and do not need production quality infrastructure. Focus should be easy deploys.
+From AWS:
+Option 2: Replace with NAT Instance (Development Only)
+Savings: ~$25-30/month
+
+Use a small EC2 instance (t3.nano ~$3.80/month) as a NAT instance instead
+Good for development environments with low traffic
+Not recommended for production
+Option 3: Remove Private Subnets (If Possible)
+Savings: ~$35-50/month
+
+If your applications don't need to be in private subnets, move them to public subnets
+Use security groups for access control instead
+
 ### **🆕 Dave's Inventory Variance Enhancement (NEW)**
 - ✅ **Task 1 Complete**: Hierarchical Category System with PostgreSQL ltree extension
   - PostgreSQL ltree extension enabled for efficient hierarchical queries

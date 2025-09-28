@@ -418,6 +418,8 @@ class UsageCalculationService {
     const variancePercentage = theoreticalQty > 0 ? 
       (varianceQuantity / theoreticalQty) * 100 : 0;
     const varianceDollarValue = varianceQuantity * unitCost;
+    // Normalize -0 to +0 to avoid Object.is() equality issues in tests
+    const normalizedVarianceDollarValue = varianceDollarValue === 0 ? 0 : varianceDollarValue;
 
     // Determine priority using Dave's business logic
     const priority = this.calculateVariancePriority(
@@ -434,7 +436,7 @@ class UsageCalculationService {
       unitCost,
       varianceQuantity,
       variancePercentage,
-      varianceDollarValue,
+      varianceDollarValue: normalizedVarianceDollarValue,
       priority,
       calculationMethod: method,
       recipeData: theoreticalUsage.metadata || null,
@@ -530,10 +532,10 @@ class UsageCalculationService {
         (sum, a) => sum + parseFloat(a.varianceDollarValue), 
         0
       ),
-      averageConfidence: analyses.reduce(
+      averageConfidence: analyses.length > 0 ? analyses.reduce(
         (sum, a) => sum + (parseFloat(a.calculationConfidence) || 0), 
         0
-      ) / analyses.length
+      ) / analyses.length : 0
     };
 
     return summary;
