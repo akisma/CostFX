@@ -1,7 +1,10 @@
 /* eslint-disable react/prop-types */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
 import Dashboard from '../../src/components/dashboard/Dashboard.jsx';
+import inventorySlice from '../../src/store/slices/inventorySlice.js';
 
 // Mock recharts to avoid canvas issues in tests
 vi.mock('recharts', () => ({
@@ -33,20 +36,85 @@ vi.mock('../../src/components/dashboard/ChartContainer', () => ({
   )
 }));
 
+// Mock PeriodSelector to avoid deep Redux integration complexity
+vi.mock('../../src/components/inventory/PeriodSelector', () => ({
+  default: ({ onPeriodSelect, onDateRangeSelect }) => (
+    <div data-testid="period-selector">
+      <button 
+        onClick={() => onPeriodSelect({ id: '1', periodName: 'Test Period' })}
+        data-testid="select-period-btn"
+      >
+        Select Period
+      </button>
+      <button 
+        onClick={() => onDateRangeSelect({ from: new Date(), to: new Date() })}
+        data-testid="select-date-range-btn"
+      >
+        Select Date Range
+      </button>
+    </div>
+  )
+}));
+
 describe('Dashboard Component', () => {
+  let store;
+
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+    
+    // Create a test store with initial state
+    store = configureStore({
+      reducer: {
+        inventory: inventorySlice
+      },
+      preloadedState: {
+        inventory: {
+          periods: [],
+          periodSelection: {
+            selectedPeriod: null,
+            selectedDateRange: null,
+            searchTerm: '',
+            filterOptions: {
+              type: 'all',
+              status: 'all',
+              limit: 50
+            }
+          },
+          dashboard: null,
+          loading: {
+            periods: false,
+            dashboard: false,
+            createPeriod: false,
+            updatePeriod: false
+          },
+          error: {
+            periods: null,
+            dashboard: null,
+            createPeriod: null,
+            updatePeriod: null
+          }
+        }
+      }
+    });
+  });
+
+  const renderWithStore = (component) => {
+    return render(
+      <Provider store={store}>
+        {component}
+      </Provider>
+    );
+  };
 
   it('renders loading state initially', () => {
-    render(<Dashboard />)
+    renderWithStore(<Dashboard />);
     
     // Should show loading state initially (check for spinner)
-    expect(document.querySelector('.spinner')).toBeInTheDocument()
-  })
+    expect(document.querySelector('.spinner')).toBeInTheDocument();
+  });
 
   it('renders dashboard metrics after loading', async () => {
-    render(<Dashboard />)
+    renderWithStore(<Dashboard />);
     
     // Wait for the loading to complete (simulated timeout in component)
     await waitFor(() => {
@@ -59,36 +127,36 @@ describe('Dashboard Component', () => {
   })
 
   it('displays recent activity section', async () => {
-    render(<Dashboard />)
+    renderWithStore(<Dashboard />);
     
     await waitFor(() => {
-      expect(screen.getByText(/recent activity/i)).toBeInTheDocument()
-    }, { timeout: 2000 })
-  })
+      expect(screen.getByText(/recent activity/i)).toBeInTheDocument();
+    }, { timeout: 2000 });
+  });
 
   it('displays alerts section', async () => {
-    render(<Dashboard />)
+    renderWithStore(<Dashboard />);
     
     await waitFor(() => {
       // Look for specific alert messages that should be present
-      expect(screen.getByText(/order more olive oil/i)).toBeInTheDocument()
-    }, { timeout: 2000 })
-  })
+      expect(screen.getByText(/order more olive oil/i)).toBeInTheDocument();
+    }, { timeout: 2000 });
+  });
 
   it('shows revenue metrics', async () => {
-    render(<Dashboard />)
+    renderWithStore(<Dashboard />);
     
     await waitFor(() => {
-      expect(screen.getByText(/revenue/i)).toBeInTheDocument()
-    }, { timeout: 2000 })
-  })
+      expect(screen.getByText(/revenue/i)).toBeInTheDocument();
+    }, { timeout: 2000 });
+  });
 
   it('shows waste percentage metrics', async () => {
-    render(<Dashboard />)
+    renderWithStore(<Dashboard />);
     
     await waitFor(() => {
       // Look specifically for the "Waste Percentage" metric card title
-      expect(screen.getByText('Waste Percentage')).toBeInTheDocument()
-    }, { timeout: 2000 })
-  })
+      expect(screen.getByText('Waste Percentage')).toBeInTheDocument();
+    }, { timeout: 2000 });
+  });
 })

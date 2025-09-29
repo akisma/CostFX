@@ -74,6 +74,71 @@ export const fetchInventoryDashboard = createAsyncThunk(
   }
 )
 
+// Period Selection Operations
+export const fetchPeriods = createAsyncThunk(
+  'inventory/fetchPeriods',
+  async ({ restaurantId, filters = {} }, { rejectWithValue }) => {
+    try {
+      const queryParams = new URLSearchParams({ restaurantId });
+      
+      // Add filters to query params
+      if (filters.periodTypes?.length) {
+        queryParams.append('periodTypes', filters.periodTypes.join(','));
+      }
+      if (filters.statusFilter?.length) {
+        queryParams.append('status', filters.statusFilter.join(','));
+      }
+      if (filters.limit) {
+        queryParams.append('limit', filters.limit);
+      }
+      if (filters.page) {
+        queryParams.append('page', filters.page);
+      }
+      
+      const response = await api.get(`/periods?${queryParams}`)
+      return response.data.data
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || 'Failed to fetch periods')
+    }
+  }
+)
+
+export const fetchPeriodById = createAsyncThunk(
+  'inventory/fetchPeriodById',
+  async (periodId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/periods/${periodId}`)
+      return response.data.data
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || 'Failed to fetch period')
+    }
+  }
+)
+
+export const createPeriod = createAsyncThunk(
+  'inventory/createPeriod',
+  async (periodData, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/periods', periodData)
+      return response.data.data
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || 'Failed to create period')
+    }
+  }
+)
+
+export const updatePeriod = createAsyncThunk(
+  'inventory/updatePeriod',
+  async ({ periodId, updateData }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/periods/${periodId}`, updateData)
+      return response.data.data
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || 'Failed to update period')
+    }
+  }
+)
+
 const initialState = {
   // Legacy state
   transactions: [],
@@ -160,6 +225,28 @@ const initialState = {
     generatedAt: null
   },
   
+  // Period Selection State
+  periodSelection: {
+    periods: [],
+    selectedPeriod: null,
+    selectedDateRange: null,
+    filters: {
+      restaurantId: null,
+      periodTypes: ['weekly', 'monthly', 'custom'],
+      statusFilter: ['draft', 'active', 'closed'],
+      searchTerm: ''
+    },
+    pagination: {
+      page: 1,
+      limit: 50,
+      total: 0,
+      pages: 0
+    },
+    loading: false,
+    error: null,
+    lastFetch: null
+  },
+  
   loading: false,
   error: null,
   
@@ -170,7 +257,10 @@ const initialState = {
     expirationAlerts: false,
     wasteAnalysis: false,
     stockOptimization: false,
-    dashboard: false
+    dashboard: false,
+    periods: false,
+    periodCreate: false,
+    periodUpdate: false
   }
 }
 
@@ -211,6 +301,32 @@ const inventorySlice = createSlice({
       state.wasteAnalysis = initialState.wasteAnalysis
       state.stockOptimization = initialState.stockOptimization
       state.dashboardData = initialState.dashboardData
+    },
+    
+    // Period Selection Actions
+    setPeriodFilters: (state, action) => {
+      state.periodSelection.filters = { ...state.periodSelection.filters, ...action.payload }
+    },
+    setSelectedPeriod: (state, action) => {
+      state.periodSelection.selectedPeriod = action.payload
+      // Clear date range when period is selected
+      if (action.payload) {
+        state.periodSelection.selectedDateRange = null
+      }
+    },
+    setSelectedDateRange: (state, action) => {
+      state.periodSelection.selectedDateRange = action.payload
+      // Clear period when date range is selected
+      if (action.payload) {
+        state.periodSelection.selectedPeriod = null
+      }
+    },
+    clearPeriodSelection: (state) => {
+      state.periodSelection.selectedPeriod = null
+      state.periodSelection.selectedDateRange = null
+    },
+    clearPeriodData: (state) => {
+      state.periodSelection = initialState.periodSelection
     }
   },
   extraReducers: (builder) => {
@@ -328,6 +444,91 @@ const inventorySlice = createSlice({
         state.loading = false
         state.error = action.payload
       })
+    
+    // Fetch Periods
+    builder
+      .addCase(fetchPeriods.pending, (state) => {
+        state.loadingStates.periods = true
+        state.periodSelection.loading = true
+        state.periodSelection.error = null
+      })
+      .addCase(fetchPeriods.fulfilled, (state, action) => {
+        state.loadingStates.periods = false
+        state.periodSelection.loading = false
+        state.periodSelection.periods = action.payload.periods || []
+        state.periodSelection.pagination = action.payload.pagination || state.periodSelection.pagination
+        state.periodSelection.lastFetch = new Date().toISOString()
+      })
+      .addCase(fetchPeriods.rejected, (state, action) => {
+        state.loadingStates.periods = false
+        state.periodSelection.loading = false
+        state.periodSelection.error = action.payload
+      })
+    
+    // Fetch Period By ID
+    builder
+      .addCase(fetchPeriodById.pending, (state) => {
+        state.periodSelection.loading = true
+        state.periodSelection.error = null
+      })
+      .addCase(fetchPeriodById.fulfilled, (state, action) => {
+        state.periodSelection.loading = false
+        // Update the period in the list if it exists
+        const periodIndex = state.periodSelection.periods.findIndex(p => p.id === action.payload.id)
+        if (periodIndex !== -1) {
+          state.periodSelection.periods[periodIndex] = action.payload
+        }
+        // Set as selected if not already selected
+        if (!state.periodSelection.selectedPeriod || state.periodSelection.selectedPeriod.id !== action.payload.id) {
+          state.periodSelection.selectedPeriod = action.payload
+        }
+      })
+      .addCase(fetchPeriodById.rejected, (state, action) => {
+        state.periodSelection.loading = false
+        state.periodSelection.error = action.payload
+      })
+    
+    // Create Period
+    builder
+      .addCase(createPeriod.pending, (state) => {
+        state.loadingStates.periodCreate = true
+        state.periodSelection.error = null
+      })
+      .addCase(createPeriod.fulfilled, (state, action) => {
+        state.loadingStates.periodCreate = false
+        // Add new period to the beginning of the list
+        state.periodSelection.periods.unshift(action.payload)
+        state.periodSelection.selectedPeriod = action.payload
+        // Update pagination
+        state.periodSelection.pagination.total += 1
+      })
+      .addCase(createPeriod.rejected, (state, action) => {
+        state.loadingStates.periodCreate = false
+        state.periodSelection.error = action.payload
+      })
+    
+    // Update Period
+    builder
+      .addCase(updatePeriod.pending, (state) => {
+        state.loadingStates.periodUpdate = true
+        state.periodSelection.error = null
+      })
+      .addCase(updatePeriod.fulfilled, (state, action) => {
+        state.loadingStates.periodUpdate = false
+        // Update the period in the list
+        const periodIndex = state.periodSelection.periods.findIndex(p => p.id === action.payload.id)
+        if (periodIndex !== -1) {
+          state.periodSelection.periods[periodIndex] = action.payload
+        }
+        // Update selected period if it's the one being updated
+        if (state.periodSelection.selectedPeriod?.id === action.payload.id) {
+          state.periodSelection.selectedPeriod = action.payload
+        }
+      })
+      .addCase(updatePeriod.rejected, (state, action) => {
+        state.loadingStates.periodUpdate = false
+        state.periodSelection.error = action.payload
+      })
   }
 })
 
@@ -340,7 +541,12 @@ export const {
   setCurrentInventory,
   setLowStockItems,
   setWasteData,
-  clearInventoryData
+  clearInventoryData,
+  setPeriodFilters,
+  setSelectedPeriod,
+  setSelectedDateRange,
+  clearPeriodSelection,
+  clearPeriodData
 } = inventorySlice.actions
 
 // Selectors
@@ -353,6 +559,62 @@ export const selectInventoryDashboard = (state) => state.inventory.dashboardData
 export const selectInventoryLoading = (state) => state.inventory.loading
 export const selectInventoryLoadingStates = (state) => state.inventory.loadingStates
 export const selectInventoryError = (state) => state.inventory.error
+
+// Period Selection Selectors
+export const selectPeriodSelection = (state) => state.inventory.periodSelection
+export const selectPeriods = (state) => state.inventory.periodSelection.periods
+export const selectSelectedPeriod = (state) => state.inventory.periodSelection.selectedPeriod
+export const selectSelectedDateRange = (state) => state.inventory.periodSelection.selectedDateRange
+export const selectPeriodFilters = (state) => state.inventory.periodSelection.filters
+export const selectPeriodPagination = (state) => state.inventory.periodSelection.pagination
+export const selectPeriodLoading = (state) => state.inventory.periodSelection.loading
+export const selectPeriodError = (state) => state.inventory.periodSelection.error
+
+// Computed period selectors
+export const selectFilteredPeriods = (state) => {
+  const { periods, filters } = state.inventory.periodSelection
+  let filtered = [...periods]
+  
+  // Filter by period types
+  if (filters.periodTypes?.length) {
+    filtered = filtered.filter(p => filters.periodTypes.includes(p.periodType))
+  }
+  
+  // Filter by status
+  if (filters.statusFilter?.length) {
+    filtered = filtered.filter(p => filters.statusFilter.includes(p.status))
+  }
+  
+  // Search filter
+  if (filters.searchTerm) {
+    const term = filters.searchTerm.toLowerCase()
+    filtered = filtered.filter(p => 
+      p.periodName.toLowerCase().includes(term) ||
+      (p.description && p.description.toLowerCase().includes(term))
+    )
+  }
+  
+  return filtered
+}
+
+export const selectActivePeriod = (state) => {
+  const periods = state.inventory.periodSelection.periods
+  return periods.find(p => p.status === 'active') || null
+}
+
+export const selectPeriodStats = (state) => {
+  const periods = state.inventory.periodSelection.periods
+  return periods.reduce((stats, period) => {
+    stats.total++
+    stats.byStatus[period.status] = (stats.byStatus[period.status] || 0) + 1
+    stats.byType[period.periodType] = (stats.byType[period.periodType] || 0) + 1
+    return stats
+  }, {
+    total: 0,
+    byStatus: { draft: 0, active: 0, closed: 0, locked: 0 },
+    byType: { weekly: 0, monthly: 0, custom: 0 }
+  })
+}
 
 // Legacy selectors for backward compatibility
 export const selectCurrentInventory = (state) => state.inventory.currentInventory
