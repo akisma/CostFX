@@ -5,6 +5,7 @@ import recipeRoutes from './recipes.js';
 import inventoryRoutes from './inventory.js';
 import salesRoutes from './sales.js';
 import agentRoutes from './agents.js';
+import periodRoutes from './periods.js';
 
 const router = express.Router();
 
@@ -15,6 +16,7 @@ router.use('/recipes', recipeRoutes);
 router.use('/inventory', inventoryRoutes);
 router.use('/sales', salesRoutes);
 router.use('/agents', agentRoutes);
+router.use('/periods', periodRoutes);
 
 // API info endpoint
 router.get('/', (req, res) => {
@@ -27,7 +29,8 @@ router.get('/', (req, res) => {
       recipes: '/api/v1/recipes',
       inventory: '/api/v1/inventory',
       sales: '/api/v1/sales',
-      agents: '/api/v1/agents'
+      agents: '/api/v1/agents',
+      periods: '/api/v1/periods'
     }
   });
 });

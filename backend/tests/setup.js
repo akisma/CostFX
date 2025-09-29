@@ -14,8 +14,8 @@ process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
 process.env.REDIS_URL = `redis://${testConfig.redis.host}:${testConfig.redis.port}`;
 
 // Mock database connection
-vi.mock('../src/config/database.js', () => ({
-  sequelize: {
+vi.mock('../src/config/database.js', () => {
+  const mockSequelize = {
     authenticate: vi.fn().mockResolvedValue(),
     sync: vi.fn().mockResolvedValue(),
     close: vi.fn().mockResolvedValue(),
@@ -25,10 +25,15 @@ vi.mock('../src/config/database.js', () => ({
         rollback: vi.fn().mockResolvedValue()
       })
     )
-  },
-  connectDB: vi.fn().mockResolvedValue(),
-  closeDB: vi.fn().mockResolvedValue()
-}));
+  };
+  
+  return {
+    default: mockSequelize,
+    sequelize: mockSequelize,
+    connectDB: vi.fn().mockResolvedValue(),
+    closeDB: vi.fn().mockResolvedValue()
+  };
+});
 
 // Mock Redis
 vi.mock('../src/config/redis.js', () => ({
