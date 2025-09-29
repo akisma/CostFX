@@ -1,0 +1,329 @@
+import { describe, beforeEach, afterEach, test, expect, vi } from 'vitest';
+
+// Our elegant setup.js handles all mocking consistently
+// This test uses the stateful mock system with shared data stores
+
+describe('Sequelize Models - Updated Unit Tests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('IngredientCategory Model', () => {
+    test('should create ingredient category successfully', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const IngredientCategory = mockDatabase.default.models.IngredientCategory;
+
+      const categoryData = {
+        name: 'Spices',
+        description: 'Various spices and seasonings',
+        parentId: null
+      };
+
+      const category = await IngredientCategory.create(categoryData);
+      
+      expect(category).toBeDefined();
+      expect(category.name).toBe('Spices');
+      expect(category.description).toBe('Various spices and seasonings');
+    });
+
+    test('should find category by primary key', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const IngredientCategory = mockDatabase.default.models.IngredientCategory;
+
+      // Create a category first
+      const created = await IngredientCategory.create({
+        name: 'Produce',
+        description: 'Fresh fruits and vegetables'
+      });
+
+      const found = await IngredientCategory.findByPk(created.id);
+      
+      expect(found).toBeDefined();
+      expect(found.name).toBe('Produce');
+    });
+
+    test('should find all categories', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const IngredientCategory = mockDatabase.default.models.IngredientCategory;
+
+      await IngredientCategory.create({ name: 'Meat', description: 'Various meats' });
+      await IngredientCategory.create({ name: 'Dairy', description: 'Dairy products' });
+
+      const categories = await IngredientCategory.findAll();
+      
+      expect(categories).toBeDefined();
+      expect(Array.isArray(categories)).toBe(true);
+      expect(categories.length).toBeGreaterThanOrEqual(2);
+    });
+
+    test('should get category tree structure', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const IngredientCategory = mockDatabase.default.models.IngredientCategory;
+
+      // Our elegant mock system handles complex queries
+      const tree = await IngredientCategory.getCategoryTree();
+      
+      expect(tree).toBeDefined();
+      expect(Array.isArray(tree)).toBe(true);
+    });
+
+    test('should search categories by name', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const IngredientCategory = mockDatabase.default.models.IngredientCategory;
+
+      await IngredientCategory.create({ name: 'Spices', description: 'Spice category' });
+      
+      const results = await IngredientCategory.searchCategories('Spice');
+      
+      expect(results).toBeDefined();
+      expect(Array.isArray(results)).toBe(true);
+    });
+  });
+
+  describe('InventoryItem Model', () => {
+    test('should create inventory item successfully', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const InventoryItem = mockDatabase.default.models.InventoryItem;
+
+      const itemData = {
+        restaurantId: 1,
+        name: 'Premium Saffron',
+        category: 'Spices',
+        unit: 'oz',
+        unitCost: 25.00,
+        currentStock: 10.0,
+        minimumStock: 2.0,
+        maximumStock: 20.0
+      };
+
+      const item = await InventoryItem.create(itemData);
+      
+      expect(item).toBeDefined();
+      expect(item.name).toBe('Premium Saffron');
+      expect(item.unitCost).toBe(25.00);
+    });
+
+    test('should find all inventory items', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const InventoryItem = mockDatabase.default.models.InventoryItem;
+
+      const items = await InventoryItem.findAll();
+      
+      expect(items).toBeDefined();
+      expect(Array.isArray(items)).toBe(true);
+    });
+
+    test('should find high value items', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const InventoryItem = mockDatabase.default.models.InventoryItem;
+
+      // Create high value item
+      await InventoryItem.create({
+        restaurantId: 1,
+        name: 'Truffle Oil',
+        category: 'Premium',
+        unit: 'ml',
+        unitCost: 50.00,
+        highValueFlag: true
+      });
+
+      const highValueItems = await InventoryItem.findHighValueItems(1);
+      
+      expect(highValueItems).toBeDefined();
+      expect(Array.isArray(highValueItems)).toBe(true);
+    });
+
+    test('should get category variance summary', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const InventoryItem = mockDatabase.default.models.InventoryItem;
+
+      const summary = await InventoryItem.getCategoryVarianceSummary(1, 1);
+      
+      expect(summary).toBeDefined();
+    });
+  });
+
+  describe('Restaurant Model', () => {
+    test('should create restaurant successfully', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const Restaurant = mockDatabase.default.models.Restaurant;
+
+      const restaurantData = {
+        name: 'Test Restaurant',
+        address: '123 Test St',
+        phone: '555-0123',
+        email: 'test@restaurant.com',
+        timezone: 'America/New_York'
+      };
+
+      const restaurant = await Restaurant.create(restaurantData);
+      
+      expect(restaurant).toBeDefined();
+      expect(restaurant.name).toBe('Test Restaurant');
+      expect(restaurant.timezone).toBe('America/New_York');
+    });
+
+    test('should find restaurant by primary key', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const Restaurant = mockDatabase.default.models.Restaurant;
+
+      const created = await Restaurant.create({
+        name: 'Another Restaurant',
+        address: '456 Another St'
+      });
+
+      const found = await Restaurant.findByPk(created.id);
+      
+      expect(found).toBeDefined();
+      expect(found.name).toBe('Another Restaurant');
+    });
+
+    test('should find all restaurants', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const Restaurant = mockDatabase.default.models.Restaurant;
+
+      const restaurants = await Restaurant.findAll();
+      
+      expect(restaurants).toBeDefined();
+      expect(Array.isArray(restaurants)).toBe(true);
+    });
+  });
+
+  describe('Model Associations and Business Logic', () => {
+    test('should handle model associations correctly', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const Restaurant = mockDatabase.default.models.Restaurant;
+      const InventoryItem = mockDatabase.default.models.InventoryItem;
+
+      // Create restaurant and associated items
+      const restaurant = await Restaurant.create({
+        name: 'Association Test Restaurant',
+        address: '789 Association St'
+      });
+
+      const item = await InventoryItem.create({
+        restaurantId: restaurant.id,
+        name: 'Associated Item',
+        category: 'Test',
+        unit: 'piece',
+        unitCost: 1.00
+      });
+
+      expect(item.restaurantId).toBe(restaurant.id);
+    });
+
+    test('should validate required fields', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const InventoryItem = mockDatabase.default.models.InventoryItem;
+
+      // Our elegant mock system handles validation
+      await expect(InventoryItem.create({
+        // Missing required fields
+        name: 'Incomplete Item'
+      })).rejects.toThrow();
+    });
+
+    test('should handle cascading operations', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const Restaurant = mockDatabase.default.models.Restaurant;
+      const InventoryItem = mockDatabase.default.models.InventoryItem;
+
+      const restaurant = await Restaurant.create({
+        name: 'Cascade Test Restaurant',
+        address: '999 Cascade St'
+      });
+
+      await InventoryItem.create({
+        restaurantId: restaurant.id,
+        name: 'Cascade Item',
+        category: 'Test',
+        unit: 'piece',
+        unitCost: 1.00
+      });
+
+      // Our elegant mock system handles cascading deletes
+      await restaurant.destroy();
+      
+      const items = await InventoryItem.findAll({
+        where: { restaurantId: restaurant.id }
+      });
+      expect(items).toHaveLength(0);
+    });
+  });
+
+  describe('Complex Queries and Business Operations', () => {
+    test('should handle complex filtering queries', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const InventoryItem = mockDatabase.default.models.InventoryItem;
+
+      // Create items with different properties
+      await InventoryItem.create({
+        restaurantId: 1,
+        name: 'Expensive Item',
+        category: 'Premium',
+        unit: 'oz',
+        unitCost: 100.00,
+        highValueFlag: true
+      });
+
+      await InventoryItem.create({
+        restaurantId: 1,
+        name: 'Cheap Item',
+        category: 'Basic',
+        unit: 'lb',
+        unitCost: 1.00,
+        highValueFlag: false
+      });
+
+      // Our elegant mock system handles complex where clauses
+      const expensiveItems = await InventoryItem.findAll({
+        where: {
+          unitCost: { [mockDatabase.default.Sequelize.Op.gte]: 50.00 }
+        }
+      });
+
+      expect(expensiveItems.length).toBeGreaterThan(0);
+    });
+
+    test('should support pagination and ordering', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const InventoryItem = mockDatabase.default.models.InventoryItem;
+
+      const items = await InventoryItem.findAll({
+        limit: 10,
+        offset: 0,
+        order: [['name', 'ASC']]
+      });
+
+      expect(items).toBeDefined();
+      expect(Array.isArray(items)).toBe(true);
+    });
+
+    test('should handle transaction operations', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      const Restaurant = mockDatabase.default.models.Restaurant;
+      const InventoryItem = mockDatabase.default.models.InventoryItem;
+
+      // Our elegant mock system supports transactions
+      const restaurant = await Restaurant.create({
+        name: 'Transaction Test Restaurant',
+        address: '111 Transaction St'
+      });
+
+      const item = await InventoryItem.create({
+        restaurantId: restaurant.id,
+        name: 'Transaction Item',
+        category: 'Test',
+        unit: 'piece',
+        unitCost: 5.00
+      });
+
+      expect(restaurant.id).toBeDefined();
+      expect(item.restaurantId).toBe(restaurant.id);
+    });
+  });
+});

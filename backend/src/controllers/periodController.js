@@ -32,11 +32,11 @@ class PeriodController {
       const { restaurantId, periodName, periodType, periodStart, periodEnd, description } = req.body;
       
       // Check for overlapping periods
-      const overlappingPeriods = await InventoryPeriod.findOverlappingPeriods({
+      const overlappingPeriods = await InventoryPeriod.findOverlappingPeriods(
         restaurantId,
-        periodStart: new Date(periodStart),
-        periodEnd: new Date(periodEnd)
-      });
+        new Date(periodStart),
+        new Date(periodEnd)
+      );
       
       if (overlappingPeriods.length > 0) {
         return res.status(409).json({

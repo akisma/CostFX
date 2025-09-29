@@ -150,10 +150,10 @@ export async function connectDB() {
     await sequelize.authenticate();
     logger.info('✅ Database connection established successfully');
     
-    // Only sync in development, use migrations in production
+    // Only sync in development if needed, but prefer migrations
     if (isDevelopment) {
-      await sequelize.sync({ alter: true });
-      logger.info('📊 Database synchronized (development mode)');
+      // Use migrations instead of sync to avoid schema conflicts
+      logger.info('📊 Database ready (development mode - using migrations)');
     } else {
       logger.info('📊 Database ready (production mode - use migrations)');
     }

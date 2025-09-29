@@ -107,18 +107,12 @@ export const up = async function(pgm) {
     assigned_to: {
       type: 'integer',
       notNull: false,
-      references: 'users(id)',
-      onDelete: 'SET NULL',
-      onUpdate: 'CASCADE',
-      comment: 'User assigned to investigate this variance'
+      comment: 'User assigned to investigate this variance (references future users table)'
     },
     investigated_by: {
       type: 'integer',
       notNull: false,
-      references: 'users(id)',
-      onDelete: 'SET NULL',
-      onUpdate: 'CASCADE',
-      comment: 'User who investigated this variance'
+      comment: 'User who investigated this variance (references future users table)'
     },
     assigned_at: {
       type: 'timestamp',

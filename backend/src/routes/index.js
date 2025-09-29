@@ -6,6 +6,7 @@ import inventoryRoutes from './inventory.js';
 import salesRoutes from './sales.js';
 import agentRoutes from './agents.js';
 import periodRoutes from './periods.js';
+import varianceRoutes from './variance.js';
 
 const router = express.Router();
 
@@ -17,6 +18,7 @@ router.use('/inventory', inventoryRoutes);
 router.use('/sales', salesRoutes);
 router.use('/agents', agentRoutes);
 router.use('/periods', periodRoutes);
+router.use('/variance', varianceRoutes);
 
 // API info endpoint
 router.get('/', (req, res) => {
@@ -30,7 +32,8 @@ router.get('/', (req, res) => {
       inventory: '/api/v1/inventory',
       sales: '/api/v1/sales',
       agents: '/api/v1/agents',
-      periods: '/api/v1/periods'
+      periods: '/api/v1/periods',
+      variance: '/api/v1/variance'
     }
   });
 });

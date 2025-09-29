@@ -171,8 +171,8 @@ describe('Period Management API', () => {
       expect(response.body.data.pagination.total).toBe(2);
       
       // Should be ordered by periodStart DESC
-      expect(new Date(response.body.data.periods[0].periodStart))
-        .toBeGreaterThan(new Date(response.body.data.periods[1].periodStart));
+      expect(new Date(response.body.data.periods[0].periodStart).getTime())
+        .toBeGreaterThan(new Date(response.body.data.periods[1].periodStart).getTime());
     });
 
     test('should filter periods by status', async () => {

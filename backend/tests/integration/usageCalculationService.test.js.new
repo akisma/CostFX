@@ -1,0 +1,313 @@
+import { describe, test, expect, beforeEach, beforeAll, afterAll, afterEach, vi } from 'vitest';
+
+// Our elegant setup.js handles all mocking consistently
+// This test uses the stateful mock system with shared data stores
+
+// Import the service after mocks are set up
+const { default: UsageCalculationService } = await import('../../src/services/UsageCalculationService.js');
+
+describe('UsageCalculationService Integration', () => {
+  let service;
+  let testRestaurant, testItems, testPeriod, testSnapshots;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    service = new UsageCalculationService();
+    
+    // Use our elegant mock system - models are already mocked by setup.js
+    const mockDatabase = await import('../../src/config/database.js');
+    service.models = mockDatabase.default.models;
+  });
+
+  beforeAll(async () => {
+    // Setup test data using our stateful mocks
+    testRestaurant = {
+      id: 1,
+      name: 'Test Restaurant',
+      timezone: 'America/New_York',
+      currency: 'USD'
+    };
+
+    testItems = [
+      {
+        id: 1,
+        restaurantId: 1,
+        name: 'Premium Saffron',
+        category: 'spices',
+        unitType: 'weight',
+        unit: 'oz',
+        unitCost: 19.00,
+        currentStock: 50.0,
+        minimumStock: 10.0,
+        maximumStock: 100.0
+      },
+      {
+        id: 2,
+        restaurantId: 1,
+        name: 'Romaine Lettuce',
+        category: 'produce',
+        unitType: 'weight',
+        unit: 'lb',
+        unitCost: 1.25,
+        currentStock: 25.0,
+        minimumStock: 5.0,
+        maximumStock: 50.0
+      },
+      {
+        id: 3,
+        restaurantId: 1,
+        name: 'Whole Milk',
+        category: 'dairy',
+        unitType: 'volume',
+        unit: 'liter',
+        unitCost: 3.50,
+        currentStock: 8.0,
+        minimumStock: 2.0,
+        maximumStock: 15.0
+      }
+    ];
+
+    testPeriod = {
+      id: 1,
+      restaurantId: 1,
+      periodName: 'Test Period',
+      periodStart: new Date('2025-01-01'),
+      periodEnd: new Date('2025-01-07'),
+      status: 'closed'
+    };
+
+    // Create test data in our elegant stateful mocks
+    const mockDatabase = await import('../../src/config/database.js');
+    const models = mockDatabase.default.models;
+    
+    // Create restaurant, items, period, and snapshots in our shared stores
+    await models.Restaurant.create(testRestaurant);
+    for (const item of testItems) {
+      await models.InventoryItem.create(item);
+    }
+    await models.InventoryPeriod.create(testPeriod);
+    
+    // Create snapshots for testing
+    const snapshots = [
+      {
+        id: 1,
+        periodId: 1,
+        inventoryItemId: 1,
+        snapshotType: 'beginning',
+        quantity: 50.0,
+        unitCost: 19.00,
+        totalValue: 950.0,
+        countedBy: 1,
+        countedAt: new Date('2025-01-01T08:00:00Z'),
+        verified: true
+      },
+      {
+        id: 2,
+        periodId: 1,
+        inventoryItemId: 1,
+        snapshotType: 'ending',
+        quantity: 46.0,
+        unitCost: 19.00,
+        totalValue: 874.0,
+        countedBy: 1,
+        countedAt: new Date('2025-01-07T18:00:00Z'),
+        verified: true
+      },
+      {
+        id: 3,
+        periodId: 1,
+        inventoryItemId: 2,
+        snapshotType: 'beginning',
+        quantity: 25.0,
+        unitCost: 1.25,
+        totalValue: 31.25,
+        countedBy: 1,
+        countedAt: new Date('2025-01-01T08:00:00Z'),
+        verified: true
+      },
+      {
+        id: 4,
+        periodId: 1,
+        inventoryItemId: 2,
+        snapshotType: 'ending',
+        quantity: 20.0,
+        unitCost: 1.25,
+        totalValue: 25.0,
+        countedBy: 1,
+        countedAt: new Date('2025-01-07T18:00:00Z'),
+        verified: true
+      }
+    ];
+    
+    for (const snapshot of snapshots) {
+      await models.PeriodInventorySnapshot.create(snapshot);
+    }
+    
+    // Create transactions for testing
+    await models.InventoryTransaction.create({
+      id: 1,
+      inventoryItemId: 2,
+      transactionType: 'purchase',
+      quantity: 10.0,
+      unitCost: 1.25,
+      totalValue: 12.5,
+      transactionDate: new Date('2025-01-03T10:00:00Z'),
+      notes: 'Regular delivery'
+    });
+  });
+
+  describe('Service Initialization', () => {
+    test('should initialize with database models', () => {
+      expect(service).toBeInstanceOf(UsageCalculationService);
+      expect(service.models).toBeDefined();
+      expect(service.models.InventoryPeriod).toBeDefined();
+      expect(service.models.InventoryItem).toBeDefined();
+      expect(service.models.PeriodInventorySnapshot).toBeDefined();
+    });
+  });
+
+  describe('Period Usage Calculation', () => {
+    test('should calculate usage for entire period successfully', async () => {
+      const result = await service.calculateUsageForPeriod(1, { method: 'recipe_based' });
+      
+      expect(result.success).toBe(true);
+      expect(result.periodId).toBe(1);
+      expect(result.summary.processedItems).toBe(3);
+      expect(result.summary.skippedItems).toBe(0);
+      expect(result.summary.errorItems).toBe(0);
+    });
+
+    test('should skip existing analyses when recalculate is false', async () => {
+      // First calculation
+      const result1 = await service.calculateUsageForPeriod(1, { method: 'historical_average' });
+      expect(result1.summary.processedItems).toBe(3);
+      
+      // Second calculation without recalculate
+      const result2 = await service.calculateUsageForPeriod(1, { method: 'historical_average', recalculate: false });
+      expect(result2.summary.skippedItems).toBe(3);
+      expect(result2.summary.processedItems).toBe(0);
+    });
+
+    test('should handle period not found error', async () => {
+      await expect(service.calculateUsageForPeriod(999999, { method: 'recipe_based' }))
+        .rejects.toThrow('Period not found');
+    });
+
+    test('should filter by specific item IDs', async () => {
+      const result = await service.calculateUsageForPeriod(1, { 
+        method: 'recipe_based',
+        itemIds: [1, 2]
+      });
+      
+      expect(result.success).toBe(true);
+      expect(result.summary.processedItems).toBe(2);
+    });
+
+    test('should handle individual item processing errors gracefully', async () => {
+      // Create an item that will cause processing error
+      const mockDatabase = await import('../../src/config/database.js');
+      await mockDatabase.default.models.InventoryItem.create({
+        id: 999,
+        restaurantId: 1,
+        name: 'Error Item',
+        category: 'test',
+        unitCost: 0, // This might cause division by zero
+        currentStock: 0
+      });
+      
+      const result = await service.calculateUsageForPeriod(1, { 
+        method: 'recipe_based',
+        itemIds: [1, 2, 999]
+      });
+      
+      expect(result.success).toBe(true);
+      expect(result.summary.processedItems).toBe(2);
+      expect(result.summary.errorItems).toBe(1);
+    });
+  });
+
+  describe('Multiple Periods Calculation', () => {
+    test('should calculate usage for multiple periods', async () => {
+      // Create second period
+      const mockDatabase = await import('../../src/config/database.js');
+      await mockDatabase.default.models.InventoryPeriod.create({
+        id: 2,
+        restaurantId: 1,
+        periodName: 'Second Period',
+        periodStart: new Date('2025-01-08'),
+        periodEnd: new Date('2025-01-14'),
+        status: 'closed'
+      });
+      
+      const results = await service.calculateUsageForPeriods([1, 2], { method: 'recipe_based' });
+      
+      expect(results).toHaveLength(2);
+      expect(results[0].success).toBe(true);
+      expect(results[1].success).toBe(true);
+    });
+
+    test('should handle failed periods in batch calculation', async () => {
+      const results = await service.calculateUsageForPeriods([1, 999999], { method: 'recipe_based' });
+      
+      expect(results).toHaveLength(2);
+      expect(results[0].success).toBe(true);
+      expect(results[1].success).toBe(false);
+      expect(results[1].error).toContain('Period not found');
+    });
+  });
+
+  describe('Calculation Summary', () => {
+    test('should generate comprehensive calculation summary', async () => {
+      const result = await service.calculateUsageForPeriod(1, { method: 'recipe_based' });
+      
+      expect(result.summary).toMatchObject({
+        processedItems: expect.any(Number),
+        skippedItems: expect.any(Number),
+        errorItems: expect.any(Number),
+        totalItems: expect.any(Number),
+        calculationMethod: 'recipe_based',
+        executionTime: expect.any(Number)
+      });
+    });
+  });
+
+  describe('Edge Cases and Error Handling', () => {
+    test('should handle items with zero unit cost', async () => {
+      const mockDatabase = await import('../../src/config/database.js');
+      await mockDatabase.default.models.InventoryItem.create({
+        id: 998,
+        restaurantId: 1,
+        name: 'Free Item',
+        category: 'test',
+        unitCost: 0.0,
+        currentStock: 10
+      });
+      
+      const result = await service.calculateUsageForPeriod(1, { 
+        method: 'recipe_based',
+        itemIds: [998]
+      });
+      
+      expect(result.success).toBe(true);
+    });
+
+    test('should handle very large numbers gracefully', async () => {  
+      const mockDatabase = await import('../../src/config/database.js');
+      await mockDatabase.default.models.InventoryItem.create({
+        id: 997,
+        restaurantId: 1,
+        name: 'Large Value Item',
+        category: 'test',
+        unitCost: 999999.99,
+        currentStock: 100000
+      });
+      
+      const result = await service.calculateUsageForPeriod(1, { 
+        method: 'recipe_based',
+        itemIds: [997]
+      });
+      
+      expect(result.success).toBe(true);
+    });
+  });
+});

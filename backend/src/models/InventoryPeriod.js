@@ -80,6 +80,42 @@ class InventoryPeriod extends Model {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
   }
 
+  async canTransitionTo(newStatus) {
+    // Define valid status transitions
+    const validTransitions = {
+      'draft': ['active'],
+      'active': ['closed'],
+      'closed': ['locked'],
+      'locked': []
+    };
+    
+    return validTransitions[this.status]?.includes(newStatus) || false;
+  }
+
+  async getSnapshotCompleteness() {
+    // Import the model at runtime to avoid circular dependency issues
+    const { PeriodInventorySnapshot } = sequelize.models;
+    
+    // Get snapshots for this period
+    const snapshots = await PeriodInventorySnapshot.findAll({
+      where: { periodId: this.id }
+    });
+    
+    const beginningSnapshots = snapshots.filter(s => s.snapshotType === 'beginning').length;
+    const endingSnapshots = snapshots.filter(s => s.snapshotType === 'ending').length;
+    
+    return {
+      hasBeginningSnapshot: beginningSnapshots > 0,
+      hasEndingSnapshot: endingSnapshots > 0,
+      isComplete: beginningSnapshots > 0 && endingSnapshots > 0,
+      snapshotSummary: {
+        beginning: beginningSnapshots,
+        ending: endingSnapshots,
+        total: snapshots.length
+      }
+    };
+  }
+
   // Static methods for period management
   static async findActivePeriodsForRestaurant(restaurantId) {
     return this.findAll({
