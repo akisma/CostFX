@@ -260,11 +260,7 @@ class AgentService {
     await this.ensureInitialized();
     
     try {
-      return await this.manager.routeRequest({
-        agentName,
-        ...request,
-        timestamp: new Date().toISOString()
-      });
+      return await this.manager.routeToSpecificAgent(agentName, request);
     } catch (error) {
       console.error(`[AgentService] Error processing request to ${agentName}:`, error);
       throw error;
