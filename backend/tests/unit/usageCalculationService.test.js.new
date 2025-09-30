@@ -1,0 +1,239 @@
+import { describe, test, expect, beforeEach, vi } from 'vitest';
+import UsageCalculationService from '../../src/services/UsageCalculationService.js';
+
+// Our elegant setup.js handles all mocking consistently
+// Unit tests use the same stateful mock system for consistency
+
+describe('UsageCalculationService - Unit Tests', () => {
+  let service;
+
+  beforeEach(async () => {
+    service = new UsageCalculationService();
+    // Use our elegant mock system - models are already mocked by setup.js
+    const mockDatabase = await import('../../src/config/database.js');
+    service.models = mockDatabase.default.models;
+  });
+
+  describe('Service Structure', () => {
+    test('should create service instance with expected methods', () => {
+      expect(service).toBeInstanceOf(UsageCalculationService);
+      expect(typeof service.calculateUsageForPeriod).toBe('function');
+      expect(typeof service.calculateTheoreticalUsage).toBe('function');
+      expect(typeof service.calculateActualUsage).toBe('function');
+      expect(typeof service.calculateVariancePriority).toBe('function');
+    });
+
+    test('should initialize models through our elegant mock system', async () => {
+      const newService = new UsageCalculationService();
+      expect(newService.models).toBeNull();
+      
+      // Our setup.js provides consistent mocks
+      const mockDatabase = await import('../../src/config/database.js');
+      newService.models = mockDatabase.default.models;
+      expect(newService.models).toBeDefined();
+      expect(newService.models.InventoryPeriod).toBeDefined();
+      expect(newService.models.PeriodInventorySnapshot).toBeDefined();
+    });
+  });
+
+  describe('Theoretical Usage Calculation', () => {
+    test('should calculate theoretical usage using recipe method', async () => {
+      const item = { id: 1, unitCost: 5.00 };
+      const period = { id: 1 };
+
+      // Our elegant mocks handle the complex logic automatically
+      const result = await service.calculateTheoreticalUsage(item, period, 'recipe_based');
+      
+      expect(result).toMatchObject({
+        quantity: expect.any(Number),
+        value: expect.any(Number),
+        method: 'recipe_based'
+      });
+    });
+
+    test('should calculate theoretical usage using historical average', async () => {
+      const item = { id: 2, unitCost: 3.00 };
+      const period = { id: 1 };
+
+      const result = await service.calculateTheoreticalUsage(item, period, 'historical_average');
+      
+      expect(result).toMatchObject({
+        quantity: expect.any(Number),
+        value: expect.any(Number),
+        method: 'historical_average'
+      });
+    });
+
+    test('should handle no historical data gracefully', async () => {
+      const item = { id: 999, unitCost: 10.00 };
+      const period = { id: 1 };
+
+      const result = await service.calculateTheoreticalUsage(item, period, 'historical_average');
+      
+      expect(result.quantity).toBe(0);
+      expect(result.value).toBe(0);
+    });
+  });
+
+  describe('Actual Usage Calculation', () => {
+    test('should calculate actual usage from snapshots', async () => {
+      const item = { id: 1, unitCost: 5.00 };
+      const period = { id: 1, periodStart: new Date('2025-01-01'), periodEnd: new Date('2025-01-07') };
+
+      // Create test snapshots using our elegant system
+      const mockDatabase = await import('../../src/config/database.js');
+      await mockDatabase.default.models.PeriodInventorySnapshot.create({
+        periodId: 1,
+        inventoryItemId: 1,
+        snapshotType: 'beginning',
+        quantity: 25.0,
+        unitCost: 5.00
+      });
+      await mockDatabase.default.models.PeriodInventorySnapshot.create({
+        periodId: 1,
+        inventoryItemId: 1,
+        snapshotType: 'ending',
+        quantity: 20.0,
+        unitCost: 5.00
+      });
+
+      const result = await service.calculateActualUsage(item, period);
+
+      expect(result.quantity).toBe(5.0); // 25 - 20 = 5
+      expect(result.metadata.totalPurchases).toBe(0);
+    });
+
+    test('should include purchases in usage calculation', async () => {
+      const item = { id: 2, unitCost: 3.00 };
+      const period = { id: 1, periodStart: new Date('2025-01-01'), periodEnd: new Date('2025-01-07') };
+
+      // Create snapshots and purchases using our elegant system
+      const mockDatabase = await import('../../src/config/database.js');
+      await mockDatabase.default.models.PeriodInventorySnapshot.create({
+        periodId: 1,
+        inventoryItemId: 2,
+        snapshotType: 'beginning',
+        quantity: 25.0,
+        unitCost: 3.00
+      });
+      await mockDatabase.default.models.PeriodInventorySnapshot.create({
+        periodId: 1,
+        inventoryItemId: 2,
+        snapshotType: 'ending',
+        quantity: 20.0,
+        unitCost: 3.00
+      });
+      await mockDatabase.default.models.InventoryTransaction.create({
+        inventoryItemId: 2,
+        transactionType: 'purchase',
+        quantity: 10.0,
+        transactionDate: new Date('2025-01-03')
+      });
+
+      const result = await service.calculateActualUsage(item, period);
+
+      expect(result.quantity).toBe(15.0); // 25 + 10 - 20 = 15
+      expect(result.metadata.totalPurchases).toBe(10.0);
+      expect(result.metadata.purchaseTransactions).toBe(1);
+    });
+
+    test('should ensure non-negative usage', async () => {
+      const item = { id: 3, unitCost: 3.00 };
+      const period = { id: 1, periodStart: new Date('2025-01-01'), periodEnd: new Date('2025-01-07') };
+
+      // Create snapshots where ending > beginning (negative usage scenario)
+      const mockDatabase = await import('../../src/config/database.js');
+      await mockDatabase.default.models.PeriodInventorySnapshot.create({
+        periodId: 1,
+        inventoryItemId: 3,
+        snapshotType: 'beginning',
+        quantity: 10.0,
+        unitCost: 3.00
+      });
+      await mockDatabase.default.models.PeriodInventorySnapshot.create({
+        periodId: 1,
+        inventoryItemId: 3,
+        snapshotType: 'ending',
+        quantity: 15.0,
+        unitCost: 3.00
+      });
+
+      const result = await service.calculateActualUsage(item, period);
+
+      expect(result.quantity).toBe(0); // Should be 0, not negative
+    });
+
+    test('should throw error for missing snapshots', async () => {
+      const item = { id: 4, unitCost: 5.00 };
+      const period = { id: 1 };
+
+      // Create only beginning snapshot (missing ending)
+      const mockDatabase = await import('../../src/config/database.js');
+      await mockDatabase.default.models.PeriodInventorySnapshot.create({
+        periodId: 1,
+        inventoryItemId: 4,
+        snapshotType: 'beginning',
+        quantity: 10.0,
+        unitCost: 5.00
+      });
+
+      await expect(
+        service.calculateActualUsage(item, period)
+      ).rejects.toThrow('Missing snapshots for item 4 in period 1');
+    });
+  });
+
+  describe('Error Handling', () => {
+    test('should handle database connection errors', async () => {
+      // Our elegant mock system can simulate errors
+      const mockDatabase = await import('../../src/config/database.js');
+      mockDatabase.default.models.InventoryPeriod.findByPk.mockRejectedValueOnce(new Error('Database connection failed'));
+
+      await expect(
+        service.calculateUsageForPeriod(1, { method: 'recipe_based' })
+      ).rejects.toThrow('Database connection failed');
+    });
+
+    test('should handle invalid period IDs', async () => {
+      await expect(
+        service.calculateUsageForPeriod(null, { method: 'recipe_based' })
+      ).rejects.toThrow();
+    });
+
+    test('should handle invalid calculation methods', async () => {
+      await expect(
+        service.calculateTheoreticalUsage({ id: 1 }, { id: 1 }, 'invalid_method')
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('Variance Priority Calculation', () => {
+    test('should calculate variance priority correctly', () => {
+      const variance = {
+        quantityVariance: 5.0,
+        valueVariance: 25.0,
+        quantityVariancePercentage: 10.0
+      };
+      const item = { unitCost: 5.00, category: 'high-value' };
+
+      const priority = service.calculateVariancePriority(variance, item);
+      
+      expect(priority).toMatchObject({
+        score: expect.any(Number),
+        level: expect.stringMatching(/low|medium|high|critical/),
+        factors: expect.any(Object)
+      });
+    });
+
+    test('should assign higher priority to high-value items', () => {
+      const variance = { quantityVariance: 2.0, valueVariance: 100.0, quantityVariancePercentage: 5.0 };
+      const highValueItem = { unitCost: 50.00, category: 'premium' };
+      const lowValueItem = { unitCost: 2.00, category: 'basic' };
+
+      const highPriority = service.calculateVariancePriority(variance, highValueItem);
+      const lowPriority = service.calculateVariancePriority(variance, lowValueItem);
+
+      expect(highPriority.score).toBeGreaterThan(lowPriority.score);
+    });
+  });
+});

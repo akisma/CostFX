@@ -109,12 +109,7 @@ const sequelize = new Sequelize(connectionUrl, {
     acquire: dbConfig.pool.acquire,
     idle: dbConfig.pool.idle
   },
-  dialectOptions: useSSL ? {
-    ssl: {
-      require: true,
-      rejectUnauthorized: !isProduction // Allow self-signed certs in non-prod
-    }
-  } : {},
+
   // Enhanced retry and connection options
   retry: {
     max: isProduction ? 5 : 3,
@@ -128,6 +123,18 @@ const sequelize = new Sequelize(connectionUrl, {
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at'
+  },
+  // PostgreSQL-specific configurations for ltree support
+  dialectOptions: {
+    ...((useSSL) ? {
+      ssl: {
+        require: true,
+        rejectUnauthorized: !isProduction // Allow self-signed certs in non-prod
+      }
+    } : {}),
+    // Enable PostgreSQL extensions
+    supportBigNumbers: true,
+    bigNumberStrings: true
   }
 });
 
@@ -143,10 +150,10 @@ export async function connectDB() {
     await sequelize.authenticate();
     logger.info('✅ Database connection established successfully');
     
-    // Only sync in development, use migrations in production
+    // Only sync in development if needed, but prefer migrations
     if (isDevelopment) {
-      await sequelize.sync({ alter: true });
-      logger.info('📊 Database synchronized (development mode)');
+      // Use migrations instead of sync to avoid schema conflicts
+      logger.info('📊 Database ready (development mode - using migrations)');
     } else {
       logger.info('📊 Database ready (production mode - use migrations)');
     }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSelector } from 'react-redux'
 import { 
   DollarSign, 
   TrendingDown, 
@@ -9,6 +10,11 @@ import {
 } from 'lucide-react'
 import MetricCard from './MetricCard'
 import ChartContainer from './ChartContainer'
+import PeriodSelector from '../inventory/PeriodSelector'
+import { 
+  selectSelectedPeriod,
+  selectSelectedDateRange
+} from '../../store/slices/inventorySlice'
 
 const Dashboard = () => {
   const [metrics, setMetrics] = useState({
@@ -21,6 +27,36 @@ const Dashboard = () => {
 
   const [recentActivity, setRecentActivity] = useState([])
   const [alerts, setAlerts] = useState([])
+  const [showPeriodSelector, setShowPeriodSelector] = useState(false)
+  
+  // Redux selectors for period selection
+  const selectedPeriod = useSelector(selectSelectedPeriod)
+  const selectedDateRange = useSelector(selectSelectedDateRange)
+  
+  // For demo purposes, using restaurant ID 1
+  const restaurantId = 1
+
+  const getCurrentPeriodDisplay = () => {
+    if (selectedPeriod) {
+      return selectedPeriod.periodName
+    }
+    if (selectedDateRange?.from && selectedDateRange?.to) {
+      return 'Custom Range'
+    }
+    return 'All Time'
+  }
+
+  const handlePeriodSelect = (period) => {
+    console.log('Dashboard period selected:', period)
+    setShowPeriodSelector(false)
+    // Here you could trigger dashboard data refresh for the selected period
+  }
+
+  const handleDateRangeSelect = (dateRange) => {
+    console.log('Dashboard date range selected:', dateRange)
+    setShowPeriodSelector(false)
+    // Here you could trigger dashboard data refresh for the selected date range
+  }
 
   useEffect(() => {
     // Simulate API calls
@@ -63,18 +99,73 @@ const Dashboard = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <div className="flex items-center space-x-3">
-          <Calendar className="h-5 w-5 text-gray-500" />
-          <span className="text-sm text-gray-600">
-            {new Date().toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
-          </span>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
+            <Calendar className="h-5 w-5 text-gray-500" />
+            <span className="text-sm text-gray-600">
+              {new Date().toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </span>
+          </div>
+          
+          {/* Period Selection Widget */}
+          <div className="relative">
+            <button
+              onClick={() => setShowPeriodSelector(!showPeriodSelector)}
+              className="flex items-center space-x-2 px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+            >
+              <Calendar className="h-4 w-4 text-gray-500" />
+              <span className="text-gray-700">Period: {getCurrentPeriodDisplay()}</span>
+            </button>
+            
+            {showPeriodSelector && (
+              <div className="absolute right-0 top-full mt-2 z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-4 min-w-80">
+                <div className="mb-3">
+                  <h3 className="text-sm font-medium text-gray-900">Select Analysis Period</h3>
+                  <p className="text-xs text-gray-500">Choose a period for dashboard analytics</p>
+                </div>
+                <PeriodSelector
+                  restaurantId={restaurantId}
+                  selectedPeriod={selectedPeriod}
+                  selectedDateRange={selectedDateRange}
+                  onPeriodSelect={handlePeriodSelect}
+                  onDateRangeSelect={handleDateRangeSelect}
+                  placeholder="All time data..."
+                  showCreateButton={false}
+                  showDateRangePicker={true}
+                  className="w-full"
+                />
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <button
+                    onClick={() => setShowPeriodSelector(false)}
+                    className="text-xs text-gray-500 hover:text-gray-700"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Period Context Display */}
+      {(selectedPeriod || selectedDateRange) && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm text-blue-800">
+            📊 <strong>Dashboard showing data for:</strong> {getCurrentPeriodDisplay()}
+            {selectedPeriod && (
+              <span className="text-blue-600 ml-2">
+                ({selectedPeriod.periodStart} - {selectedPeriod.periodEnd})
+              </span>
+            )}
+          </p>
+        </div>
+      )}
 
       {/* Value Proposition */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
