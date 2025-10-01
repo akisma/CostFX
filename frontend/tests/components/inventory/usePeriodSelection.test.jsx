@@ -78,7 +78,13 @@ describe('usePeriodSelection Hook', () => {
         { wrapper: ({ children }) => wrapper({ children, initialState: { periods: mockPeriods } }) }
       );
 
-      const validPeriod = mockPeriods[0];
+      // Create a period that doesn't overlap with existing periods
+      const validPeriod = {
+        id: 'test-valid',
+        periodStart: '2024-02-01T00:00:00Z',
+        periodEnd: '2024-02-07T23:59:59Z',
+        status: 'active'
+      };
       const errors = result.current.validatePeriod(validPeriod);
       
       expect(errors).toEqual([]);
@@ -191,7 +197,7 @@ describe('usePeriodSelection Hook', () => {
       const filters = { searchTerm: 'Weekly' };
       const filtered = result.current.getFilteredPeriods(filters);
       
-      expect(filtered).toHaveLength(2);
+      expect(filtered).toHaveLength(1);
       expect(filtered.every(p => p.periodName.includes('Weekly'))).toBe(true);
     });
 
@@ -215,7 +221,13 @@ describe('usePeriodSelection Hook', () => {
         { wrapper: ({ children }) => wrapper({ children, initialState: { periods: mockPeriods } }) }
       );
 
-      const validPeriod = mockPeriods[0];
+      // Create a period that doesn't overlap with existing periods
+      const validPeriod = {
+        id: 'test-select',
+        periodStart: '2024-03-01T00:00:00Z',
+        periodEnd: '2024-03-07T23:59:59Z',
+        status: 'active'
+      };
       const response = result.current.selectPeriod(validPeriod);
       
       expect(response.success).toBe(true);

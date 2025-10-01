@@ -315,7 +315,16 @@ const inventorySlice = createSlice({
       }
     },
     setSelectedDateRange: (state, action) => {
-      state.periodSelection.selectedDateRange = action.payload
+      // Convert Date objects to ISO strings to maintain serialization
+      const payload = action.payload;
+      if (payload && typeof payload === 'object') {
+        state.periodSelection.selectedDateRange = {
+          from: payload.from instanceof Date ? payload.from.toISOString() : payload.from,
+          to: payload.to instanceof Date ? payload.to.toISOString() : payload.to
+        };
+      } else {
+        state.periodSelection.selectedDateRange = payload;
+      }
       // Clear period when date range is selected
       if (action.payload) {
         state.periodSelection.selectedPeriod = null
