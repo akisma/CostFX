@@ -16,6 +16,14 @@ class Restaurant extends Model {
       foreignKey: 'restaurantId',
       as: 'inventoryPeriods'
     });
+    
+    // POS Integration: One restaurant can have multiple POS connections
+    // Progress Note: Added for Issue #15 - Multi-POS Architecture
+    Restaurant.hasMany(models.POSConnection, {
+      foreignKey: 'restaurantId',
+      as: 'posConnections'
+    });
+    
     // Future associations when models are implemented
     // Restaurant.hasMany(models.Recipe, {
     //   foreignKey: 'restaurantId',
@@ -110,6 +118,20 @@ Restaurant.init({
     allowNull: false,
     defaultValue: true,
     field: 'is_active'
+  },
+  // POS Integration: Primary POS provider for this restaurant
+  // Progress Note: Added for Issue #15 - Multi-POS Architecture
+  // This field indicates the main POS system used by the restaurant
+  posProvider: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    field: 'pos_provider',
+    validate: {
+      isIn: {
+        args: [['square', 'toast', null]],
+        msg: 'POS provider must be either "square", "toast", or null'
+      }
+    }
   }
 }, {
   sequelize,
