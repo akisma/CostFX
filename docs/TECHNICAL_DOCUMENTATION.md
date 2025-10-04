@@ -250,6 +250,175 @@ class BaseAgent {
 - Snapshot completion tracking for beginning/ending inventory
 - Variance analysis completion status
 
+### POS Integration Architecture
+
+**Status**: ✅ **FOUNDATION COMPLETE** (October 2025) - OAuth framework, token encryption, multi-provider adapter pattern
+
+**Implementation**: Issue #15 - Setup Multi-POS Architecture Foundation
+
+#### Overview
+
+The POS Integration system provides a secure, READ ONLY, one-way data flow from merchant POS systems (Square, Toast, etc.) into CostFX for analysis. The system never writes data back to merchant POS systems - the merchant's POS remains the authoritative source of truth.
+
+**Data Flow**: POS System → CostFX (READ ONLY)
+
+#### Architecture Components
+
+**1. Provider Adapters** (`backend/src/adapters/`)
+- **POSAdapter.js**: Abstract base class defining common interface
+- **SquareAdapter.js**: Square POS implementation with OAuth 2.0
+- **ToastAdapter.js**: Toast POS stub (future implementation)
+- **POSAdapterFactory.js**: Factory pattern for adapter instantiation
+
+**2. Security Services** (`backend/src/services/`)
+- **TokenEncryptionService.js**: AES-256-GCM authenticated encryption for OAuth tokens
+  - Unique IV per encryption operation
+  - Authentication tag for tamper detection
+  - Encryption key stored in AWS Secrets Manager (production)
+- **OAuthStateService.js**: CSRF protection for OAuth flows
+  - Cryptographically secure state tokens
+  - 10-minute TTL for attack window limitation
+  - One-time use tokens (prevents replay attacks)
+
+**3. Data Models** (`backend/src/models/`)
+- **POSConnection.js**: OAuth connection management with encrypted token storage
+  - Unique constraint: one connection per (restaurant_id, provider)
+  - Token expiration tracking and refresh
+  - Connection status lifecycle (active, expired, revoked, error)
+
+**4. Error Handling** (`backend/src/utils/`)
+- **posErrors.js**: Specialized error classes
+  - POSAuthError: OAuth and authentication failures
+  - POSTokenError: Token encryption/refresh failures
+  - POSSyncError: Data synchronization failures
+  - POSConfigError: Configuration validation failures
+  - POSRateLimitError: API rate limiting
+
+#### Database Schema
+
+**pos_connections** table:
+```sql
+CREATE TABLE pos_connections (
+  id SERIAL PRIMARY KEY,
+  restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  provider VARCHAR(50) NOT NULL,  -- 'square', 'toast', etc.
+  merchant_id VARCHAR(255) NOT NULL,  -- POS merchant identifier
+  location_id VARCHAR(255),  -- POS location identifier
+  access_token_encrypted TEXT,  -- AES-256-GCM encrypted
+  access_token_iv VARCHAR(32),  -- Initialization vector
+  refresh_token_encrypted TEXT,  -- AES-256-GCM encrypted
+  refresh_token_iv VARCHAR(32),  -- Initialization vector
+  token_expires_at TIMESTAMP WITH TIME ZONE,
+  status VARCHAR(50) DEFAULT 'active',  -- active, expired, revoked, error
+  last_sync_at TIMESTAMP WITH TIME ZONE,
+  metadata JSONB,  -- Provider-specific data
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(restaurant_id, provider)  -- One connection per provider per restaurant
+);
+```
+
+**Indexes:**
+- `idx_pos_provider`: Fast provider lookups
+- `idx_pos_restaurant`: Restaurant's connections
+- `idx_pos_status`: Active connection queries
+- `idx_pos_sync`: Last sync timestamp queries
+
+#### Square Integration
+
+**OAuth 2.0 Flow:**
+1. **Initiate**: Generate state token, redirect to Square authorization
+2. **Callback**: Verify state, exchange code for tokens
+3. **Store**: Encrypt and save access/refresh tokens
+4. **Refresh**: Automatic token refresh before expiration (30-day tokens)
+5. **Revoke**: Clean disconnect with token revocation
+
+**OAuth Scopes (READ ONLY):**
+- `ITEMS_READ`: Catalog/inventory items (NO WRITE ACCESS)
+- `INVENTORY_READ`: Stock counts (NO WRITE ACCESS)
+- `ORDERS_READ`: Sales/order data (NO WRITE ACCESS)
+- `MERCHANT_PROFILE_READ`: Business information
+
+**Square SDK**: `square` npm package v37.1.0
+
+**Webhook Support:**
+- HMAC-SHA256 signature verification
+- Event types: inventory updates, catalog changes, order events
+- Signature header: `x-square-hmacsha256-signature`
+
+#### Security Best Practices
+
+✅ **Token Encryption**: AES-256-GCM with unique IVs  
+✅ **CSRF Protection**: State tokens for OAuth flows  
+✅ **No Sensitive Logging**: Tokens never logged  
+✅ **READ ONLY Scopes**: No write permissions requested  
+✅ **Token Rotation**: Refresh tokens properly rotated  
+✅ **Webhook Verification**: Cryptographic signature validation  
+
+#### Environment Configuration
+
+Required environment variables (see `.env.example`):
+
+```bash
+# Token Encryption (CRITICAL - use secure key in production)
+TOKEN_ENCRYPTION_KEY=<32-byte-hex-key>  # Generate with: openssl rand -hex 32
+
+# Square POS Configuration
+SQUARE_OAUTH_CLIENT_ID=<from Square Developer Dashboard>
+SQUARE_OAUTH_CLIENT_SECRET=<from Square Developer Dashboard>
+SQUARE_OAUTH_REDIRECT_URI=https://your-domain.com/api/pos/square/callback
+SQUARE_ENVIRONMENT=sandbox  # or 'production'
+SQUARE_WEBHOOK_SIGNATURE_KEY=<from Square Developer Dashboard>
+SQUARE_WEBHOOKS_ENABLED=true
+
+# Toast POS Configuration (Future)
+TOAST_CLIENT_ID=<future>
+TOAST_CLIENT_SECRET=<future>
+TOAST_OAUTH_REDIRECT_URI=https://your-domain.com/api/pos/toast/callback
+```
+
+#### Usage Example
+
+```javascript
+// Initialize factory
+await POSAdapterFactory.initialize();
+
+// Get adapter for provider
+const adapter = await POSAdapterFactory.getAdapter('square');
+
+// Initiate OAuth flow
+const { authorizationUrl, state } = await adapter.initiateOAuth(restaurantId);
+// Redirect user to authorizationUrl...
+
+// Handle OAuth callback
+const connection = await adapter.handleOAuthCallback({
+  code: req.query.code,
+  state: req.query.state,
+  restaurantId
+});
+
+// Sync inventory (READ ONLY from Square)
+const result = await adapter.syncInventory(connection);
+console.log(`Synced ${result.synced} items`);
+
+// Health check
+const health = await adapter.healthCheck(connection);
+console.log(`Connection healthy: ${health.healthy}`);
+```
+
+#### Future Enhancements
+
+📋 **Planned:**
+- Complete syncInventory() implementation (Square Catalog API)
+- Complete syncSales() implementation (Square Orders API)
+- Toast POS adapter implementation
+- Webhook processing for real-time updates
+- Multi-location support for restaurant chains
+- Scheduled sync jobs (daily/hourly)
+- Sync conflict resolution strategies
+
+For detailed integration guide, see [POS_INTEGRATION_GUIDE.md](./POS_INTEGRATION_GUIDE.md)
+
 ### Database Migration System
 
 **Migration Tool**: node-pg-migrate (ES module compatible, PostgreSQL-optimized)

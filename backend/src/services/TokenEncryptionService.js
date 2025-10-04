@@ -24,7 +24,7 @@
 
 import crypto from 'crypto';
 import settings from '../config/settings.js';
-import logger from './logger.js';
+import logger from '../utils/logger.js';
 
 class TokenEncryptionService {
   constructor() {

@@ -231,18 +231,33 @@ vi.mock('sequelize', () => {
     )
   }));
   
+  // Mock Model class for Sequelize ORM
+  class MockModel {
+    static associate() {}
+    static init() { return this; }
+  }
+  
+  // Mock DataTypes functions
+  const createDataType = (type) => {
+    const fn = (length) => `${type}(${length || ''})`;
+    fn.toString = () => type;
+    return fn;
+  };
+  
   return {
     default: mockSequelize,
     Sequelize: mockSequelize,
+    Model: MockModel,
     DataTypes: {
-      INTEGER: 'INTEGER',
-      STRING: 'STRING',
-      TEXT: 'TEXT',
-      BOOLEAN: 'BOOLEAN',
-      DATE: 'DATE',
-      DECIMAL: 'DECIMAL',
-      FLOAT: 'FLOAT',
-      ENUM: 'ENUM'
+      INTEGER: createDataType('INTEGER'),
+      STRING: createDataType('STRING'),
+      TEXT: createDataType('TEXT'),
+      BOOLEAN: createDataType('BOOLEAN'),
+      DATE: createDataType('DATE'),
+      DECIMAL: createDataType('DECIMAL'),
+      FLOAT: createDataType('FLOAT'),
+      ENUM: (...values) => `ENUM(${values.join(',')})`,
+      JSONB: createDataType('JSONB')
     },
     Op: {
       between: 'between',
