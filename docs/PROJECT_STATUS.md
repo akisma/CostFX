@@ -84,15 +84,16 @@
 
 ### **Recent Updates (October 4, 2025)**
 
-#### **✅ Issue #30: Square OAuth Connection UI** (COMPLETE)
+#### **✅ Issue #30: Square OAuth Connection UI** (COMPLETE - PRODUCTION TESTED)
 
-**Implementation Status**: 100% Complete and Production Ready
+**Implementation Status**: 100% Complete, Tested End-to-End with Production Square OAuth
 
 **Core Deliverables:**
 - ✅ **Redux State Management**: Complete `squareConnectionSlice` with 7 async thunks
   - OAuth initiation, callback handling, status checking, location management
   - 32 comprehensive unit tests (100% passing)
   - Full integration with notistack for notifications
+  - **Fixed**: Data contract mapping to match backend response fields
 - ✅ **React Components**: Production-ready UI components with full functionality
   - `ConnectionButton` - OAuth flow initiation with loading states
   - `ConnectionStatus` - Visual health indicators (connected/disconnected/error)
@@ -101,20 +102,33 @@
   - `ErrorBoundary` - Graceful error handling for robustness
 - ✅ **Routing & Navigation**: Seamless user experience
   - `/settings/integrations/square` - Main connection page
-  - `/settings/integrations/square/callback` - OAuth callback handler
+  - Backend callback redirects to frontend with `?success=true` or `?error=message`
   - Settings menu with "Square Integration" link
 - ✅ **Testing & Quality**: All quality gates passed
   - Frontend: 167/167 tests passing (32 new Redux tests + existing)
   - Backend: 399/399 tests still passing
   - Build: Successful (2.38s)
   - Dev Server: Running without errors on ports 3000/3001
-- ✅ **User Workflow**: Complete OAuth flow implementation
-  1. Navigate to Settings → Square Integration
-  2. Click "Connect Square" button
-  3. Redirect to Square OAuth authorization
-  4. Return with success notification
-  5. Select locations to sync
-  6. View connection status with management options
+  - **Manual Testing**: Complete OAuth flow tested with production Square account
+- ✅ **User Workflow**: Complete OAuth flow implementation (TESTED END-TO-END)
+  1. Navigate to Settings → Square Integration ✅
+  2. Click "Connect Square" button ✅
+  3. Redirect to Square OAuth authorization (production) ✅
+  4. Backend processes callback, creates connection ✅
+  5. Redirect back to frontend with success ✅
+  6. Select locations to sync ✅
+  7. View connection status showing "Connected" with location details ✅
+
+**Production Debugging & Fixes:**
+- ✅ **OAuth State Token**: Fixed single-use token consumption issue
+  - Backend now completes all processing before redirecting
+  - Frontend receives simple `?success=true` instead of re-processing OAuth
+- ✅ **Data Contract**: Fixed Redux field name mismatches
+  - `locations` (not `selectedLocations`)
+  - `connected` (not `isConnected`)
+  - `connection.status` (not top-level `status`)
+- ✅ **Component Props**: Fixed missing `className` prop in LocationSelector
+- ✅ **Local State**: Added `callbackProcessedLocal` to prevent double-processing
 
 **Files Created:**
 - `frontend/src/store/slices/squareConnectionSlice.js` (Redux state + 32 tests)
@@ -125,11 +139,32 @@
 - `frontend/src/components/common/ErrorBoundary.jsx`
 - `frontend/tests/store/squareConnectionSlice.test.js`
 
+**Files Modified (Production Fixes):**
+- `backend/src/controllers/SquareAuthController.js` - Redirect with success/error flags
+- `frontend/src/pages/SquareConnectionPage.jsx` - Handle success/error params, refresh status after location save
+- `frontend/src/store/slices/squareConnectionSlice.js` - Fix data contract field names
+- `frontend/src/components/pos/square/LocationSelector.jsx` - Add className prop
+
+**Documentation Updated:**
+- `docs/SQUARE_OAUTH_ARCHITECTURE.md` - Added sections 11-12:
+  - Section 11: OAuth Callback Flow - Backend Processing pattern
+  - Section 12: Backend-Frontend Data Contract Issues and fixes
+  - Production Deployment Lessons Learned (10 major debugging lessons)
+
+**Session Notes (October 4, 2025 - Production Testing):**
+- Duration: ~3 hours of manual testing and debugging
+- Discovered 4 critical bugs during production OAuth testing
+- All bugs fixed and verified working end-to-end
+- Connection verified: ID 1, Merchant ML16NMBH0T1H8, Location JJLLC
+
 **Technical Implementation:**
 - PropTypes validation on all components
 - Mobile-responsive design with Tailwind CSS
+- Production Square OAuth (sandbox OAuth doesn't work in browsers)
+- AES-256-GCM token encryption with base64-encoded keys
 - Loading states and error handling throughout
 - URL cleanup after OAuth callback
+- Backend-complete processing pattern (prevents state token reuse)
 - Comprehensive error messages with user-friendly notifications
 
 **Next Steps:** Manual OAuth testing with Square sandbox account, E2E integration testing

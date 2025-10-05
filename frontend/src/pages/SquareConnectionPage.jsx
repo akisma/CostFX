@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { useSnackbar } from 'notistack'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import {
@@ -9,14 +9,12 @@ import {
   LocationSelector
 } from '../components/pos/square'
 import {
-  handleSquareCallback,
   selectSquareLocations,
   fetchSquareStatus,
   selectIsConnected,
   selectShowLocationSelector,
   selectCallbackProcessed,
-  toggleLocationSelector,
-  markCallbackProcessed
+  toggleLocationSelector
 } from '../store/slices/squareConnectionSlice'
 
 /**
@@ -38,9 +36,8 @@ import {
  */
 const SquareConnectionPage = () => {
   const dispatch = useDispatch()
-  const navigate = useNavigate()
   const { enqueueSnackbar } = useSnackbar()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const isConnected = useSelector(selectIsConnected)
   const showLocationSelector = useSelector(selectShowLocationSelector)
@@ -48,53 +45,54 @@ const SquareConnectionPage = () => {
 
   const [view, setView] = useState('status') // 'status' | 'connect' | 'locations'
   const [isHandlingCallback, setIsHandlingCallback] = useState(false)
-
-  /**
-   * Process OAuth callback
-   */
-  const handleOAuthCallback = useCallback(async (code, state) => {
-    setIsHandlingCallback(true)
-
-    try {
-      await dispatch(handleSquareCallback({ code, state })).unwrap()
-
-      enqueueSnackbar('Successfully connected to Square!', { variant: 'success' })
-
-      // Mark as processed to prevent double processing
-      dispatch(markCallbackProcessed())
-
-      // Show location selector
-      setView('locations')
-
-      // Clean up URL (remove query params)
-      navigate('/settings/integrations/square', { replace: true })
-
-    } catch (err) {
-      const errorMessage = err?.message || err || 'Failed to complete Square authentication'
-      enqueueSnackbar(errorMessage, { variant: 'error' })
-
-      // Mark as processed even on error to prevent retry loops
-      dispatch(markCallbackProcessed())
-
-      setView('connect')
-    } finally {
-      setIsHandlingCallback(false)
-    }
-  }, [dispatch, enqueueSnackbar, navigate])
+  const [callbackProcessedLocal, setCallbackProcessed] = useState(false)
 
   /**
    * Handle OAuth callback from Square
    * This runs when user is redirected back from Square OAuth page
    */
   useEffect(() => {
-    const code = searchParams.get('code')
-    const state = searchParams.get('state')
-
-    // Check if this is an OAuth callback
-    if (code && state && !callbackProcessed) {
-      handleOAuthCallback(code, state)
+    const success = searchParams.get('success')
+    const error = searchParams.get('error')
+    
+    // Handle successful OAuth callback
+    if (success === 'true' && !callbackProcessedLocal) {
+      setCallbackProcessed(true)
+      
+      // Fetch the connection status to get the new connection
+      dispatch(fetchSquareStatus())
+        .unwrap()
+        .then(() => {
+          enqueueSnackbar('Square connected successfully! Please select locations to sync.', { 
+            variant: 'success' 
+          })
+          // Show location selector
+          dispatch(toggleLocationSelector(true))
+          setView('locations')
+        })
+        .catch((err) => {
+          const errorMessage = err?.message || 'Failed to load Square connection'
+          enqueueSnackbar(errorMessage, { variant: 'error' })
+        })
+        .finally(() => {
+          // Clean up URL parameters
+          searchParams.delete('success')
+          setSearchParams(searchParams, { replace: true })
+        })
     }
-  }, [searchParams, callbackProcessed, handleOAuthCallback])
+    
+    // Handle OAuth error
+    if (error && !callbackProcessedLocal) {
+      setCallbackProcessed(true)
+      const errorMessage = decodeURIComponent(error)
+      enqueueSnackbar(`Connection failed: ${errorMessage}`, { variant: 'error' })
+      
+      // Clean up URL parameters
+      searchParams.delete('error')
+      setSearchParams(searchParams, { replace: true })
+      setView('connect')
+    }
+  }, [searchParams, callbackProcessedLocal, dispatch, enqueueSnackbar, setSearchParams])
 
   /**
    * Load connection status on mount
@@ -126,6 +124,9 @@ const SquareConnectionPage = () => {
       await dispatch(selectSquareLocations(locationIds)).unwrap()
 
       enqueueSnackbar('Locations saved successfully', { variant: 'success' })
+
+      // Refresh connection status to get updated data
+      await dispatch(fetchSquareStatus()).unwrap()
 
       // Hide location selector and show status
       dispatch(toggleLocationSelector(false))

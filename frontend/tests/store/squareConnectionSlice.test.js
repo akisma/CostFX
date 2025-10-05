@@ -266,10 +266,9 @@ describe('squareConnectionSlice', () => {
       const mockResponse = {
         data: {
           data: {
-            connection: { id: 1, provider: 'square' },
-            selectedLocations: [{ id: 'L1', name: 'Location 1' }],
-            isConnected: true,
-            status: 'active'
+            connection: { id: 1, provider: 'square', status: 'active' },
+            locations: [{ id: 'L1', name: 'Location 1' }],
+            connected: true
           }
         }
       }
@@ -280,7 +279,7 @@ describe('squareConnectionSlice', () => {
 
       const state = store.getState().squareConnection
       expect(state.connection).toEqual(mockResponse.data.data.connection)
-      expect(state.selectedLocations).toEqual(mockResponse.data.data.selectedLocations)
+      expect(state.selectedLocations).toEqual(mockResponse.data.data.locations)
       expect(state.isConnected).toBe(true)
       expect(state.connectionStatus).toBe('active')
       expect(state.loading.status).toBe(false)

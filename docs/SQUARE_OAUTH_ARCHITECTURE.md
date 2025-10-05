@@ -665,7 +665,195 @@ await POSAdapterFactory.initializeAdapters(); // ← Added this
 
 ---
 
+## 11. OAuth Callback Flow - Backend Processing
+
+### Architecture Decision: Server-Side Complete Processing
+
+The OAuth callback is handled entirely on the backend before redirecting to the frontend. This approach was chosen after discovering that the OAuth state token can only be consumed once.
+
+#### Flow Overview
+
+```
+Square OAuth → Backend Callback → Process Everything → Redirect to Frontend with Result
+```
+
+#### Why This Pattern?
+
+**Initial Approach (Failed):**
+```javascript
+// Backend received callback, redirected with code/state
+res.redirect(`${frontend}/square?code=${code}&state=${state}`)
+
+// Frontend detected params, tried to process again
+dispatch(handleSquareCallback({ code, state })) // ❌ State token already consumed!
+```
+
+**Problem**: State tokens are single-use for CSRF protection. The backend consumes the token during initial processing, so the frontend can't reuse it.
+
+**Current Approach (Correct):**
+
+```javascript
+// Backend - SquareAuthController.callback()
+static async callback(req, res) {
+  try {
+    const { code, state } = req.query;
+    const restaurantId = req.restaurantId; // From middleware
+    
+    // Process EVERYTHING on the backend
+    const result = await SquareAuthService.handleCallback({
+      code,
+      state,
+      restaurantId
+    });
+    // ^ Creates POSConnection, encrypts tokens, fetches locations
+    
+    // Redirect with simple success flag
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/settings/integrations/square?success=true`);
+    
+  } catch (error) {
+    // Redirect with error message
+    const errorMessage = encodeURIComponent(error.message);
+    res.redirect(`${frontendUrl}/settings/integrations/square?error=${errorMessage}`);
+  }
+}
+```
+
+#### Frontend Handling
+
+```javascript
+// SquareConnectionPage.jsx
+useEffect(() => {
+  const success = searchParams.get('success')
+  const error = searchParams.get('error')
+  
+  if (success === 'true' && !callbackProcessed) {
+    setCallbackProcessed(true)
+    
+    // Just fetch the connection that backend already created
+    dispatch(fetchSquareStatus())
+      .unwrap()
+      .then(() => {
+        enqueueSnackbar('Square connected successfully!', { variant: 'success' })
+        dispatch(toggleLocationSelector(true))
+        setView('locations')
+      })
+      .finally(() => {
+        searchParams.delete('success')
+        setSearchParams(searchParams, { replace: true })
+      })
+  }
+  
+  if (error && !callbackProcessed) {
+    setCallbackProcessed(true)
+    enqueueSnackbar(`Connection failed: ${decodeURIComponent(error)}`, { variant: 'error' })
+    searchParams.delete('error')
+    setSearchParams(searchParams, { replace: true })
+  }
+}, [searchParams, callbackProcessed])
+```
+
+#### Key Benefits
+
+1. **State Token Security**: Single-use tokens work correctly
+2. **Atomic Processing**: Backend handles entire OAuth flow in one transaction
+3. **Simpler Frontend**: Just fetch connection status, no OAuth logic
+4. **Better Error Handling**: Backend catches all OAuth errors before redirect
+5. **Clean URLs**: Simple `?success=true` or `?error=message` parameters
+
+#### What the Backend Does
+
+1. Validates state token (consumes it)
+2. Exchanges code for access token with Square
+3. Encrypts tokens with AES-256-GCM
+4. Creates POSConnection record in database
+5. Fetches merchant and location data from Square
+6. Redirects to frontend with result
+
+#### What the Frontend Does
+
+1. Detects `success=true` parameter
+2. Fetches connection status (finds the new connection)
+3. Shows location selector UI
+4. Cleans up URL parameters
+
+---
+
+## 12. Backend-Frontend Data Contract Issues
+
+### Problem: Field Name Mismatches
+
+During final testing, discovered that the Redux slice was looking for different field names than the backend was returning, causing the UI to show "Not connected" even when the connection was active.
+
+#### Backend Response Structure
+
+```json
+{
+  "success": true,
+  "message": "Square connection active",
+  "data": {
+    "connected": true,
+    "connection": {
+      "id": 1,
+      "provider": "square",
+      "status": "active",
+      "merchantId": "ML16NMBH0T1H8"
+    },
+    "locations": [
+      {
+        "id": 1,
+        "locationId": "LCNB64H9DFJCY",
+        "locationName": "JJLLC",
+        "address": "2025 Griffith Park Blvd, Los Angeles, CA",
+        "status": "active",
+        "syncEnabled": true,
+        "lastSyncAt": null
+      }
+    ]
+  }
+}
+```
+
+#### Redux Slice Expectations (BEFORE FIX)
+
+```javascript
+// ❌ WRONG - These field names didn't match backend
+.addCase(fetchSquareStatus.fulfilled, (state, action) => {
+  state.connection = action.payload.connection
+  state.selectedLocations = action.payload.selectedLocations || []  // ❌ Backend sends "locations"
+  state.isConnected = action.payload.isConnected || false          // ❌ Backend sends "connected"
+  state.connectionStatus = action.payload.status || 'disconnected' // ❌ Backend sends "connection.status"
+})
+```
+
+#### Redux Slice Fix (AFTER)
+
+```javascript
+// ✅ CORRECT - Now matches backend field names
+.addCase(fetchSquareStatus.fulfilled, (state, action) => {
+  state.connection = action.payload.connection
+  state.selectedLocations = action.payload.locations || []         // ✅ Matches backend
+  state.isConnected = action.payload.connected || false            // ✅ Matches backend
+  state.connectionStatus = action.payload.connection?.status || 'disconnected' // ✅ Nested field
+})
+```
+
+#### Lesson Learned
+
+**Always verify the actual API response format during integration**. Don't assume field names match between backend and frontend. Use browser DevTools Network tab or console to inspect actual responses:
+
+```javascript
+// Quick verification in browser console
+fetch('http://localhost:3001/api/pos/square/status')
+  .then(r => r.json())
+  .then(console.log)
+```
+
+This immediately shows the exact structure and field names the backend is returning.
+
+---
+
 *Generated: October 4, 2025*  
 *Issue: #30 - Square OAuth Connection UI*  
 *Status: Complete and Production Ready*  
-*Updated: Added Production Deployment Lessons Learned section*
+*Updated: Added OAuth Callback Flow architecture, Backend-Frontend data contract issues, and Production Deployment Lessons Learned*

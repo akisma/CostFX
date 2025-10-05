@@ -283,9 +283,9 @@ const squareConnectionSlice = createSlice({
       .addCase(fetchSquareStatus.fulfilled, (state, action) => {
         state.loading.status = false
         state.connection = action.payload.connection
-        state.selectedLocations = action.payload.selectedLocations || []
-        state.isConnected = action.payload.isConnected || false
-        state.connectionStatus = action.payload.status || 'disconnected'
+        state.selectedLocations = action.payload.locations || []
+        state.isConnected = action.payload.connected || false
+        state.connectionStatus = action.payload.connection?.status || 'disconnected'
         state.error = null
       })
       .addCase(fetchSquareStatus.rejected, (state, action) => {

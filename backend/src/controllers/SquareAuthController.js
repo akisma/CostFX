@@ -77,36 +77,25 @@ class SquareAuthController {
         restaurantId
       });
       
-      res.status(200).json({
-        success: true,
-        message: 'Square OAuth callback handled successfully',
-        data: {
-          connection: {
-            id: result.connection.id,
-            provider: result.connection.provider,
-            status: result.connection.status,
-            isActive: result.connection.isActive()
-          },
-          locations: result.locations.map(loc => ({
-            id: loc.id,
-            name: loc.name,
-            address: loc.address,
-            isActive: loc.isActive,
-            capabilities: loc.capabilities
-          }))
-        }
-      });
+      // Redirect back to frontend with success status
+      // The frontend will detect 'success=true' and fetch the connection status
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const redirectUrl = `${frontendUrl}/settings/integrations/square?success=true`;
+      
+      res.redirect(redirectUrl);
+      
     } catch (error) {
       logger.error('SquareAuthController.callback failed', {
         error: error.message,
         restaurantId: req.restaurantId || req.restaurant?.id
       });
       
-      res.status(error.statusCode || 500).json({
-        success: false,
-        message: error.message || 'Failed to handle Square OAuth callback',
-        error: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      });
+      // Redirect back to frontend with error
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const errorMessage = encodeURIComponent(error.message || 'Failed to complete Square authentication');
+      const redirectUrl = `${frontendUrl}/settings/integrations/square?error=${errorMessage}`;
+      
+      res.redirect(redirectUrl);
     }
   }
   

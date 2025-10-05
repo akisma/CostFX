@@ -28,7 +28,8 @@ const LocationSelector = ({
   onLocationsSelected,
   onCancel,
   required = false,
-  preselectedLocationIds = []
+  preselectedLocationIds = [],
+  className = ''
 }) => {
   const dispatch = useDispatch()
   const { enqueueSnackbar } = useSnackbar()
@@ -319,7 +320,8 @@ LocationSelector.propTypes = {
   onLocationsSelected: PropTypes.func.isRequired,
   onCancel: PropTypes.func,
   required: PropTypes.bool,
-  preselectedLocationIds: PropTypes.arrayOf(PropTypes.string)
+  preselectedLocationIds: PropTypes.arrayOf(PropTypes.string),
+  className: PropTypes.string
 }
 
 export default LocationSelector
