@@ -9,6 +9,9 @@ import logger from './utils/logger.js';
 import routes from './routes/index.js';
 import settings from './config/settings.js';
 
+import swaggerSpec from './config/swagger.js';
+import swaggerUi from 'swagger-ui-express';
+
 const app = express();
 
 // Security middleware ----
@@ -41,6 +44,9 @@ app.use((req, res, next) => {
   });
   next();
 });
+
+// Swagger docs route
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Health check
 app.get('/health', (req, res) => {

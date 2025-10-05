@@ -252,9 +252,11 @@ class BaseAgent {
 
 ### POS Integration Architecture
 
-**Status**: ✅ **FOUNDATION COMPLETE** (October 2025) - OAuth framework, token encryption, multi-provider adapter pattern
+**Status**: ✅ **OAUTH SERVICE COMPLETE** (October 2025) - Full OAuth flow, multi-location support, REST API endpoints
 
-**Implementation**: Issue #15 - Setup Multi-POS Architecture Foundation
+**Implementation**: 
+- ✅ Issue #15 - Setup Multi-POS Architecture Foundation
+- ✅ Issue #16 - Square OAuth Authentication Service
 
 #### Overview
 
@@ -406,6 +408,113 @@ const health = await adapter.healthCheck(connection);
 console.log(`Connection healthy: ${health.healthy}`);
 ```
 
+#### Square OAuth Authentication Service
+
+**Status**: ✅ **COMPLETE** (October 4, 2025) - Issue #16
+
+**Implementation Files:**
+
+**Database:**
+- `migrations/1759612780000_create-square-locations.js` - Multi-location support table
+- `models/SquareLocation.js` - Location model with sync tracking and helper methods
+- `models/POSConnection.js` - Updated with SquareLocation association
+
+**Middleware:**
+- `middleware/restaurantContext.js` - Restaurant-centric authentication (no User model)
+  - `requireRestaurant`: Extract restaurantId from request (defaults to 1 in dev)
+  - `optionalRestaurant`: Non-failing version for optional auth
+  - `validateRestaurantAccess`: Placeholder for future User integration
+- `middleware/squareAuthMiddleware.js` - Square-specific validation
+  - `requireSquareConnection`: Validate active connection, check token expiry
+  - `validateOAuthCallback`: OAuth callback parameter validation
+  - `squareErrorHandler`: Convert POS errors to HTTP responses
+  - `squareOAuthRateLimit`: Rate limiter (10 requests/15min)
+
+**Service Layer:**
+- `services/SquareAuthService.js` - Business logic orchestration
+  - `initiateConnection()`: Start OAuth flow with state token
+  - `handleCallback()`: Exchange authorization code for tokens
+  - `getConnectionStatus()`: Check connection and location status
+  - `getLocations()`: Fetch available Square locations
+  - `selectLocations()`: Save selected locations for sync
+  - `disconnect()`: Revoke OAuth tokens and disconnect
+  - `healthCheck()`: Verify connection operational status
+
+**Controller Layer:**
+- `controllers/SquareAuthController.js` - HTTP request handlers
+  - 7 controller methods with error handling and response formatting
+
+**Routes:**
+- `routes/squareAuth.js` - Express routes with Swagger documentation
+  - `POST /api/v1/pos/square/connect` - Initiate OAuth
+  - `GET /api/v1/pos/square/callback` - Handle OAuth callback
+  - `GET /api/v1/pos/square/status` - Get connection status
+  - `GET /api/v1/pos/square/locations` - List available locations
+  - `POST /api/v1/pos/square/locations/select` - Select locations for sync
+  - `POST /api/v1/pos/square/disconnect` - Disconnect integration
+  - `GET /api/v1/pos/square/health` - Health check endpoint
+
+**Database Schema - square_locations:**
+```sql
+CREATE TABLE square_locations (
+  id SERIAL PRIMARY KEY,
+  pos_connection_id INTEGER NOT NULL REFERENCES pos_connections(id) ON DELETE CASCADE,
+  location_id VARCHAR(255) NOT NULL,  -- Square location ID
+  location_name VARCHAR(255) NOT NULL,
+  address JSONB,  -- Full address object from Square
+  status VARCHAR(50) DEFAULT 'active',
+  capabilities JSONB,  -- Location capabilities array
+  sync_enabled BOOLEAN DEFAULT true,
+  last_sync_at TIMESTAMP WITH TIME ZONE,
+  metadata JSONB,  -- Additional location metadata
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(pos_connection_id, location_id)
+);
+```
+
+**Indexes:**
+- `idx_square_locations_connection`: Fast connection lookups
+- `idx_square_locations_location_id`: Square location ID queries
+- `idx_square_locations_sync`: Sync status queries
+- `idx_square_locations_status`: Status filtering
+
+**Architecture Decisions:**
+
+1. **Restaurant-Centric (No User Model)**: 
+   - Deferred User model to Issue #26+ (post-MVP)
+   - Middleware defaults to restaurantId=1 in development
+   - 100+ line comment documents rationale and future User integration path
+   - Simplifies MVP while maintaining future extensibility
+
+2. **Multi-Location Support**:
+   - Restaurants can select multiple Square locations
+   - Each location tracked separately for sync operations
+   - Location-specific metadata and capabilities storage
+
+3. **Comprehensive Error Handling**:
+   - Custom error classes for POS-specific failures
+   - Middleware converts errors to appropriate HTTP responses
+   - Rate limiting prevents OAuth abuse
+
+4. **API Documentation**:
+   - Full Swagger/OpenAPI 3.0 documentation
+   - Accessible at `/api-docs` endpoint
+   - Request/response schemas for all endpoints
+
+**Testing:**
+- ✅ All 399 tests passing (100% success rate)
+- ✅ POSAdapterFactory mock added to test setup
+- ✅ Model associations tested and operational
+- ✅ Dev server starts without errors
+
+**Validation:**
+- ✅ Migration applied successfully to database
+- ✅ All routes registered at `/api/v1/pos/square`
+- ✅ Swagger documentation generated
+- ✅ No linting or syntax errors
+- ✅ Integration with existing POSAdapterFactory
+
 #### Future Enhancements
 
 📋 **Planned:**
@@ -413,9 +522,9 @@ console.log(`Connection healthy: ${health.healthy}`);
 - Complete syncSales() implementation (Square Orders API)
 - Toast POS adapter implementation
 - Webhook processing for real-time updates
-- Multi-location support for restaurant chains
 - Scheduled sync jobs (daily/hourly)
 - Sync conflict resolution strategies
+- User model integration for multi-user support (Issue #26+)
 
 For detailed integration guide, see [POS_INTEGRATION_GUIDE.md](./POS_INTEGRATION_GUIDE.md)
 

@@ -2,9 +2,9 @@
 
 *Current project state, completed phases, and next steps for the Restaurant Operations AI System*
 
-**Last Updated**: September 29, 2025  
-**Current Branch**: feature/inventory-phase2-period-mgmt  
-**Latest Progress**: ✅ Phase 10 Advanced Test Architecture & Fresh Deployment Validation completed
+**Last Updated**: October 4, 2025  
+**Current Branch**: feature/api-hookup  
+**Latest Progress**: ✅ Issue #16 Square OAuth Authentication Service completed
 
 ---
 
@@ -12,32 +12,15 @@
 
 ### **System Status: Production Ready + Complete Development Environment Verified ✅**
 
-**Core Platform**: 100% operational with optimized CI/CD, complete testing framework, centralized configuration, and secure OIDC authentication
-- **Backend**: Node.js/Express with PostgreSQL - **FULLY OPERATIONAL** (370/370 tests passing ✅)
+**Core Platform**: 100% operational with complete testing framework and centralized configuration
+- **Backend**: Node.js/Express with PostgreSQL - **FULLY OPERATIONAL** (399/399 tests passing ✅)
 - **Frontend**: React/Vite with Redux Toolkit - **FULLY OPERATIONAL** (49/49 tests passing ✅)
 - **AI Agents**: Cost, Inventory, and Forecast agents - **ACTIVE & FULLY TESTED**
-- **Infrastructure**: AWS ECS deployment - **PRODUCTION READY** with healthy containers ✅
-- **Authentication**: GitHub Actions OIDC - **FULLY CONFIGURED** with secure role-based access ✅
+- **POS Integration**: Square OAuth authentication - **COMPLETE** with multi-location support ✅
 - **Testing**: Complete Vitest-based test suite (399/399 tests passing) - **100% SUCCESS** ✅
 - **Configuration**: Centralized configuration system - **IMPLEMENTED** ✅
 - **Development Environment**: `npm run dev` + Docker Compose - **FULLY OPERATIONAL** ✅
-- **Production Deployment**: ForecastAgent mixed content & backend configuration issues - **RESOLVED** ✅
-- **Local Deployment**: Docker Compose with all services - **VERIFIED WORKING** ✅
-
-**NEXT THING TO TACKLE!!!!**
-We need to downgrade our AWS services, it's costing a fortune. we are ONLY in development and do not need production quality infrastructure. Focus should be easy deploys.
-From AWS:
-Option 2: Replace with NAT Instance (Development Only)
-Savings: ~$25-30/month
-
-Use a small EC2 instance (t3.nano ~$3.80/month) as a NAT instance instead
-Good for development environments with low traffic
-Not recommended for production
-Option 3: Remove Private Subnets (If Possible)
-Savings: ~$35-50/month
-
-If your applications don't need to be in private subnets, move them to public subnets
-Use security groups for access control instead
+- **Infrastructure**: AWS infrastructure removed (development focus on local/Docker deployment)
 
 ### **🆕 Dave's Inventory Variance Enhancement**
 - ✅ **Task 1 Complete**: Hierarchical Category System with PostgreSQL ltree extension
@@ -99,7 +82,51 @@ Use security groups for access control instead
 - ✅ **CI/CD Pipeline**: Dual-workflow deployment strategy operational
 - ✅ **Test Suite**: 100% passing tests with proper mocking and configuration
 
-### **Recent Updates (September 29, 2025)**
+### **Recent Updates (October 4, 2025)**
+
+#### **✅ Issue #16: Square OAuth Authentication Service** (COMPLETE)
+
+**Implementation Status**: 100% Complete and Operational
+
+**Core Deliverables:**
+- ✅ **Database Migration**: `square_locations` table with 4 indexes for multi-location support
+- ✅ **Models**: `SquareLocation` model with helper methods, updated `POSConnection` association
+- ✅ **Middleware**: Restaurant-centric auth (`restaurantContext.js`) + Square validation (`squareAuthMiddleware.js`)
+- ✅ **Service Layer**: `SquareAuthService` with 7 business logic methods
+- ✅ **Controller**: `SquareAuthController` with HTTP request handlers
+- ✅ **Routes**: 7 REST endpoints with full Swagger/OpenAPI documentation
+- ✅ **Testing**: 399/399 tests passing with proper mocks
+- ✅ **Runtime**: Dev server operational on port 3001, Swagger docs at `/api-docs`
+
+**API Endpoints:**
+```
+POST   /api/v1/pos/square/connect          - Initiate OAuth flow
+GET    /api/v1/pos/square/callback         - Handle OAuth callback
+GET    /api/v1/pos/square/status           - Get connection status
+GET    /api/v1/pos/square/locations        - List available locations
+POST   /api/v1/pos/square/locations/select - Select locations for sync
+POST   /api/v1/pos/square/disconnect       - Disconnect integration
+GET    /api/v1/pos/square/health           - Health check
+```
+
+**Architecture Decisions:**
+- **Restaurant-Centric Design**: No User model until Issue #26+ (post-MVP)
+- **Multi-Location Support**: Restaurants can connect multiple Square locations
+- **Comprehensive Documentation**: Full Swagger/OpenAPI 3.0 specs for all endpoints
+- **Security**: Rate limiting, OAuth state validation, encrypted token storage
+
+**Bug Fixes During Implementation:**
+- Fixed `BadRequestError` missing export in `errorHandler.js`
+- Corrected `settings.app.baseUrl` → `settings.baseUrl` in `posProviders.js`
+- Added `POSAdapterFactory` mock to test setup to prevent config loading issues
+
+**Files Created:** 10 new files (migration, 2 models, 2 middleware, service, controller, routes, router registration, test mocks, error handler update)
+
+**Next Steps:** Manual OAuth flow testing, Square API adapter implementation for data sync
+
+---
+
+### **Previous Updates (September 29, 2025)**
 
 #### **🧪 Test Architecture Restoration & Fresh Deployment Validation**
 - ✅ **Elegant Stateful Mock System Restored**: Sophisticated test factory pattern in `tests/setup.js`

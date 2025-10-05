@@ -34,14 +34,23 @@ class POSConnection extends Model {
    * 
    * Relationships:
    * - belongsTo Restaurant: Each connection belongs to one restaurant
+   * - hasMany SquareLocation: One connection can have multiple locations (for Square)
    * 
    * Progress Note: Association enables restaurant.getPOSConnections() queries
+   * Issue #16: Added SquareLocation association for multi-location support
    */
   static associate(models) {
     POSConnection.belongsTo(models.Restaurant, {
       foreignKey: 'restaurantId',
       as: 'restaurant',
       onDelete: 'CASCADE' // If restaurant deleted, delete its connections
+    });
+    
+    // Square multi-location support (Issue #16)
+    POSConnection.hasMany(models.SquareLocation, {
+      foreignKey: 'posConnectionId',
+      as: 'squareLocations',
+      onDelete: 'CASCADE' // If connection deleted, delete its locations
     });
   }
 

@@ -7,6 +7,7 @@ import salesRoutes from './sales.js';
 import agentRoutes from './agents.js';
 import periodRoutes from './periods.js';
 import varianceRoutes from './variance.js';
+import squareAuthRoutes from './squareAuth.js'; // Issue #16: Square OAuth routes
 
 const router = express.Router();
 
@@ -19,6 +20,7 @@ router.use('/sales', salesRoutes);
 router.use('/agents', agentRoutes);
 router.use('/periods', periodRoutes);
 router.use('/variance', varianceRoutes);
+router.use('/pos/square', squareAuthRoutes); // Issue #16: Square OAuth endpoints
 
 // API info endpoint
 router.get('/', (req, res) => {
@@ -33,7 +35,8 @@ router.get('/', (req, res) => {
       sales: '/api/v1/sales',
       agents: '/api/v1/agents',
       periods: '/api/v1/periods',
-      variance: '/api/v1/variance'
+      variance: '/api/v1/variance',
+      squareAuth: '/api/v1/pos/square' // Issue #16: Square OAuth
     }
   });
 });

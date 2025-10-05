@@ -9,6 +9,8 @@ import InventoryPeriod from './InventoryPeriod.js';
 import InventoryTransaction from './InventoryTransaction.js';
 import PeriodInventorySnapshot from './PeriodInventorySnapshot.js';
 import TheoreticalUsageAnalysis from './TheoreticalUsageAnalysis.js';
+import POSConnection from './POSConnection.js';
+import SquareLocation from './SquareLocation.js';
 
 // Collect all models
 const models = {
@@ -19,7 +21,9 @@ const models = {
   InventoryPeriod,
   InventoryTransaction,
   PeriodInventorySnapshot,
-  TheoreticalUsageAnalysis
+  TheoreticalUsageAnalysis,
+  POSConnection,
+  SquareLocation
 };
 
 // Initialize associations
@@ -43,7 +47,9 @@ export {
   InventoryPeriod,
   InventoryTransaction,
   PeriodInventorySnapshot,
-  TheoreticalUsageAnalysis
+  TheoreticalUsageAnalysis,
+  POSConnection,
+  SquareLocation
 };
 
 export default models;

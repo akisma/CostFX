@@ -66,7 +66,7 @@ export const squareConfig = {
     ],
     
     // Redirect URI must match exactly what's registered in Square dashboard
-    redirectUri: process.env.SQUARE_OAUTH_REDIRECT_URI || `${settings.app.baseUrl}/api/pos/square/callback`
+    redirectUri: process.env.SQUARE_OAUTH_REDIRECT_URI || `${settings.baseUrl}/api/pos/square/callback`
   },
   
   // Webhook configuration
@@ -140,7 +140,7 @@ export const toastConfig = {
     // Progress Note: When implementing, request READ ONLY scopes
     // We never write data back to Toast POS - one-way sync only
     scopes: [], // To be determined based on Toast API docs (READ permissions only)
-    redirectUri: process.env.TOAST_OAUTH_REDIRECT_URI || `${settings.app.baseUrl}/api/pos/toast/callback`
+    redirectUri: process.env.TOAST_OAUTH_REDIRECT_URI || `${settings.baseUrl}/api/pos/toast/callback`
   },
   
   // Webhook configuration (placeholder)

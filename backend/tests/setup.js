@@ -22,7 +22,9 @@ const sharedDataStores = {
   InventoryTransaction: new Map(),
   Supplier: new Map(),
   IngredientCategory: new Map(),
-  TheoreticalUsageAnalysis: new Map()
+  TheoreticalUsageAnalysis: new Map(),
+  POSConnection: new Map(),
+  SquareLocation: new Map()
 };
 
 // Helper to generate unique IDs
@@ -383,6 +385,48 @@ vi.mock('../src/models/PeriodInventorySnapshot.js', () => ({
 
 vi.mock('../src/models/TheoreticalUsageAnalysis.js', () => ({
   default: createStatefulMockModel('TheoreticalUsageAnalysis')
+}));
+
+vi.mock('../src/models/POSConnection.js', () => ({
+  default: createStatefulMockModel('POSConnection')
+}));
+
+vi.mock('../src/models/SquareLocation.js', () => ({
+  default: createStatefulMockModel('SquareLocation')
+}));
+
+// Mock POSAdapterFactory to avoid loading posProviders config
+vi.mock('../src/adapters/POSAdapterFactory.js', () => ({
+  default: {
+    getAdapter: vi.fn().mockReturnValue({
+      initialize: vi.fn().mockResolvedValue(undefined),
+      initiateOAuth: vi.fn().mockResolvedValue({
+        authorizationUrl: 'https://connect.squareup.com/oauth2/authorize?test',
+        state: 'test-state-token'
+      }),
+      handleOAuthCallback: vi.fn().mockResolvedValue({
+        id: 1,
+        provider: 'square',
+        status: 'active',
+        isActive: vi.fn().mockReturnValue(true)
+      }),
+      getLocations: vi.fn().mockResolvedValue([
+        {
+          id: 'L123',
+          name: 'Test Location',
+          address: {},
+          isActive: true,
+          capabilities: ['CREDIT_CARD_PROCESSING']
+        }
+      ]),
+      disconnect: vi.fn().mockResolvedValue(undefined),
+      healthCheck: vi.fn().mockResolvedValue({
+        healthy: true,
+        message: 'Connection healthy',
+        details: {}
+      })
+    })
+  }
 }));
 
 // Mock OpenAI
