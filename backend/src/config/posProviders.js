@@ -55,6 +55,9 @@ export const squareConfig = {
     clientId: process.env.SQUARE_OAUTH_CLIENT_ID || process.env.SQUARE_APPLICATION_ID || null,
     clientSecret: process.env.SQUARE_OAUTH_CLIENT_SECRET || null,
     
+    // OAuth authorization URLs (environment-specific)
+    authorizationUrl: process.env.SQUARE_OAUTH_AUTHORIZATION_URL || null, // Override if needed
+    
     // OAuth scopes requested from merchants
     // Progress Note: READ ONLY scopes - we never write data back to Square
     // Request minimal necessary scopes per security best practice

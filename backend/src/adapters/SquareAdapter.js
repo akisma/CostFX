@@ -36,6 +36,7 @@ import crypto from 'crypto';
 import POSAdapter from './POSAdapter.js';
 import POSConnection from '../models/POSConnection.js';
 import OAuthStateService from '../services/OAuthStateService.js';
+import TokenEncryptionService from '../services/TokenEncryptionService.js';
 import logger from '../utils/logger.js';
 import {
   POSError,
@@ -167,13 +168,21 @@ class SquareAdapter extends POSAdapter {
       
       // Build authorization URL
       // Progress Note: Square OAuth requires: client_id, scope, session (boolean), state
-      const authUrl = new URL('https://connect.squareup.com/oauth2/authorize');
+      // Sandbox uses squareupsandbox.com, Production uses connect.squareup.com
+      // Can be overridden via SQUARE_OAUTH_AUTHORIZATION_URL environment variable
+      const baseUrl = this.config.oauth.authorizationUrl || (
+        this.config.environment === 'sandbox' 
+          ? 'https://squareupsandbox.com'
+          : 'https://connect.squareup.com'
+      );
+      const authUrl = new URL(`${baseUrl}/oauth2/authorize`);
       
       // Add query parameters per Square OAuth spec
       authUrl.searchParams.append('client_id', this.config.oauth.clientId);
       authUrl.searchParams.append('scope', this.config.oauth.scopes.join(' '));
       authUrl.searchParams.append('session', 'false'); // Request long-lived tokens
       authUrl.searchParams.append('state', state);
+      authUrl.searchParams.append('redirect_uri', this.config.oauth.redirectUri);
       
       const authorizationUrl = authUrl.toString();
       
@@ -221,16 +230,26 @@ class SquareAdapter extends POSAdapter {
     this._ensureInitialized();
     this._logOperation('handleOAuthCallback', { restaurantId });
     
+    let verifiedRestaurantId = restaurantId; // Initialize with parameter value
+    
     try {
       // Verify state token (CSRF protection)
       // Progress Note: This verifies and consumes the state token (one-time use)
-      const isValidState = await OAuthStateService.verifyAndConsumeState(state, {
+      // Returns the session data (restaurantId, provider, timestamp) if valid
+      const sessionData = await OAuthStateService.verifyAndConsumeState({
         restaurantId,
         provider: 'square'
-      });
+      }, state);
       
-      if (!isValidState) {
+      if (!sessionData) {
         throw new POSAuthError('Invalid or expired state token - possible CSRF attack');
+      }
+      
+      // Extract restaurantId from state token (overrides parameter if provided)
+      verifiedRestaurantId = sessionData.restaurantId || restaurantId;
+      
+      if (!verifiedRestaurantId) {
+        throw new POSAuthError('Restaurant ID not found in state token');
       }
       
       // Exchange authorization code for tokens
@@ -263,7 +282,7 @@ class SquareAdapter extends POSAdapter {
       // Progress Note: Unique constraint on (restaurant_id, provider) ensures one Square connection per restaurant
       let connection = await POSConnection.findOne({
         where: {
-          restaurantId,
+          restaurantId: verifiedRestaurantId,
           provider: 'square'
         }
       });
@@ -286,27 +305,28 @@ class SquareAdapter extends POSAdapter {
         
       } else {
         // Create new connection
+        // Encrypt tokens first before creating the record
+        const encryptedAccessToken = TokenEncryptionService.encrypt(accessToken);
+        const encryptedRefreshToken = TokenEncryptionService.encrypt(refreshToken);
+        
         connection = await POSConnection.create({
-          restaurantId,
+          restaurantId: verifiedRestaurantId,
           provider: 'square',
           merchantId,
           locationId,
           tokenExpiresAt,
           status: 'active',
+          accessTokenEncrypted: encryptedAccessToken,
+          refreshTokenEncrypted: encryptedRefreshToken,
           metadata: {
             connectedAt: new Date().toISOString(),
             merchantInfo
           }
         });
-        
-        // Set encrypted tokens after creation
-        await connection.setAccessToken(accessToken);
-        await connection.setRefreshToken(refreshToken);
-        await connection.save();
       }
       
       this._logOperation('handleOAuthCallback', {
-        restaurantId,
+        restaurantId: verifiedRestaurantId,
         connectionId: connection.id,
         merchantId,
         locationId,
@@ -318,7 +338,7 @@ class SquareAdapter extends POSAdapter {
       
     } catch (error) {
       this._logOperation('handleOAuthCallback', {
-        restaurantId,
+        restaurantId: verifiedRestaurantId,
         error: error.message
       }, 'error');
       

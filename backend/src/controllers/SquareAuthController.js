@@ -26,7 +26,14 @@ class SquareAuthController {
    */
   static async connect(req, res) {
     try {
-      const { restaurantId } = req;
+      const restaurantId = req.restaurant?.id;
+      
+      if (!restaurantId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Restaurant context is required'
+        });
+      }
       
       const result = await SquareAuthService.initiateConnection(restaurantId);
       
@@ -41,7 +48,7 @@ class SquareAuthController {
     } catch (error) {
       logger.error('SquareAuthController.connect failed', {
         error: error.message,
-        restaurantId: req.restaurantId
+        restaurantId: req.restaurant?.id
       });
       
       res.status(error.statusCode || 500).json({
@@ -62,7 +69,7 @@ class SquareAuthController {
   static async callback(req, res) {
     try {
       const { code, state } = req.query;
-      const { restaurantId } = req; // Extracted by validateOAuthCallback middleware
+      const restaurantId = req.restaurantId; // Extracted by validateOAuthCallback middleware
       
       const result = await SquareAuthService.handleCallback({
         code,
@@ -92,7 +99,7 @@ class SquareAuthController {
     } catch (error) {
       logger.error('SquareAuthController.callback failed', {
         error: error.message,
-        restaurantId: req.restaurantId
+        restaurantId: req.restaurantId || req.restaurant?.id
       });
       
       res.status(error.statusCode || 500).json({
@@ -112,7 +119,7 @@ class SquareAuthController {
    */
   static async status(req, res) {
     try {
-      const { restaurantId } = req;
+      const restaurantId = req.restaurant?.id;
       
       const result = await SquareAuthService.getConnectionStatus(restaurantId);
       
@@ -143,7 +150,7 @@ class SquareAuthController {
     } catch (error) {
       logger.error('SquareAuthController.status failed', {
         error: error.message,
-        restaurantId: req.restaurantId
+        restaurantId: req.restaurant?.id
       });
       
       res.status(error.statusCode || 500).json({
@@ -163,7 +170,7 @@ class SquareAuthController {
    */
   static async locations(req, res) {
     try {
-      const { restaurantId } = req;
+      const restaurantId = req.restaurant?.id;
       
       const locations = await SquareAuthService.getLocations(restaurantId);
       
@@ -184,7 +191,7 @@ class SquareAuthController {
     } catch (error) {
       logger.error('SquareAuthController.locations failed', {
         error: error.message,
-        restaurantId: req.restaurantId
+        restaurantId: req.restaurant?.id
       });
       
       res.status(error.statusCode || 500).json({
@@ -204,7 +211,7 @@ class SquareAuthController {
    */
   static async selectLocations(req, res) {
     try {
-      const { restaurantId } = req;
+      const restaurantId = req.restaurant?.id;
       const { locationIds } = req.body;
       
       // Validate request body
@@ -244,7 +251,7 @@ class SquareAuthController {
     } catch (error) {
       logger.error('SquareAuthController.selectLocations failed', {
         error: error.message,
-        restaurantId: req.restaurantId
+        restaurantId: req.restaurant?.id
       });
       
       res.status(error.statusCode || 500).json({
@@ -264,7 +271,7 @@ class SquareAuthController {
    */
   static async disconnect(req, res) {
     try {
-      const { restaurantId } = req;
+      const restaurantId = req.restaurant?.id;
       
       await SquareAuthService.disconnect(restaurantId);
       
@@ -276,7 +283,7 @@ class SquareAuthController {
     } catch (error) {
       logger.error('SquareAuthController.disconnect failed', {
         error: error.message,
-        restaurantId: req.restaurantId
+        restaurantId: req.restaurant?.id
       });
       
       res.status(error.statusCode || 500).json({
@@ -296,7 +303,7 @@ class SquareAuthController {
    */
   static async health(req, res) {
     try {
-      const { restaurantId } = req;
+      const restaurantId = req.restaurant?.id;
       
       const result = await SquareAuthService.healthCheck(restaurantId);
       
@@ -308,7 +315,7 @@ class SquareAuthController {
     } catch (error) {
       logger.error('SquareAuthController.health failed', {
         error: error.message,
-        restaurantId: req.restaurantId
+        restaurantId: req.restaurant?.id
       });
       
       res.status(500).json({

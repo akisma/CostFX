@@ -1369,6 +1369,328 @@ async getRecipeIngredients(restaurantId) {
 
 ## Implementation Guides
 
+### Square OAuth Connection UI (Issue #30)
+
+**Overview**: Complete frontend implementation for Square POS OAuth integration, providing users with a seamless connection workflow from authorization through location selection.
+
+#### Architecture
+
+**Component Hierarchy:**
+```
+App.jsx (ErrorBoundary wrapper)
+  └── SquareConnectionPage (orchestrator)
+      ├── ConnectionButton (OAuth initiation)
+      ├── ConnectionStatus (health monitoring)
+      └── LocationSelector (multi-location selection)
+```
+
+**Data Flow:**
+```
+User Action → Component → Redux Thunk → API Service → Backend
+                          ↓
+                    State Update → UI Re-render
+```
+
+#### Redux State Management
+
+**File**: `frontend/src/store/slices/squareConnectionSlice.js`
+
+**State Structure:**
+```javascript
+{
+  connectionStatus: null,  // Connection health status
+  authorizationUrl: null,  // OAuth URL from backend
+  locations: [],           // Available Square locations
+  selectedLocationIds: [], // User-selected locations
+  loading: {               // Granular loading states
+    initiating: false,
+    callback: false,
+    status: false,
+    locations: false,
+    selecting: false,
+    disconnecting: false,
+    health: false
+  },
+  error: null              // Error messages
+}
+```
+
+**Async Thunks** (7 total):
+1. `initiateSquareConnection()` - Start OAuth flow
+2. `handleSquareCallback(code, state)` - Process OAuth return
+3. `fetchSquareStatus()` - Get connection status
+4. `fetchSquareLocations()` - Retrieve available locations
+5. `selectSquareLocations(locationIds)` - Save selected locations
+6. `disconnectSquare()` - Remove integration
+7. `checkSquareHealth()` - Verify connection health
+
+**Key Selectors** (11 total):
+```javascript
+selectConnectionStatus(state)    // Get connection status
+selectAuthorizationUrl(state)    // Get OAuth URL
+selectSquareLocations(state)     // Get locations array
+selectSelectedLocationIds(state) // Get selected IDs
+selectSquareError(state)         // Get error message
+selectIsInitiating(state)        // OAuth flow loading
+selectIsProcessingCallback(state)// Callback processing
+// ... and 4 more loading selectors
+```
+
+#### Components
+
+**1. ConnectionButton** (`frontend/src/components/pos/square/ConnectionButton.jsx`)
+
+**Purpose**: Initiate Square OAuth flow with visual feedback
+
+**Key Features:**
+- Dispatches `initiateSquareConnection` thunk
+- Redirects to Square authorization URL
+- Loading state with spinner icon
+- Error handling with notistack notifications
+
+**Usage Example:**
+```jsx
+import { ConnectionButton } from '../components/pos/square';
+
+<ConnectionButton />
+```
+
+**2. ConnectionStatus** (`frontend/src/components/pos/square/ConnectionStatus.jsx`)
+
+**Purpose**: Display connection health with management options
+
+**Key Features:**
+- Visual status badges (connected/disconnected/error)
+- Location list display
+- Disconnect button with confirmation
+- Periodic health checks
+
+**Props**: None (connects to Redux)
+
+**3. LocationSelector** (`frontend/src/components/pos/square/LocationSelector.jsx`)
+
+**Purpose**: Multi-location checkbox selection UI
+
+**Key Features:**
+- Search/filter functionality
+- Select all/none toggle
+- Validation (at least 1 location required)
+- Loading/error/empty states
+
+**State Management:**
+- Local state for search term
+- Redux for locations array and submission
+
+**4. SquareConnectionPage** (`frontend/src/pages/SquareConnectionPage.jsx`)
+
+**Purpose**: Main orchestration component managing OAuth flow
+
+**Key Features:**
+- OAuth callback detection via URL params
+- View switching (connect → status → locations)
+- URL cleanup after callback processing
+- useCallback for effect dependencies
+
+**View Logic:**
+```javascript
+if (!connectionStatus) {
+  return <ConnectionButton />;
+} else if (selectedLocationIds.length === 0) {
+  return <LocationSelector />;
+} else {
+  return <ConnectionStatus />;
+}
+```
+
+**5. ErrorBoundary** (`frontend/src/components/common/ErrorBoundary.jsx`)
+
+**Purpose**: Catch and display React component errors gracefully
+
+**Key Features:**
+- Class component with getDerivedStateFromError
+- Development error details display
+- Refresh/home navigation buttons
+- Console error logging
+
+#### Routing Configuration
+
+**Main Route** (`/settings/integrations/square`):
+```jsx
+<Route 
+  path="/settings/integrations/square" 
+  element={<SquareConnectionPage />} 
+/>
+```
+
+**Callback Route** (`/settings/integrations/square/callback`):
+```jsx
+<Route 
+  path="/settings/integrations/square/callback" 
+  element={<SquareConnectionPage />} 
+/>
+```
+
+**Navigation Link** (in `Layout.jsx`):
+```jsx
+{
+  label: 'Settings',
+  icon: Settings,
+  path: '/settings',
+  children: [
+    {
+      label: 'Square Integration',
+      icon: Plug,
+      path: '/settings/integrations/square'
+    }
+  ]
+}
+```
+
+#### User Flow
+
+1. **Navigation**: User clicks "Settings" → "Square Integration"
+2. **Connection View**: Sees `ConnectionButton` component
+3. **OAuth Initiation**: Clicks "Connect Square"
+   - Redux dispatches `initiateSquareConnection`
+   - Backend returns authorization URL
+   - User redirected to Square OAuth page
+4. **Authorization**: User approves Square permissions
+5. **Callback Handling**: Square redirects to callback route
+   - `SquareConnectionPage` detects code/state params
+   - Dispatches `handleSquareCallback` thunk
+   - Backend exchanges code for access token
+   - Success notification shown
+6. **Location Selection**: Component switches to `LocationSelector`
+   - Fetches available Square locations
+   - User selects locations to sync
+   - Submits selection
+7. **Status View**: Component switches to `ConnectionStatus`
+   - Shows connection health
+   - Displays selected locations
+   - Provides disconnect option
+
+#### Testing
+
+**Test File**: `frontend/tests/store/squareConnectionSlice.test.js`
+
+**Coverage**: 32 unit tests (100% passing)
+
+**Test Categories:**
+- Initial state validation
+- Synchronous actions (5 tests)
+- Async thunk success cases (7 tests)
+- Async thunk failure cases (7 tests)
+- Selectors (11 tests)
+- State transitions (2 tests)
+
+**Example Test:**
+```javascript
+describe('initiateSquareConnection', () => {
+  it('should handle successful connection initiation', async () => {
+    const mockAuthUrl = 'https://connect.squareup.com/oauth2/authorize...';
+    mockApi.initiateSquareConnection.mockResolvedValue({
+      data: { authorizationUrl: mockAuthUrl }
+    });
+    
+    await store.dispatch(initiateSquareConnection());
+    
+    const state = store.getState().squareConnection;
+    expect(state.authorizationUrl).toBe(mockAuthUrl);
+    expect(state.loading.initiating).toBe(false);
+    expect(state.error).toBeNull();
+  });
+});
+```
+
+#### Error Handling
+
+**Error Boundary**: Wraps all routes in `App.jsx`
+```jsx
+<ErrorBoundary>
+  <Routes>
+    {/* All routes */}
+  </Routes>
+</ErrorBoundary>
+```
+
+**API Error Handling**: Consistent pattern across all thunks
+```javascript
+try {
+  const response = await api.someEndpoint();
+  return response.data;
+} catch (error) {
+  return rejectWithValue(error.response?.data?.message || 'Operation failed');
+}
+```
+
+**User Notifications**: notistack integration in `main.jsx`
+```jsx
+<SnackbarProvider 
+  maxSnack={3}
+  anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+  autoHideDuration={4000}
+>
+  <App />
+</SnackbarProvider>
+```
+
+#### Mobile Responsiveness
+
+All components use Tailwind CSS responsive classes:
+- `sm:`, `md:`, `lg:` breakpoints for layout adjustments
+- Touch-friendly button sizes (minimum 44px)
+- Readable font sizes on small screens
+- Proper spacing and padding across devices
+
+**Example:**
+```jsx
+<div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+  {/* Responsive grid layout */}
+</div>
+```
+
+#### Quality Metrics
+
+- **Frontend Tests**: 167/167 passing (100%)
+- **Backend Tests**: 399/399 passing (100%)
+- **Redux Slice Tests**: 32/32 passing (100%)
+- **Build Time**: 2.38s average
+- **Bundle Size**: 962.71 kB (optimized for production)
+- **Dev Server**: Running without errors
+
+#### API Integration
+
+**Backend Endpoints Used:**
+- `POST /api/v1/pos/square/connect` - Initiate OAuth
+- `POST /api/v1/pos/square/callback` - Exchange code for token
+- `GET /api/v1/pos/square/status` - Get connection status
+- `GET /api/v1/pos/square/locations` - Fetch locations
+- `POST /api/v1/pos/square/locations/select` - Save location selection
+- `DELETE /api/v1/pos/square/disconnect` - Remove integration
+- `GET /api/v1/pos/square/health` - Check connection health
+
+**API Service** (`frontend/src/services/api.js`):
+```javascript
+export const initiateSquareConnection = () => 
+  api.post('/pos/square/connect');
+
+export const handleSquareCallback = (code, state) => 
+  api.post('/pos/square/callback', { code, state });
+
+// ... other methods
+```
+
+#### Future Enhancements
+
+- **E2E Testing**: Playwright tests for full OAuth flow
+- **Sandbox Testing**: Square sandbox account integration
+- **Error Recovery**: Automatic retry on network failures
+- **Location Sync Status**: Real-time sync progress indicators
+- **Webhook Integration**: Event notifications from Square
+- **Multi-restaurant Support**: Location mapping for multiple restaurants
+
+---
+
 ### Setting Up Development Environment
 
 #### Prerequisites

@@ -91,7 +91,11 @@ class OAuthStateService {
       
       // Development fallback: in-memory storage with expiration
       const expiresAt = Date.now() + (ttlSeconds * 1000);
-      this.stateStore.set(key, { token: stateToken, expiresAt });
+      this.stateStore.set(key, { 
+        token: stateToken, 
+        expiresAt,
+        sessionData: sessionId // Store the session data for retrieval
+      });
       
       logger.debug('[OAuthStateService] State token generated', {
         sessionId,
@@ -139,6 +143,7 @@ class OAuthStateService {
       // Development fallback: in-memory retrieval
       const stored = this.stateStore.get(key);
       let storedState = null;
+      let storedSessionData = null;
       
       if (stored) {
         // Check if token has expired
@@ -147,6 +152,7 @@ class OAuthStateService {
           this.stateStore.delete(key);
         } else {
           storedState = stored.token;
+          storedSessionData = stored.sessionData;
         }
       }
       
@@ -195,7 +201,8 @@ class OAuthStateService {
         sessionId
       });
       
-      return true;
+      // Return the session data along with verification result
+      return storedSessionData;
       
     } catch (error) {
       logger.error('[OAuthStateService] State verification failed', {
