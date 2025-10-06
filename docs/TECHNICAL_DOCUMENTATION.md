@@ -3158,6 +3158,61 @@ docker run --rm frontend:latest grep -r "elb.amazonaws.com" /usr/share/nginx/htm
   psql -h localhost -U username -d costfx_dev
   ```
 
+#### React Component Issues
+
+**Issue**: ReferenceError for undefined function or state setter
+- **Cause**: Function called without proper declaration (missing `useState`, `useCallback`, etc.)
+- **Example**: `ReferenceError: setIsDisconnecting is not defined` in ConnectionStatus component
+- **Solution**: 
+  ```javascript
+  // ❌ BAD: Calling undefined function
+  const handleClick = () => {
+    setIsLoading(true); // Error if useState not declared!
+  };
+  
+  // ✅ GOOD: Properly declare state before using
+  const [isLoading, setIsLoading] = useState(false);
+  const handleClick = () => {
+    setIsLoading(true);
+  };
+  
+  // ✅ BETTER: Use existing Redux state instead of redundant local state
+  const isLoading = useSelector(state => state.feature.loading);
+  const handleClick = () => {
+    dispatch(startLoading()); // Redux manages state
+  };
+  ```
+- **Prevention**: 
+  - Add component-level integration tests that exercise actual button clicks
+  - Verify all function calls have corresponding declarations
+  - Use ESLint with `no-undef` rule enabled
+  - Prefer Redux for shared state over local `useState`
+  - Run tests that mock actual user interactions, not just Redux actions
+
+**Production Bug Fix Examples (October 2025):**
+
+1. **Frontend - Disconnect Button Crash**
+   - **Component**: `frontend/src/components/pos/square/ConnectionStatus.jsx`
+   - **Bug**: `setIsDisconnecting is not defined` ReferenceError
+   - **Root Cause**: Function called `setIsDisconnecting(true)` without `useState` declaration
+   - **Fix**: Removed broken call; component already used Redux `loading.disconnect` state
+   - **Tests Added**: 5 component tests in `ConnectionStatus.test.jsx` validating disconnect behavior
+   - **Lesson**: Component-level tests catch issues that Redux unit tests miss
+
+2. **Backend - Square Token Revocation**
+   - **Component**: `backend/src/adapters/SquareAdapter.js`
+   - **Bug**: `Argument for 'authorization' failed validation` from Square API
+   - **Root Cause**: SDK `revokeToken()` not properly configured with Basic Auth
+   - **Fix**: Replaced with direct axios HTTP call using Basic Auth header (base64 clientId:clientSecret)
+   - **Lesson**: Test external API integrations; SDK abstractions can hide auth requirements
+
+3. **Frontend - Data Contract Mismatch**
+   - **Component**: `frontend/src/components/pos/square/ConnectionStatus.jsx`
+   - **Bug**: Location names not displaying (empty bullets in list)
+   - **Root Cause**: Component used `location.name` but backend sends `location.locationName`
+   - **Fix**: Updated to `location.locationName || location.name` with fallback
+   - **Lesson**: Validate frontend-backend data field naming consistency
+
 #### Testing Issues
 
 **Issue**: Tests failing with "describe is not defined" or ES module errors

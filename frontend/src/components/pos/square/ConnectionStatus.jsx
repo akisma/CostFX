@@ -73,8 +73,6 @@ const ConnectionStatus = ({
     }
 
     try {
-      setIsDisconnecting(true)
-
       await dispatch(disconnectSquare()).unwrap()
       
       enqueueSnackbar('Square disconnected successfully', { variant: 'success' })
@@ -205,7 +203,7 @@ const ConnectionStatus = ({
                 className="flex items-center gap-2 text-sm text-gray-600 p-2 bg-gray-50 rounded"
               >
                 <CheckCircle2 size={14} className="text-green-500" />
-                <span className="font-medium">{location.name}</span>
+                <span className="font-medium">{location.locationName || location.name}</span>
                 {location.address && (
                   <span className="text-gray-400">
                     • {location.address.city || location.address.locality}

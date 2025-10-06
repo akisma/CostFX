@@ -33,6 +33,7 @@
 
 import { Client, Environment } from 'square';
 import crypto from 'crypto';
+import axios from 'axios';
 import POSAdapter from './POSAdapter.js';
 import POSConnection from '../models/POSConnection.js';
 import OAuthStateService from '../services/OAuthStateService.js';
@@ -110,9 +111,14 @@ class SquareAdapter extends POSAdapter {
       
       // Create Square SDK client for OAuth operations
       // Progress Note: This client uses application credentials for OAuth flows
+      // The client credentials are needed for token revocation (Basic Auth)
       this.oauthClient = new Client({
         environment,
-        // OAuth client doesn't need access token - it generates them
+        bearerAuthCredentials: {
+          accessToken: '', // Not needed for OAuth operations
+        },
+        // For revoke token, Square SDK will use Basic Auth with clientId:clientSecret
+        // when we provide them in the request body
       });
       
       // Create application-level client (if application access token provided)
@@ -463,12 +469,46 @@ class SquareAdapter extends POSAdapter {
       
       if (accessToken) {
         // Revoke token with Square
-        // Progress Note: Square's revokeToken endpoint
-        await this.oauthClient.oAuthApi.revokeToken({
-          clientId: this.config.oauth.clientId,
-          accessToken,
-          revokeOnlyAccessToken: false // Also revoke refresh token
-        });
+        // Progress Note: Square's revokeToken endpoint requires Basic Auth
+        // The SDK doesn't properly handle the authorization, so we use axios directly
+        const revokeUrl = this.config.environment === 'production'
+          ? 'https://connect.squareup.com/oauth2/revoke'
+          : 'https://connect.squareupsandbox.com/oauth2/revoke';
+        
+        // Create Basic Auth header: base64(clientId:clientSecret)
+        const authString = Buffer.from(
+          `${this.config.oauth.clientId}:${this.config.oauth.clientSecret}`
+        ).toString('base64');
+        
+        try {
+          await axios.post(
+            revokeUrl,
+            {
+              access_token: accessToken,
+              client_id: this.config.oauth.clientId
+            },
+            {
+              headers: {
+                'Authorization': `Basic ${authString}`,
+                'Content-Type': 'application/json',
+                'Square-Version': '2024-10-17' // Use recent API version
+              }
+            }
+          );
+          
+          this._logOperation('disconnect', {
+            connectionId: connection.id,
+            note: 'Token successfully revoked with Square'
+          });
+          
+        } catch (revokeError) {
+          // Log the revocation error but continue with local cleanup
+          this._logOperation('disconnect', {
+            connectionId: connection.id,
+            revokeError: revokeError.response?.data || revokeError.message,
+            note: 'Token revocation failed, continuing with local cleanup'
+          }, 'warn');
+        }
       }
       
       // Update connection status

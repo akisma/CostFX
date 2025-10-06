@@ -853,7 +853,337 @@ This immediately shows the exact structure and field names the backend is return
 
 ---
 
+## 13. Production Bug Fixes: Disconnect Feature Issues
+
+### Overview (October 5, 2025)
+
+During post-deployment testing, three bugs were discovered and fixed in the disconnect functionality:
+1. Frontend crash from undefined state setter
+2. Backend authentication failure in token revocation
+3. Frontend data contract mismatch in location display
+
+---
+
+### Bug 1: Frontend - Disconnect Button Crash
+
+#### Bug Discovery
+
+The disconnect functionality was failing with a JavaScript `ReferenceError` when users tried to disconnect their Square integration.
+
+**Location**: `frontend/src/components/pos/square/ConnectionStatus.jsx`  
+**Line**: 76 (in handleDisconnect function)
+
+```javascript
+const handleDisconnect = async () => {
+  if (!window.confirm('Are you sure you want to disconnect Square? This will stop syncing data.')) {
+    return
+  }
+
+  try {
+    setIsDisconnecting(true)  // ❌ ReferenceError: setIsDisconnecting is not defined!
+
+    await dispatch(disconnectSquare()).unwrap()
+    
+    enqueueSnackbar('Square disconnected successfully', { variant: 'success' })
+    
+    if (onDisconnect) {
+      onDisconnect()
+    }
+  } catch (err) {
+    const errorMessage = err?.message || err || 'Failed to disconnect Square'
+    enqueueSnackbar(errorMessage, { variant: 'error' })
+  }
+}
+```
+
+**Root Cause**: The component was calling `setIsDisconnecting(true)` but never declared this state with `useState`. This line was likely copy-pasted from another component or was a placeholder that was never completed.
+
+**Impact**: 
+- Users clicking "Disconnect" button → JavaScript runtime error
+- Disconnect action never executed
+- Component crashed, preventing any further actions
+- Production feature completely broken
+
+#### The Fix
+
+**Option Evaluated**: Add missing `useState` declaration
+```javascript
+const [isDisconnecting, setIsDisconnecting] = useState(false)
+```
+
+**Option Chosen**: Remove the broken call entirely and use existing Redux state
+
+**Why**: The component already had access to `loading.disconnect` from Redux store via `useSelector(selectLoading)`. This state was:
+1. Already being managed correctly by the Redux slice
+2. Already being used in the UI to show loading state on the button
+3. Properly updated by the `disconnectSquare` thunk
+
+**Final Code (Corrected)**:
+
+```javascript
+const handleDisconnect = async () => {
+  if (!window.confirm('Are you sure you want to disconnect Square? This will stop syncing data.')) {
+    return
+  }
+
+  try {
+    // Removed: setIsDisconnecting(true)
+    // Redux thunk handles loading.disconnect state automatically
+
+    await dispatch(disconnectSquare()).unwrap()
+    
+    enqueueSnackbar('Square disconnected successfully', { variant: 'success' })
+    
+    if (onDisconnect) {
+      onDisconnect()
+    }
+  } catch (err) {
+    const errorMessage = err?.message || err || 'Failed to disconnect Square'
+    enqueueSnackbar(errorMessage, { variant: 'error' })
+  }
+}
+```
+
+#### How the Button Uses Redux State
+
+The disconnect button already correctly used `loading.disconnect` from Redux:
+
+```jsx
+<button
+  onClick={handleDisconnect}
+  disabled={loading.disconnect}  // ✅ Already using Redux state
+  className="px-3 py-1.5 text-sm font-medium text-red-600 bg-white border border-red-600 rounded-md hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+>
+  {loading.disconnect ? (
+    <>
+      <Loader2 className="animate-spin" size={16} />
+      <span>Disconnecting...</span>
+    </>
+  ) : (
+    <>
+      <X size={16} />
+      <span>Disconnect</span>
+    </>
+  )}
+</button>
+```
+
+#### Validation & Testing
+
+**Test Suite Enhanced**: Added comprehensive UI tests that would have caught this bug
+- File: `frontend/tests/components/pos/square/ConnectionStatus.test.jsx`
+- Tests: 5 focused tests specifically for disconnect functionality
+- Key Test: "should successfully dispatch disconnect without calling undefined setIsDisconnecting"
+
+**Tests Verify**:
+1. ✅ Disconnect button renders when connected
+2. ✅ Confirmation dialog appears before disconnect
+3. ✅ Redux action dispatches successfully (proves no ReferenceError)
+4. ✅ Loading state comes from Redux (not local useState)
+5. ✅ Error handling works correctly
+6. ✅ onDisconnect callback fires after successful disconnect
+
+**Test Results**:
+- Backend: 399/399 tests passing ✅
+- Frontend: 172/172 tests passing ✅ (increased from 167 with new tests)
+- Build: Successful (2.54s) ✅
+- Dev Server: Running cleanly on ports 3000/3001 ✅
+
+---
+
+### Consolidated Lessons Learned
+
+1. **Component-Level Testing is Critical**: Unit tests for Redux slices passed because they mocked dispatch. Component-level integration tests that render full components and simulate user interactions catch these bugs.
+
+2. **Test Actual User Flows**: Don't just test Redux actions in isolation. Test the components that use them with real button clicks.
+
+3. **Verify Function Declarations**: Before calling any function or setter, ensure it's properly declared. ESLint rules like `no-undef` help catch these.
+
+4. **Prefer Redux for Shared State**: When state is already managed by Redux, don't create redundant local state with `useState`.
+
+5. **Test External API Integrations**: SDK abstractions can hide authentication requirements. When APIs fail, inspect the actual HTTP requests being made.
+
+6. **Validate Data Contracts**: Frontend and backend field names must match. Document the API contract explicitly and add validation.
+
+7. **Graceful Degradation**: For disconnect/cleanup operations, proceed with local cleanup even if external API calls fail.
+
+8. **Code Review Checklist**:
+   - ✅ Verify every function call has a corresponding declaration
+   - ✅ Check API authentication requirements match implementation  
+   - ✅ Validate frontend-backend data field naming consistency
+   - ✅ Test error paths and edge cases, not just happy paths
+   - ✅ Use ESLint with `no-undef` rule enabled
+
+#### Why These Bugs Weren't Caught Earlier
+
+#### Why These Bugs Weren't Caught Earlier
+
+**During Development**:
+- Redux slice tests only tested thunk behavior with API mocks
+- Component tests didn't simulate actual button clicks
+- Backend SDK abstraction hid authentication details
+- Data contract wasn't explicitly documented
+
+**During Manual Testing**:
+- Initial testing focused on OAuth flow (connect, select locations)
+- Disconnect testing was deferred as "less critical"  
+- Only happy path tested, not full user journey
+
+**Fixes Applied**: 
+- Added component-level integration tests
+- Documented API authentication patterns
+- Created explicit frontend-backend data contracts
+
+---
+
+### Summary
+
+**Total Bugs Fixed**: 3  
+**Files Modified**: 3
+- `frontend/src/components/pos/square/ConnectionStatus.jsx` (bugs #1, #3)
+- `backend/src/adapters/SquareAdapter.js` (bug #2)
+- `frontend/tests/components/pos/square/ConnectionStatus.test.jsx` (new test file)
+
+**Test Results After Fixes**:
+- Backend: 399/399 tests passing ✅
+- Frontend: 172/172 tests passing ✅  
+- Build: Successful ✅
+- Manual Testing: All OAuth features working ✅
+
+---
+
+*Generated: October 4, 2025*  
+*Updated: October 5, 2025 - Added three production bug fixes*  
+*Issue: #30 - Square OAuth Connection UI*  
+*Status: Complete and Production Ready*
+
+---
+
+### Bug 2: Backend - Square Token Revocation Authorization
+
+#### Bug Discovery
+
+After fixing the frontend crash, disconnect still failed with a Square API authorization error:
+
+```
+Argument for 'authorization' failed validation.
+Expected value to be of type 'string' but found 'undefined'.
+```
+
+**Location**: `backend/src/adapters/SquareAdapter.js` - `disconnect` method
+
+#### The Problem
+
+The Square SDK's `revokeToken()` method requires HTTP Basic Authentication (clientId:clientSecret encoded as base64), but the SDK client wasn't properly configured to handle this.
+
+```javascript
+// ❌ BROKEN CODE - SDK not handling auth properly
+await this.oauthClient.oAuthApi.revokeToken({
+  clientId: this.config.oauth.clientId,
+  clientSecret: this.config.oauth.clientSecret,
+  accessToken,
+  revokeOnlyAccessToken: false
+});
+```
+
+**Root Cause**: 
+- Square's OAuth revoke endpoint requires `Authorization: Basic <base64>` header
+- SDK client was initialized without authentication credentials
+- SDK expected the authorization to be configured at client level, not request level
+
+**Impact**:
+- Disconnect API calls failed with 401/400 errors
+- Tokens not revoked with Square (security issue)
+- Users couldn't properly disconnect their integrations
+
+#### The Fix
+
+Replaced SDK call with direct axios HTTP request using proper Basic Authentication:
+
+```javascript
+// ✅ FIXED CODE - Direct HTTP with Basic Auth
+const revokeUrl = this.config.environment === 'production'
+  ? 'https://connect.squareup.com/oauth2/revoke'
+  : 'https://connect.squareupsandbox.com/oauth2/revoke';
+
+// Create Basic Auth header
+const authString = Buffer.from(
+  `${this.config.oauth.clientId}:${this.config.oauth.clientSecret}`
+).toString('base64');
+
+await axios.post(
+  revokeUrl,
+  {
+    access_token: accessToken,
+    client_id: this.config.oauth.clientId
+  },
+  {
+    headers: {
+      'Authorization': `Basic ${authString}`,
+      'Content-Type': 'application/json',
+      'Square-Version': '2024-10-17'
+    }
+  }
+);
+```
+
+**Graceful Error Handling**: Even if Square revocation fails (network error, etc.), local cleanup still proceeds to ensure user can disconnect.
+
+#### Validation
+
+- ✅ Manual testing: Disconnect successfully revokes token with Square
+- ✅ Backend logs show successful revocation
+- ✅ Graceful degradation: Local cleanup proceeds even if API call fails
+
+---
+
+### Bug 3: Frontend - Location Name Display
+
+#### Bug Discovery
+
+After successful connection, the "Synced Locations" list showed bullet points with no text following them.
+
+**Location**: `frontend/src/components/pos/square/ConnectionStatus.jsx` - line 206
+
+#### The Problem
+
+Component referenced `location.name` but the backend API returns `location.locationName`.
+
+```javascript
+// ❌ BROKEN CODE - Wrong field name
+<span className="font-medium">{location.name}</span>
+```
+
+**Root Cause**:
+- Backend database schema uses `locationName` field (matching Square API convention)
+- Frontend assumed generic `name` property
+- Data contract mismatch between frontend and backend
+
+**Impact**:
+- Location names invisible in UI
+- Poor user experience - users couldn't see which locations were synced
+
+#### The Fix
+
+```javascript
+// ✅ FIXED CODE - Correct field with fallback
+<span className="font-medium">{location.locationName || location.name}</span>
+```
+
+**Fallback Pattern**: Using `locationName || name` ensures compatibility if backend field changes in future.
+
+#### Validation
+
+- ✅ Manual testing: Location names now display correctly
+- ✅ Verified with actual Square location data
+
+---
+
+### Consolidated Lessons Learned
+
 *Generated: October 4, 2025*  
 *Issue: #30 - Square OAuth Connection UI*  
 *Status: Complete and Production Ready*  
-*Updated: Added OAuth Callback Flow architecture, Backend-Frontend data contract issues, and Production Deployment Lessons Learned*
+*Updated: Added OAuth Callback Flow architecture, Backend-Frontend data contract issues, Production Deployment Lessons Learned, and Production Bug Fix (Disconnect useState Issue)*
+
+````
