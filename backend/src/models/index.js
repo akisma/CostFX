@@ -11,6 +11,12 @@ import PeriodInventorySnapshot from './PeriodInventorySnapshot.js';
 import TheoreticalUsageAnalysis from './TheoreticalUsageAnalysis.js';
 import POSConnection from './POSConnection.js';
 import SquareLocation from './SquareLocation.js';
+// Square POS Models (Issue #18)
+import SquareCategory from './SquareCategory.js';
+import SquareMenuItem from './SquareMenuItem.js';
+import SquareInventoryCount from './SquareInventoryCount.js';
+import SquareOrder from './SquareOrder.js';
+import SquareOrderItem from './SquareOrderItem.js';
 
 // Collect all models
 const models = {
@@ -23,7 +29,13 @@ const models = {
   PeriodInventorySnapshot,
   TheoreticalUsageAnalysis,
   POSConnection,
-  SquareLocation
+  SquareLocation,
+  // Square POS Models
+  SquareCategory,
+  SquareMenuItem,
+  SquareInventoryCount,
+  SquareOrder,
+  SquareOrderItem
 };
 
 // Initialize associations
@@ -49,7 +61,12 @@ export {
   PeriodInventorySnapshot,
   TheoreticalUsageAnalysis,
   POSConnection,
-  SquareLocation
+  SquareLocation,
+  SquareCategory,
+  SquareMenuItem,
+  SquareInventoryCount,
+  SquareOrder,
+  SquareOrderItem
 };
 
 export default models;

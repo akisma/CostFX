@@ -2139,16 +2139,87 @@ const loading = useSelector(selectPeriodLoading);
 
 ### Database Migrations
 
+#### ⚠️ CRITICAL: ES Modules Pattern
+
+**This backend uses ES modules (`"type": "module"` in package.json). Migrations MUST use ES module syntax!**
+
+```javascript
+/* eslint-disable camelcase */
+
+// ✅ CORRECT - ES Modules
+export const up = async (pgm) => {
+  pgm.createTable('my_table', {
+    id: { type: 'serial', primaryKey: true, notNull: true },
+    name: { type: 'varchar(255)', notNull: true }
+  });
+};
+
+export const down = async (pgm) => {
+  pgm.dropTable('my_table');
+};
+
+// ❌ WRONG - CommonJS (causes "exports is not defined in ES module scope" error)
+exports.up = async function (db) {
+  // This will FAIL! Don't use exports.up in ES module projects
+};
+```
+
+**Why this matters:** We hit this issue repeatedly. Always check existing migrations for the pattern.
+
+#### ⚠️ CRITICAL: New Sequelize Models Must Be Registered in Test Mocks
+
+**When you create new Sequelize models, you MUST update `backend/tests/setup.js` or tests will fail with cryptic errors like "Model.belongsTo is not a function".**
+
+The test suite uses Vitest mocks to avoid database dependencies during unit tests. Every model needs two additions:
+
+**1. Add to `sharedDataStores` Map:**
+```javascript
+const sharedDataStores = {
+  Restaurant: new Map(),
+  InventoryItem: new Map(),
+  // ... existing models ...
+  
+  // ✅ ADD YOUR NEW MODELS HERE
+  SquareCategory: new Map(),
+  SquareMenuItem: new Map()
+};
+```
+
+**2. Add `vi.mock()` call for each model file:**
+```javascript
+// ✅ ADD MOCK FOR EACH NEW MODEL
+vi.mock('../src/models/SquareCategory.js', () => ({
+  default: createStatefulMockModel('SquareCategory')
+}));
+
+vi.mock('../src/models/SquareMenuItem.js', () => ({
+  default: createStatefulMockModel('SquareMenuItem')
+}));
+```
+
+**Common Error:** If you forget this, you'll get errors during test runs:
+```
+TypeError: SquareCategory.belongsTo is not a function
+  at Function.associate (src/models/SquareCategory.js:37:20)
+  at src/models/index.js:44:23
+```
+
+**Why this happens:** The test environment mocks all models to avoid database connections. When `models/index.js` tries to call `associate()` on unmocked models, Sequelize's Model methods (belongsTo, hasMany, etc.) aren't available because the mock wasn't created.
+
+**Solution:** Always add new models to `tests/setup.js` immediately after creating the model file. This ensures test mocks stay in sync with actual models.
+
+**Pro tip:** Search `tests/setup.js` for "sharedDataStores" and "vi.mock('../src/models/" to find the two locations that need updates.
+
 #### Creating Migrations
 ```bash
 # Create new migration
-npx sequelize-cli migration:generate --name create-new-table
+npm run migrate:create <migration-name>
 
 # Run migrations
-npm run migrate
+npm run migrate:up
 
 # Rollback migration
-npm run migrate:rollback
+npm run migrate:down
 ```
 
 #### Migration Template

@@ -24,7 +24,13 @@ const sharedDataStores = {
   IngredientCategory: new Map(),
   TheoreticalUsageAnalysis: new Map(),
   POSConnection: new Map(),
-  SquareLocation: new Map()
+  SquareLocation: new Map(),
+  // Square POS Models (Issue #18)
+  SquareCategory: new Map(),
+  SquareMenuItem: new Map(),
+  SquareInventoryCount: new Map(),
+  SquareOrder: new Map(),
+  SquareOrderItem: new Map()
 };
 
 // Helper to generate unique IDs
@@ -393,6 +399,27 @@ vi.mock('../src/models/POSConnection.js', () => ({
 
 vi.mock('../src/models/SquareLocation.js', () => ({
   default: createStatefulMockModel('SquareLocation')
+}));
+
+// Square POS Models (Issue #18)
+vi.mock('../src/models/SquareCategory.js', () => ({
+  default: createStatefulMockModel('SquareCategory')
+}));
+
+vi.mock('../src/models/SquareMenuItem.js', () => ({
+  default: createStatefulMockModel('SquareMenuItem')
+}));
+
+vi.mock('../src/models/SquareInventoryCount.js', () => ({
+  default: createStatefulMockModel('SquareInventoryCount')
+}));
+
+vi.mock('../src/models/SquareOrder.js', () => ({
+  default: createStatefulMockModel('SquareOrder')
+}));
+
+vi.mock('../src/models/SquareOrderItem.js', () => ({
+  default: createStatefulMockModel('SquareOrderItem')
 }));
 
 // Mock POSAdapterFactory to avoid loading posProviders config

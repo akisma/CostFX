@@ -2,9 +2,9 @@
 
 *Current project state, completed phases, and next steps for the Restaurant Operations AI System*
 
-**Last Updated**: October 4, 2025  
+**Last Updated**: October 6, 2025  
 **Current Branch**: feature/api-hookup  
-**Latest Progress**: ✅ Issue #30 Square OAuth Connection UI completed
+**Latest Progress**: ✅ Issue #18 Square Database Schema completed (6 migrations + 5 models)
 
 ---
 
@@ -242,6 +242,110 @@ GET    /api/v1/pos/square/health           - Health check
 **Files Created:** 10 new files (migration, 2 models, 2 middleware, service, controller, routes, router registration, test mocks, error handler update)
 
 **Next Steps:** Manual OAuth flow testing, Square API adapter implementation for data sync
+
+---
+
+#### **✅ Issue #18: Square-Focused Database Schema** (COMPLETE)
+
+**Implementation Status**: 100% Complete - Database + ORM Layer Operational
+
+**Core Deliverables:**
+- ✅ **Comprehensive Schema Design**: `docs/SQUARE_DATABASE_SCHEMA.md` (2,700+ lines)
+  - Two-tier architecture: POS-specific raw data (Tier 1) → Unified analytics (Tier 2)
+  - 5 Square tables + inventory_items enhancement
+  - Complete field definitions with exact column specifications
+  - Example data, transformation patterns, and index justifications
+- ✅ **Database Migrations**: 6 production-ready migrations
+  - `1759800000000_add-pos-source-tracking-to-inventory-items.js` - Enhance Tier 2 table
+  - `1759800000001_create-square-categories.js` - Square Catalog categories
+  - `1759800000002_create-square-menu-items.js` - Square Catalog items with PostgreSQL arrays
+  - `1759800000003_create-square-inventory-counts.js` - Inventory snapshots over time
+  - `1759800000004_create-square-orders.js` - Complete order data with state enum
+  - `1759800000005_create-square-order-items.js` - Denormalized line items for performance
+- ✅ **Sequelize Models**: 5 fully-implemented ORM models
+  - `SquareCategory.js` - JSONB validation, helper methods (getCategoryName, isDeleted)
+  - `SquareMenuItem.js` - Custom getter/setter for PostgreSQL arrays, pricing helpers
+  - `SquareInventoryCount.js` - Immutable snapshots, state validation
+  - `SquareOrder.js` - State enum validation, dollar conversion helpers
+  - `SquareOrderItem.js` - Immutable records, quantity/pricing validation
+- ✅ **Model Associations**: Complete foreign key relationships
+  - belongsTo: POSConnection, Restaurant, SquareLocation (where applicable)
+  - hasMany: SquareInventoryCount, SquareOrderItem (from parent models)
+- ✅ **Test Infrastructure**: Vitest mocks for all new models
+  - Updated `tests/setup.js` with sharedDataStores and vi.mock() calls
+  - 399/399 tests passing (no regressions)
+- ✅ **Technical Documentation**: Permanent solutions documented
+  - Added "⚠️ CRITICAL: New Sequelize Models Must Be Registered in Test Mocks" to TECHNICAL_DOCUMENTATION.md
+  - Updated migrations/README-SQUARE-SCHEMA.md with ES modules warning
+  - Added detailed examples and troubleshooting for future developers
+
+**Database Tables Created:**
+```
+square_categories       - 5 indexes, JSONB storage, partial index on is_deleted
+square_menu_items       - 8 indexes, GIN index on square_data JSONB, text[] for category_ids
+square_inventory_counts - 8 indexes, composite idx_square_inventory_latest for queries
+square_orders           - 9 indexes, partial idx_square_orders_sales_report for analytics
+square_order_items      - 6 indexes, composite idx_square_order_items_sales for reporting
+inventory_items         - Enhanced with source_pos_provider, source_pos_item_id, source_pos_data
+```
+
+**Key Design Patterns:**
+- **JSONB Storage**: All Square API responses preserved in `square_data` column for audit trail
+- **Denormalized Fields**: Common query fields extracted for performance (name, price, quantity, etc.)
+- **PostgreSQL Arrays**: `text[]` type for category_ids with custom Sequelize getter/setter
+- **Monetary Values**: All amounts stored in cents (Square's smallest currency unit)
+- **Optimistic Concurrency**: Square `version` field tracked for sync conflict detection
+- **Immutable Records**: Inventory counts and order items have no updatedAt (historical snapshots)
+
+**Technical Challenges Solved:**
+1. **ES Modules Issue (RECURRING)**: Migration files must use `export const up/down`, not `exports.up`
+   - Documented in 3 locations to prevent future recurrence
+2. **DataTypes.ARRAY Compatibility**: `DataTypes.ARRAY(DataTypes.TEXT)` not working
+   - Solution: Use `DataTypes.TEXT` with custom getter/setter for PostgreSQL array format
+3. **Test Mock Registration**: "belongsTo is not a function" error
+   - Root cause: New models not registered in `tests/setup.js`
+   - Solution: Add to `sharedDataStores` Map AND `vi.mock()` calls
+   - **This was the hidden blocker** - models loaded fine directly but failed in test environment
+
+**Files Created (18 total):**
+- `docs/SQUARE_DATABASE_SCHEMA.md` - Comprehensive schema documentation
+- `backend/migrations/README-SQUARE-SCHEMA.md` - Migration-specific docs
+- `backend/migrations/1759800000000_add-pos-source-tracking-to-inventory-items.js`
+- `backend/migrations/1759800000001_create-square-categories.js`
+- `backend/migrations/1759800000002_create-square-menu-items.js`
+- `backend/migrations/1759800000003_create-square-inventory-counts.js`
+- `backend/migrations/1759800000004_create-square-orders.js`
+- `backend/migrations/1759800000005_create-square-order-items.js`
+- `backend/src/models/SquareCategory.js`
+- `backend/src/models/SquareMenuItem.js`
+- `backend/src/models/SquareInventoryCount.js`
+- `backend/src/models/SquareOrder.js`
+- `backend/src/models/SquareOrderItem.js`
+
+**Files Modified (3 total):**
+- `backend/src/models/index.js` - Registered 5 new Square models
+- `backend/tests/setup.js` - Added mocks for 5 new models (critical fix)
+- `docs/TECHNICAL_DOCUMENTATION.md` - Added test mocking requirements section
+
+**Validation:**
+- ✅ All 6 migrations applied cleanly to PostgreSQL
+- ✅ Database tables verified with `\dt square_*` command
+- ✅ Foreign key constraints working correctly
+- ✅ JSONB validation functional
+- ✅ All 399 tests passing (345 unit + 54 integration)
+- ✅ Models import successfully with `belongsTo` methods available
+- ✅ No regressions in existing functionality
+
+**Architecture Context:**
+- **Issue #19 (SquareAPIClient)**: Will use these tables to store raw Square API responses
+- **Issue #20 (POSDataTransformer)**: Will transform square_* tables → unified analytics tables
+- **Issue #21 (sales_transactions)**: Depends on this schema for order data
+- **Issue #25 (Toast)**: Will follow same two-tier pattern established here
+- **Issue #31 (Webhooks)**: Will update these tables in real-time
+
+**Development Time**: ~3 hours (research, design, implementation, debugging, documentation)
+
+**Issue Status**: ✅ **COMPLETE** - Database layer ready for Issue #19 (API client) implementation
 
 ---
 
