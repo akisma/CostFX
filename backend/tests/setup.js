@@ -216,6 +216,40 @@ const createStatefulMockModel = (modelName, customMethods = {}) => {
       }
       return Promise.resolve(0);
     }),
+
+    upsert: vi.fn().mockImplementation((data, options = {}) => {
+      // Find existing record based on conflict fields
+      const conflictFields = options.conflictFields || ['id'];
+      let existing = null;
+      
+      for (const item of store.values()) {
+        const matches = conflictFields.every(field => item[field] === data[field]);
+        if (matches) {
+          existing = item;
+          break;
+        }
+      }
+
+      const now = new Date();
+      
+      if (existing) {
+        // Update existing record
+        Object.assign(existing, data, { updatedAt: now });
+        store.set(existing.id, existing);
+        return Promise.resolve([existing, false]); // [instance, created=false]
+      } else {
+        // Create new record
+        const id = generateId();
+        const item = {
+          id,
+          ...data,
+          createdAt: now,
+          updatedAt: now
+        };
+        store.set(id, item);
+        return Promise.resolve([item, true]); // [instance, created=true]
+      }
+    }),
     
     // Add custom methods
     ...customMethods

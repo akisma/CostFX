@@ -36,8 +36,14 @@ import crypto from 'crypto';
 import axios from 'axios';
 import POSAdapter from './POSAdapter.js';
 import POSConnection from '../models/POSConnection.js';
+import SquareCategory from '../models/SquareCategory.js';
+import SquareMenuItem from '../models/SquareMenuItem.js';
+import SquareInventoryCount from '../models/SquareInventoryCount.js';
+import SquareLocation from '../models/SquareLocation.js';
 import OAuthStateService from '../services/OAuthStateService.js';
 import TokenEncryptionService from '../services/TokenEncryptionService.js';
+import SquareRateLimiter from '../utils/squareRateLimiter.js';
+import SquareRetryPolicy from '../utils/squareRetryPolicy.js';
 import logger from '../utils/logger.js';
 import {
   POSError,
@@ -66,12 +72,18 @@ class SquareAdapter extends POSAdapter {
     // OAuth client for authorization flows
     this.oauthClient = null;
     
-    // Rate limiting state
-    this.rateLimitState = {
-      requests: 0,
-      windowStart: Date.now(),
-      windowMs: config.api.rateLimit.windowMs
-    };
+    // Rate limiter for Square API compliance (80 req/10s with 20% buffer)
+    this.rateLimiter = new SquareRateLimiter({
+      maxRequests: config.api.rateLimit.maxRequests || 80,
+      windowMs: config.api.rateLimit.windowMs || 10000
+    });
+    
+    // Retry policy for transient errors
+    this.retryPolicy = new SquareRetryPolicy({
+      maxRetries: 3,
+      baseDelayMs: 1000,
+      maxDelayMs: 30000
+    });
     
     this._logOperation('constructor', { environment: config.environment });
   }
@@ -605,10 +617,16 @@ class SquareAdapter extends POSAdapter {
    * 
    * Progress Note: ONE-WAY SYNC - Imports data from Square into CostFX
    * Uses Square Catalog API to fetch items and Inventory API for counts
-   * Maps Square CatalogItem objects to our InventoryItem model
+   * Maps Square CatalogItem objects to square_* tables (Tier 1 raw data)
    * 
    * IMPORTANT: This is READ ONLY. We never write data back to Square.
    * The merchant's Square POS system remains the source of truth.
+   * 
+   * Implementation: Issue #19 - Square API Client
+   * - Uses rate limiter (80 req/10s) to stay within Square's limits
+   * - Uses retry policy for transient failures (429, 5xx, network errors)
+   * - Stores raw Square API responses in square_* tables
+   * - Supports incremental sync with 'since' parameter
    * 
    * @param {POSConnection} connection - Authenticated connection
    * @param {Date} [since] - Optional date to sync changes since
@@ -626,33 +644,44 @@ class SquareAdapter extends POSAdapter {
     
     try {
       const client = await this._getClientForConnection(connection);
-      const synced = 0;
-      const errors = [];
+      const stats = {
+        categoriesSynced: 0,
+        itemsSynced: 0,
+        inventoryCountsSynced: 0,
+        errors: []
+      };
       
-      // Progress Note: Full READ ONLY implementation would:
-      // 1. Use catalogApi.searchCatalogItems() with pagination (READ from Square)
-      // 2. Filter by types: ['ITEM', 'ITEM_VARIATION']
-      // 3. Map Square items to our InventoryItem model
-      // 4. Handle inventory counts from inventoryApi (READ from Square)
-      // 5. Create/update InventoryItem records in OUR database (WRITE to CostFX only)
-      // 6. Track sync metadata on POSConnection
-      // 
-      // CRITICAL: We ONLY read from Square, never write back.
-      // Square POS remains the authoritative source for inventory data.
+      // Step 1: Sync Catalog Objects (Categories and Items)
+      await this._syncCatalogObjects(client, connection, since, stats);
       
-      // Placeholder: Return success structure
-      this._logOperation('syncInventory', {
-        connectionId: connection.id,
-        synced,
-        errors: errors.length,
-        status: 'TODO - Full implementation in progress'
-      }, 'warn');
+      // Step 2: Sync Inventory Counts (for items that track inventory)
+      await this._syncInventoryCounts(client, connection, stats);
       
       // Update last sync timestamp
       connection.lastSyncAt = new Date();
       await connection.save();
       
-      return { synced, errors };
+      const totalSynced = stats.categoriesSynced + stats.itemsSynced + stats.inventoryCountsSynced;
+      
+      this._logOperation('syncInventory', {
+        connectionId: connection.id,
+        totalSynced,
+        categoriesSynced: stats.categoriesSynced,
+        itemsSynced: stats.itemsSynced,
+        inventoryCountsSynced: stats.inventoryCountsSynced,
+        errors: stats.errors.length,
+        status: 'success'
+      });
+      
+      return {
+        synced: totalSynced,
+        errors: stats.errors,
+        details: {
+          categories: stats.categoriesSynced,
+          items: stats.itemsSynced,
+          inventoryCounts: stats.inventoryCountsSynced
+        }
+      };
       
     } catch (error) {
       this._logOperation('syncInventory', {
@@ -665,6 +694,278 @@ class SquareAdapter extends POSAdapter {
         true // retryable
       );
     }
+  }
+  
+  /**
+   * Sync Catalog Objects from Square (Categories and Items)
+   * 
+   * @private
+   * @param {Client} client - Square SDK client
+   * @param {POSConnection} connection - POS connection
+   * @param {Date} since - Optional date for incremental sync
+   * @param {Object} stats - Statistics object to update
+   */
+  async _syncCatalogObjects(client, connection, since, stats) {
+    let cursor = null;
+    const types = 'CATEGORY,ITEM';
+    
+    do {
+      // Rate limit before API call
+      await this.rateLimiter.acquireToken(connection.id);
+      
+      // Make API call with retry policy
+      const response = await this.retryPolicy.executeWithRetry(
+        async () => {
+          const params = {
+            types,
+            limit: 100 // Square's max per page
+          };
+          
+          if (cursor) {
+            params.cursor = cursor;
+          }
+          
+          if (since) {
+            params.beginTime = since.toISOString();
+          }
+          
+          return await client.catalogApi.listCatalog(params);
+        },
+        {
+          method: 'catalog.listCatalog',
+          connectionId: connection.id,
+          cursor
+        }
+      );
+      
+      const objects = response.result.objects || [];
+      
+      // Process each catalog object
+      for (const obj of objects) {
+        try {
+          if (obj.type === 'CATEGORY') {
+            await this._storeCatalogCategory(connection, obj);
+            stats.categoriesSynced++;
+          } else if (obj.type === 'ITEM') {
+            await this._storeCatalogItem(connection, obj);
+            stats.itemsSynced++;
+          }
+        } catch (error) {
+          logger.error('Failed to store catalog object', {
+            objectId: obj.id,
+            objectType: obj.type,
+            error: error.message
+          });
+          stats.errors.push({
+            objectId: obj.id,
+            objectType: obj.type,
+            error: error.message
+          });
+        }
+      }
+      
+      cursor = response.result.cursor || null;
+      
+    } while (cursor);
+  }
+  
+  /**
+   * Store a Square Category in square_categories table
+   * 
+   * @private
+   * @param {POSConnection} connection - POS connection
+   * @param {Object} categoryObj - Square catalog category object
+   */
+  async _storeCatalogCategory(connection, categoryObj) {
+    const categoryData = {
+      posConnectionId: connection.id,
+      restaurantId: connection.restaurantId,
+      squareCategoryId: categoryObj.id,
+      name: categoryObj.category_data?.name || 'Unnamed Category',
+      squareVersion: categoryObj.version,
+      isDeleted: categoryObj.is_deleted || false,
+      squareUpdatedAt: categoryObj.updated_at ? new Date(categoryObj.updated_at) : new Date(),
+      squareData: categoryObj
+    };
+    
+    // Upsert: create or update based on squareCategoryId
+    await SquareCategory.upsert(categoryData, {
+      conflictFields: ['square_category_id', 'pos_connection_id']
+    });
+  }
+  
+  /**
+   * Store a Square Item in square_menu_items table
+   * 
+   * @private
+   * @param {POSConnection} connection - POS connection
+   * @param {Object} itemObj - Square catalog item object
+   */
+  async _storeCatalogItem(connection, itemObj) {
+    const itemData = itemObj.item_data || {};
+    const primaryVariation = itemData.variations?.[0];
+    const variationData = primaryVariation?.item_variation_data || {};
+    
+    // Extract price from primary variation
+    const priceAmount = variationData.price_money?.amount || 0;
+    const priceCurrency = variationData.price_money?.currency || 'USD';
+    
+    const menuItemData = {
+      posConnectionId: connection.id,
+      restaurantId: connection.restaurantId,
+      squareItemId: itemObj.id,
+      name: itemData.name || 'Unnamed Item',
+      description: itemData.description || null,
+      squareCategoryId: itemData.category_id || null,
+      priceMoneyAmount: priceAmount,
+      priceMoneyAmountCurrency: priceCurrency,
+      squareVersion: itemObj.version,
+      isDeleted: itemObj.is_deleted || false,
+      squareUpdatedAt: itemObj.updated_at ? new Date(itemObj.updated_at) : new Date(),
+      // Store variation IDs as PostgreSQL array
+      variationIds: itemData.variations?.map(v => v.id) || [],
+      squareData: itemObj
+    };
+    
+    // Upsert: create or update based on squareItemId
+    await SquareMenuItem.upsert(menuItemData, {
+      conflictFields: ['square_item_id', 'pos_connection_id']
+    });
+  }
+  
+  /**
+   * Sync Inventory Counts from Square
+   * 
+   * @private
+   * @param {Client} client - Square SDK client
+   * @param {POSConnection} connection - POS connection
+   * @param {Object} stats - Statistics object to update
+   */
+  async _syncInventoryCounts(client, connection, stats) {
+    // Get all menu items for this connection
+    const menuItems = await SquareMenuItem.findAll({
+      where: {
+        posConnectionId: connection.id,
+        isDeleted: false
+      }
+    });
+    
+    if (menuItems.length === 0) {
+      logger.info('No menu items to fetch inventory counts for', {
+        connectionId: connection.id
+      });
+      return;
+    }
+    
+    // Extract variation IDs from menu items
+    const catalogObjectIds = [];
+    for (const item of menuItems) {
+      if (item.variationIds && item.variationIds.length > 0) {
+        catalogObjectIds.push(...item.variationIds);
+      }
+    }
+    
+    if (catalogObjectIds.length === 0) {
+      logger.info('No variation IDs to fetch inventory counts for', {
+        connectionId: connection.id
+      });
+      return;
+    }
+    
+    // Square API limits: 100 catalog objects per request
+    const batchSize = 100;
+    let cursor = null;
+    
+    for (let i = 0; i < catalogObjectIds.length; i += batchSize) {
+      const batch = catalogObjectIds.slice(i, i + batchSize);
+      
+      do {
+        // Rate limit before API call
+        await this.rateLimiter.acquireToken(connection.id);
+        
+        // Make API call with retry policy
+        const response = await this.retryPolicy.executeWithRetry(
+          async () => {
+            const params = {
+              catalogObjectIds: batch
+            };
+            
+            if (cursor) {
+              params.cursor = cursor;
+            }
+            
+            return await client.inventoryApi.batchRetrieveInventoryCounts(params);
+          },
+          {
+            method: 'inventory.batchRetrieveInventoryCounts',
+            connectionId: connection.id,
+            batchSize: batch.length
+          }
+        );
+        
+        const counts = response.result.counts || [];
+        
+        // Store each inventory count
+        for (const count of counts) {
+          try {
+            await this._storeInventoryCount(connection, count, menuItems);
+            stats.inventoryCountsSynced++;
+          } catch (error) {
+            logger.error('Failed to store inventory count', {
+              catalogObjectId: count.catalog_object_id,
+              error: error.message
+            });
+            stats.errors.push({
+              catalogObjectId: count.catalog_object_id,
+              error: error.message
+            });
+          }
+        }
+        
+        cursor = response.result.cursor || null;
+        
+      } while (cursor);
+    }
+  }
+  
+  /**
+   * Store an inventory count in square_inventory_counts table
+   * 
+   * @private
+   * @param {POSConnection} connection - POS connection
+   * @param {Object} countObj - Square inventory count object
+   * @param {Array} menuItems - Array of menu items to match against
+   */
+  async _storeInventoryCount(connection, countObj, menuItems) {
+    // Find the menu item that contains this variation ID
+    const menuItem = menuItems.find(item =>
+      item.variationIds && item.variationIds.includes(countObj.catalog_object_id)
+    );
+    
+    if (!menuItem) {
+      logger.warn('No menu item found for inventory count', {
+        catalogObjectId: countObj.catalog_object_id,
+        connectionId: connection.id
+      });
+      return;
+    }
+    
+    const countData = {
+      posConnectionId: connection.id,
+      restaurantId: connection.restaurantId,
+      squareMenuItemId: menuItem.id,
+      squareCatalogObjectId: countObj.catalog_object_id,
+      squareCatalogObjectType: countObj.catalog_object_type || 'ITEM_VARIATION',
+      squareState: countObj.state || 'IN_STOCK',
+      squareLocationId: countObj.location_id || null,
+      quantity: countObj.quantity || '0',
+      calculatedAt: countObj.calculated_at ? new Date(countObj.calculated_at) : new Date(),
+      snapshotDate: new Date(),
+      squareData: countObj
+    };
+    
+    // Create new inventory count (we want historical records, not upsert)
+    await SquareInventoryCount.create(countData);
   }
 
   /**
