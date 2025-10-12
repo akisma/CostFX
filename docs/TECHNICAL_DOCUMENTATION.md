@@ -175,7 +175,314 @@ The system implements a clean service layer architecture that separates business
 ✅ **Maintainability**: Clear separation of concerns makes code easier to modify  
 ✅ **Reusability**: Services can be used across multiple agents and contexts  
 ✅ **Clean Architecture**: Each layer has a single, well-defined responsibility  
-✅ **Dependency Injection**: Enables flexible testing and service composition  
+✅ **Dependency Injection**: Enables flexible testing and service composition
+
+---
+
+## Service Layer Architecture
+
+### Overview
+
+**Status**: ✅ **COMPLETE** (October 2025) - GitHub Issue #32: Business logic fully abstracted from Sequelize models
+
+The CostFX application follows **Clean Architecture principles** with strict separation between data persistence (models) and business logic (services). This architectural refactoring was completed in October 2025 to eliminate code duplication, improve testability, and establish clear boundaries between layers.
+
+### Architectural Principles
+
+#### **What Belongs in Models** ✅
+
+Sequelize models should **ONLY** contain:
+
+1. **Data Schema**: Field definitions, types, constraints
+2. **Validations**: Data integrity rules (format, length, required fields)
+3. **Associations**: Relationships between models (belongsTo, hasMany)
+4. **Basic Sequelize Queries**: Simple findOne, findAll, create, update operations
+5. **Getter/Setter Methods**: Simple data formatting (e.g., `displayVariance`)
+
+**Example - Good Model Practice:**
+```javascript
+class IngredientCategory extends Model {
+  static associate(models) {
+    // ✅ Associations belong here
+    IngredientCategory.hasMany(models.InventoryItem, {
+      foreignKey: 'categoryId',
+      as: 'inventoryItems'
+    });
+  }
+  
+  toJSON() {
+    // ✅ Simple data transformation belongs here
+    return { ...this.get() };
+  }
+}
+
+IngredientCategory.init({
+  // ✅ Schema definitions belong here
+  name: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    validate: {
+      notEmpty: true,
+      len: [1, 100]
+    }
+  },
+  path: {
+    type: DataTypes.TEXT, // PostgreSQL ltree
+    allowNull: false,
+    unique: true
+  }
+}, { sequelize, modelName: 'IngredientCategory' });
+```
+
+#### **What Belongs in Services** ✅
+
+Services should contain **ALL** business logic:
+
+1. **Complex Calculations**: Math operations, aggregations, analysis
+2. **Business Rules**: Priority determination, threshold checks, validation
+3. **Complex Queries**: Multi-table joins, aggregations, statistical operations
+4. **Workflow Logic**: State transitions, approval flows, investigation assignments
+5. **Data Enrichment**: Adding computed fields, formatting for display
+
+**Example - Good Service Practice:**
+```javascript
+class VarianceAnalysisService {
+  /**
+   * ✅ Business logic belongs in service
+   * Calculate absolute variance values from analysis data
+   */
+  getAbsoluteVariance(analysis) {
+    return {
+      quantity: Math.abs(parseFloat(analysis.varianceQuantity) || 0),
+      dollarValue: Math.abs(parseFloat(analysis.varianceDollarValue) || 0),
+      percentage: Math.abs(analysis.variancePercentage || 0)
+    };
+  }
+
+  /**
+   * ✅ Business rules belong in service
+   * Determine if variance requires immediate attention
+   */
+  isHighImpactVariance(analysis) {
+    const absVariance = Math.abs(parseFloat(analysis.varianceDollarValue) || 0);
+    return absVariance >= 100 || 
+           analysis.priority === 'critical' || 
+           analysis.priority === 'high';
+  }
+}
+```
+
+### Core Services
+
+#### **VarianceAnalysisService** (`backend/src/services/VarianceAnalysisService.js`)
+
+**Purpose**: Handles all variance calculation and analysis business logic for TheoreticalUsageAnalysis data.
+
+**Key Methods**:
+- `getAbsoluteVariance(analysis)` - Calculate absolute variance values
+- `isHighImpactVariance(analysis)` - Determine if variance needs immediate attention
+- `getVarianceDirection(analysis)` - Determine overage/shortage direction
+- `getEfficiencyRatio(analysis)` - Calculate actual vs theoretical efficiency
+- `findHighPriorityVariances(models, periodId, restaurantId)` - Query high priority variances
+- `findByDollarThreshold(models, threshold, periodId)` - Find variances exceeding threshold
+- `getVarianceSummaryByPeriod(models, periodId)` - Generate comprehensive period summary
+
+**Usage Example**:
+```javascript
+import VarianceAnalysisService from '../services/VarianceAnalysisService.js';
+import models from '../models/index.js';
+
+// Get variance analysis
+const analysis = await models.TheoreticalUsageAnalysis.findByPk(123);
+
+// Use service for business logic
+const absoluteVariance = VarianceAnalysisService.getAbsoluteVariance(analysis);
+const isHighImpact = VarianceAnalysisService.isHighImpactVariance(analysis);
+const direction = VarianceAnalysisService.getVarianceDirection(analysis);
+
+// Complex queries through service
+const highPriorityVariances = await VarianceAnalysisService.findHighPriorityVariances(
+  models, 
+  periodId, 
+  restaurantId
+);
+```
+
+#### **InvestigationWorkflowService** (`backend/src/services/InvestigationWorkflowService.js`)
+
+**Purpose**: Manages investigation workflow and assignment business logic.
+
+**Key Methods**:
+- `getDaysInInvestigation(analysis)` - Calculate investigation duration
+- `canBeResolved(analysis)` - Check if investigation can be marked resolved
+- `assignInvestigation(analysis, userId, notes)` - Assign variance to investigator
+- `resolveInvestigation(analysis, userId, explanation, resolution)` - Complete investigation
+- `findPendingInvestigations(models, assignedTo)` - Query pending investigations
+- `getInvestigationWorkload(models)` - Get workload metrics and distribution
+
+**Usage Example**:
+```javascript
+import InvestigationWorkflowService from '../services/InvestigationWorkflowService.js';
+
+// Check investigation status
+const daysInProgress = InvestigationWorkflowService.getDaysInInvestigation(analysis);
+const canResolve = InvestigationWorkflowService.canBeResolved(analysis);
+
+// Assign investigation
+await InvestigationWorkflowService.assignInvestigation(
+  analysis, 
+  userId, 
+  "Investigating high dollar variance"
+);
+
+// Get workload metrics
+const workload = await InvestigationWorkflowService.getInvestigationWorkload(models);
+// Returns: { totalPending, byAssignee, oldestPending, highestDollarImpact }
+```
+
+#### **CategoryManagementService** (`backend/src/services/CategoryManagementService.js`)
+
+**Purpose**: Handles all hierarchical category operations using PostgreSQL ltree (NEW - October 2025).
+
+**Key Methods**:
+
+**Hierarchy Navigation**:
+- `getParentCategory(category, models)` - Get immediate parent
+- `getChildCategories(category, models)` - Get direct children
+- `getAllDescendants(category, models)` - Get all descendants recursively
+- `getAncestors(category, models)` - Get all ancestors to root
+
+**Display Formatting**:
+- `getBreadcrumbs(category)` - Generate breadcrumb trail for UI
+- `getDepth(category)` - Calculate depth level in hierarchy
+- `isDescendantOf(category, ancestorPath)` - Check descendant relationship
+
+**Complex Queries**:
+- `findByPath(path, models)` - Find category by exact path
+- `findRootCategories(models)` - Get top-level categories
+- `getCategoryTree(rootPath, models)` - Build nested tree structure
+- `getCategoryStats(category, models)` - Get statistics with item counts
+- `searchCategories(searchTerm, models, limit)` - Search by name/description
+
+**Usage Example**:
+```javascript
+import CategoryManagementService from '../services/CategoryManagementService.js';
+import models from '../models/index.js';
+
+// Get category
+const category = await models.IngredientCategory.findOne({ 
+  where: { path: 'produce.leafy_greens.romaine' } 
+});
+
+// Use service for hierarchy operations
+const parent = await CategoryManagementService.getParentCategory(category, models);
+const children = await CategoryManagementService.getChildCategories(category, models);
+const breadcrumbs = CategoryManagementService.getBreadcrumbs(category);
+// Returns: [{ path: 'produce', name: 'Produce' }, { path: 'produce.leafy_greens', name: 'Leafy Greens' }, ...]
+
+// Build category tree for UI
+const tree = await CategoryManagementService.getCategoryTree(null, models);
+// Returns nested structure: [{ id, name, path, children: [...] }]
+
+// Get statistics
+const stats = await CategoryManagementService.getCategoryStats(category, models);
+// Returns: { itemCount, descendantCount, varianceStats }
+```
+
+### Migration Impact
+
+#### **Before Refactoring** ❌
+```javascript
+// Business logic embedded in models
+class TheoreticalUsageAnalysis extends Model {
+  getAbsoluteVariance() {
+    return {
+      quantity: Math.abs(this.varianceQuantity || 0),
+      dollarValue: Math.abs(this.varianceDollarValue || 0)
+    };
+  }
+  
+  isHighImpactVariance() {
+    const absVariance = Math.abs(this.varianceDollarValue || 0);
+    return absVariance >= 100 || this.priority === 'critical';
+  }
+  
+  static async findHighPriorityVariances(periodId) {
+    // Complex query logic in model
+  }
+}
+
+// ❌ Duplicated logic in service
+class VarianceAnalysisService {
+  getAbsoluteVariance(analysis) {
+    // DUPLICATE CODE - same logic as model method
+  }
+}
+```
+
+#### **After Refactoring** ✅
+```javascript
+// Pure data model
+class TheoreticalUsageAnalysis extends Model {
+  // Only schema, validations, associations
+  static associate(models) {
+    TheoreticalUsageAnalysis.belongsTo(models.InventoryPeriod, {
+      foreignKey: 'periodId',
+      as: 'inventoryPeriod'
+    });
+  }
+}
+
+// Business logic in service (single source of truth)
+class VarianceAnalysisService {
+  getAbsoluteVariance(analysis) {
+    return {
+      quantity: Math.abs(parseFloat(analysis.varianceQuantity) || 0),
+      dollarValue: Math.abs(parseFloat(analysis.varianceDollarValue) || 0)
+    };
+  }
+  
+  async findHighPriorityVariances(models, periodId, restaurantId) {
+    // Complex query logic in service
+  }
+}
+```
+
+### Benefits of Service Layer
+
+| Benefit | Description |
+|---------|-------------|
+| **Single Source of Truth** | Business logic exists in ONE place (services), eliminating duplication |
+| **Improved Testability** | Services can be unit tested without database dependencies |
+| **Better Maintainability** | Changes to business rules only require service updates |
+| **Code Reusability** | Services can be used across multiple agents and contexts |
+| **Clear Boundaries** | Each layer has well-defined responsibilities |
+| **Easier Debugging** | Business logic separated from data access makes issues easier to isolate |
+
+### Testing Strategy
+
+**Model Tests** - Focus on data integrity
+```javascript
+// Test validations, associations, basic queries
+test('should validate path format', async () => {
+  await expect(IngredientCategory.create({ 
+    name: 'Test', 
+    path: 'invalid path!' // Should fail validation
+  })).rejects.toThrow();
+});
+```
+
+**Service Tests** - Focus on business logic
+```javascript
+// Test calculations, rules, complex operations
+test('should identify high impact variance', () => {
+  const analysis = { varianceDollarValue: 150, priority: 'high' };
+  const result = VarianceAnalysisService.isHighImpactVariance(analysis);
+  expect(result).toBe(true);
+});
+```
+
+---  
 
 #### BaseAgent Class
 **Location**: `backend/src/agents/BaseAgent.js`

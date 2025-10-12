@@ -176,7 +176,7 @@ class InvestigationWorkflowService {
     analyses.forEach(analysis => {
       // Count by status
       const status = analysis.investigationStatus || 'pending';
-      if (metrics.byStatus.hasOwnProperty(status)) {
+      if (Object.prototype.hasOwnProperty.call(metrics.byStatus, status)) {
         metrics.byStatus[status]++;
       }
 
@@ -293,6 +293,151 @@ class InvestigationWorkflowService {
       default:
         return 'Unknown Status';
     }
+  }
+
+  /**
+   * Find pending investigations
+   * Moved from TheoreticalUsageAnalysis model static method
+   * 
+   * @param {Object} models - Database models object
+   * @param {number|null} assignedTo - Optional filter by assignee
+   * @returns {Promise<Array>} Pending investigations
+   */
+  async findPendingInvestigations(models, assignedTo = null) {
+    const { Op } = models.sequelize.Sequelize;
+    const whereClause = {
+      investigationStatus: { [Op.in]: ['pending', 'investigating'] }
+    };
+    
+    if (assignedTo) {
+      whereClause.assignedTo = assignedTo;
+    }
+
+    return await models.TheoreticalUsageAnalysis.findAll({
+      where: whereClause,
+      include: [
+        { model: models.InventoryItem, as: 'inventoryItem' },
+        { model: models.InventoryPeriod, as: 'inventoryPeriod' },
+        { model: models.User, as: 'assignee', required: false }
+      ],
+      order: [['assignedAt', 'ASC']] // Oldest first for Dave's queue
+    });
+  }
+
+  /**
+   * Get investigation workload metrics
+   * Moved from TheoreticalUsageAnalysis model static method
+   * 
+   * @param {Object} models - Database models object
+   * @returns {Promise<Object>} Workload metrics and assignment distribution
+   */
+  async getInvestigationWorkload(models) {
+    const { Op } = models.sequelize.Sequelize;
+    const investigations = await models.TheoreticalUsageAnalysis.findAll({
+      where: {
+        investigationStatus: { [Op.in]: ['pending', 'investigating', 'escalated'] }
+      },
+      include: [
+        { model: models.User, as: 'assignee', required: false },
+        { model: models.InventoryItem, as: 'inventoryItem' }
+      ]
+    });
+
+    const workload = {
+      totalPending: 0,
+      totalInvestigating: 0,
+      totalEscalated: 0,
+      byAssignee: {},
+      oldestPending: null,
+      highestDollarImpact: null
+    };
+
+    investigations.forEach(investigation => {
+      const status = investigation.investigationStatus;
+      if (status === 'pending') workload.totalPending++;
+      else if (status === 'investigating') workload.totalInvestigating++;
+      else if (status === 'escalated') workload.totalEscalated++;
+
+      if (investigation.assignee) {
+        const assigneeName = investigation.assignee.name || `User ${investigation.assignedTo}`;
+        if (!workload.byAssignee[assigneeName]) {
+          workload.byAssignee[assigneeName] = { pending: 0, investigating: 0, escalated: 0, total: 0 };
+        }
+        workload.byAssignee[assigneeName][status]++;
+        workload.byAssignee[assigneeName].total++;
+      }
+
+      // Track oldest pending investigation
+      if (status === 'pending' && investigation.assignedAt) {
+        if (!workload.oldestPending || new Date(investigation.assignedAt) < new Date(workload.oldestPending.assignedAt)) {
+          workload.oldestPending = {
+            id: investigation.id,
+            itemName: investigation.inventoryItem?.name,
+            assignedAt: investigation.assignedAt,
+            daysWaiting: this.getDaysInInvestigation(investigation)
+          };
+        }
+      }
+
+      // Track highest dollar impact investigation
+      const dollarImpact = Math.abs(investigation.varianceDollarValue || 0);
+      if (!workload.highestDollarImpact || dollarImpact > workload.highestDollarImpact.dollarImpact) {
+        workload.highestDollarImpact = {
+          id: investigation.id,
+          itemName: investigation.inventoryItem?.name,
+          dollarImpact: dollarImpact,
+          status: investigation.investigationStatus
+        };
+      }
+    });
+
+    return workload;
+  }
+
+  /**
+   * Assign investigation to a user with Dave's workflow
+   * Moved from TheoreticalUsageAnalysis model instance method
+   * 
+   * @param {Object} analysis - TheoreticalUsageAnalysis model instance
+   * @param {number} userId - User ID to assign to
+   * @param {string|null} notes - Optional investigation notes
+   * @returns {Promise<Object>} Updated analysis
+   */
+  async assignInvestigation(analysis, userId, notes = null) {
+    await analysis.update({
+      assignedTo: userId,
+      investigationStatus: 'investigating',
+      assignedAt: new Date(),
+      investigationNotes: notes || analysis.investigationNotes
+    });
+    return analysis;
+  }
+
+  /**
+   * Complete investigation with findings
+   * Moved from TheoreticalUsageAnalysis model instance method
+   * 
+   * @param {Object} analysis - TheoreticalUsageAnalysis model instance
+   * @param {number} userId - User ID completing investigation
+   * @param {string} explanation - Investigation findings
+   * @param {string} resolution - Resolution status (default 'resolved')
+   * @returns {Promise<Object>} Updated analysis
+   */
+  async resolveInvestigation(analysis, userId, explanation, resolution = 'resolved') {
+    const updates = {
+      investigatedBy: userId,
+      investigationStatus: resolution,
+      resolvedAt: new Date(),
+      explanation: explanation
+    };
+    
+    // If resolution shows no issue, mark as accepted
+    if (resolution === 'resolved' && explanation.toLowerCase().includes('acceptable')) {
+      updates.investigationStatus = 'accepted';
+    }
+    
+    await analysis.update(updates);
+    return analysis;
   }
 }
 

@@ -219,6 +219,142 @@ class VarianceAnalysisService {
       return 'maintain_monitoring';
     }
   }
+
+  /**
+   * Find high priority variances for Dave's attention
+   * Moved from TheoreticalUsageAnalysis model static method
+   * 
+   * @param {Object} models - Database models object
+   * @param {number|null} periodId - Optional period filter
+   * @param {number|null} restaurantId - Optional restaurant filter
+   * @returns {Promise<Array>} High priority variance analyses
+   */
+  async findHighPriorityVariances(models, periodId = null, restaurantId = null) {
+    const { Op } = models.sequelize.Sequelize;
+    const whereClause = {
+      priority: { [Op.in]: ['critical', 'high'] }
+    };
+    
+    if (periodId) whereClause.periodId = periodId;
+    
+    const include = [
+      { model: models.InventoryItem, as: 'inventoryItem' },
+      { model: models.InventoryPeriod, as: 'inventoryPeriod' }
+    ];
+    
+    if (restaurantId) {
+      include[1].where = { restaurantId };
+    }
+
+    return await models.TheoreticalUsageAnalysis.findAll({
+      where: whereClause,
+      include,
+      order: [
+        ['priority', 'DESC'],
+        [models.sequelize.fn('ABS', models.sequelize.col('variance_dollar_value')), 'DESC']
+      ]
+    });
+  }
+
+  /**
+   * Find variances exceeding a dollar threshold
+   * Moved from TheoreticalUsageAnalysis model static method
+   * 
+   * @param {Object} models - Database models object
+   * @param {number} threshold - Dollar variance threshold (default 100)
+   * @param {number|null} periodId - Optional period filter
+   * @returns {Promise<Array>} Variances exceeding threshold
+   */
+  async findByDollarThreshold(models, threshold = 100, periodId = null) {
+    const { Op } = models.sequelize.Sequelize;
+    const whereClause = {
+      [Op.or]: [
+        { varianceDollarValue: { [Op.gte]: threshold } },
+        { varianceDollarValue: { [Op.lte]: -threshold } }
+      ]
+    };
+    
+    if (periodId) whereClause.periodId = periodId;
+
+    return await models.TheoreticalUsageAnalysis.findAll({
+      where: whereClause,
+      include: [
+        { model: models.InventoryItem, as: 'inventoryItem' },
+        { model: models.InventoryPeriod, as: 'inventoryPeriod' }
+      ],
+      order: [
+        [models.sequelize.fn('ABS', models.sequelize.col('variance_dollar_value')), 'DESC']
+      ]
+    });
+  }
+
+  /**
+   * Get comprehensive variance summary for a period
+   * Moved from TheoreticalUsageAnalysis model static method
+   * 
+   * @param {Object} models - Database models object
+   * @param {number} periodId - Period to summarize
+   * @returns {Promise<Object>} Detailed variance summary with metrics
+   */
+  async getVarianceSummaryByPeriod(models, periodId) {
+    const analyses = await models.TheoreticalUsageAnalysis.findAll({
+      where: { periodId },
+      include: [
+        { model: models.InventoryItem, as: 'inventoryItem' }
+      ]
+    });
+
+    const summary = {
+      totalVariances: analyses.length,
+      totalDollarImpact: 0,
+      byPriority: { critical: 0, high: 0, medium: 0, low: 0 },
+      byStatus: { pending: 0, investigating: 0, resolved: 0, accepted: 0, escalated: 0 },
+      significantCount: 0,
+      averageVariancePercent: 0,
+      topVariances: [],
+      investigationMetrics: {
+        totalAssigned: 0,
+        averageDaysToResolve: 0,
+        pendingCount: 0
+      }
+    };
+
+    analyses.forEach(analysis => {
+      summary.totalDollarImpact += Math.abs(analysis.varianceDollarValue);
+      summary.byPriority[analysis.priority]++;
+      summary.byStatus[analysis.investigationStatus]++;
+      
+      if (analysis.isSignificant) summary.significantCount++;
+      if (analysis.assignedTo) summary.investigationMetrics.totalAssigned++;
+      if (['pending', 'investigating'].includes(analysis.investigationStatus)) {
+        summary.investigationMetrics.pendingCount++;
+      }
+    });
+
+    // Calculate averages
+    if (analyses.length > 0) {
+      const validPercentages = analyses.filter(a => a.variancePercentage !== null);
+      if (validPercentages.length > 0) {
+        summary.averageVariancePercent = Number(
+          (validPercentages.reduce((sum, a) => sum + Math.abs(a.variancePercentage), 0) / validPercentages.length).toFixed(2)
+        );
+      }
+    }
+
+    // Get top 10 variances by dollar impact
+    summary.topVariances = analyses
+      .sort((a, b) => Math.abs(b.varianceDollarValue) - Math.abs(a.varianceDollarValue))
+      .slice(0, 10)
+      .map(analysis => ({
+        id: analysis.id,
+        itemName: analysis.inventoryItem?.name,
+        dollarVariance: analysis.varianceDollarValue,
+        priority: analysis.priority,
+        status: analysis.investigationStatus
+      }));
+
+    return summary;
+  }
 }
 
 module.exports = VarianceAnalysisService;
