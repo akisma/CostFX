@@ -84,6 +84,86 @@
 
 ### **Recent Updates**
 
+#### **✅ October 11, 2025: Service Layer Architecture Refactoring** (COMPLETE - Issue #32)
+
+**Implementation Status**: Clean architecture fully operational with complete business logic abstraction
+
+**Problem Solved**: Eliminated code duplication between models and services, established clear separation of concerns
+
+**Core Deliverables:**
+- ✅ **TheoreticalUsageAnalysis Model Refactoring**: Removed 17 methods from model
+  - 4 variance calculation methods → VarianceAnalysisService
+  - 4 workflow methods → InvestigationWorkflowService
+  - 5 static query methods → Services (findHighPriorityVariances, etc.)
+  - 4 helper methods cleaned up
+  - Model now pure data: schema, validations, associations only
+
+- ✅ **IngredientCategory Model Refactoring**: Removed 14 methods from model
+  - 7 instance ltree operations → CategoryManagementService
+  - 7 static query methods → CategoryManagementService
+  - Model now pure data: ltree schema, validations, associations only
+
+- ✅ **CategoryManagementService**: NEW service created (380 lines)
+  - Comprehensive JSDoc documentation
+  - Handles all PostgreSQL ltree hierarchical operations
+  - Methods: getParentCategory, getChildCategories, getAllDescendants, getAncestors
+  - Tree building: getCategoryTree, getCategoryStats, findRootCategories
+  - Search and navigation: searchCategories, findByPath, getBreadcrumbs
+
+- ✅ **VarianceAnalysisService**: Extended with 4 new query methods
+  - findHighPriorityVariances(models, periodId, restaurantId)
+  - findByDollarThreshold(models, threshold, periodId)
+  - getVarianceSummaryByPeriod(models, periodId)
+  - Existing 10 calculation methods retained
+
+- ✅ **InvestigationWorkflowService**: Extended with 4 new methods
+  - findPendingInvestigations(models, assignedTo)
+  - getInvestigationWorkload(models)
+  - assignInvestigation(analysis, userId, notes)
+  - resolveInvestigation(analysis, userId, explanation, resolution)
+
+**Architecture Benefits:**
+- **Single Source of Truth**: Business logic exists in ONE place (services)
+- **No Code Duplication**: Eliminated duplicate logic between models and services
+- **Improved Testability**: Services can be unit tested without database dependencies
+- **Clear Boundaries**: Models = data, Services = business logic, Agents = orchestration
+- **Better Maintainability**: Changes to business rules only require service updates
+- **Code Reusability**: Services can be used across multiple agents and contexts
+
+**Impact Summary:**
+- **Total Methods Removed**: 31 methods abstracted from 2 models
+- **Services Created**: 1 new (CategoryManagementService)
+- **Services Extended**: 2 existing (VarianceAnalysisService, InvestigationWorkflowService)
+- **Documentation**: Complete Service Layer Architecture section added to TECHNICAL_DOCUMENTATION.md
+- **Test Status**: All integration tests passing, models load without errors
+
+**Before vs After:**
+```javascript
+// ❌ Before: Business logic in model
+class TheoreticalUsageAnalysis extends Model {
+  getAbsoluteVariance() { /* calculation logic */ }
+  isHighImpactVariance() { /* business rules */ }
+}
+
+// ✅ After: Pure data model
+class TheoreticalUsageAnalysis extends Model {
+  static associate(models) { /* associations only */ }
+}
+
+// ✅ Business logic in service
+class VarianceAnalysisService {
+  getAbsoluteVariance(analysis) { /* calculation logic */ }
+  isHighImpactVariance(analysis) { /* business rules */ }
+}
+```
+
+**Production Ready:**
+- ✅ Clean architecture principles applied
+- ✅ All business logic abstracted to services
+- ✅ Models are pure data with no calculations
+- ✅ Services follow dependency injection pattern
+- ✅ Comprehensive documentation for developers
+
 #### **✅ October 11, 2025: Square Data Transformation Pipeline** (COMPLETE)
 
 **Implementation Status**: Two-Tier Architecture fully operational with UI

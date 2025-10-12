@@ -218,11 +218,13 @@ describe('SquareAdapter', () => {
       
       await adapter._syncCatalogObjects(mockClient, mockConnection, since, stats);
       
-      // Verify since date passed to API
+      // Verify since date passed to API as 5th positional parameter
       expect(listCatalogSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          beginTime: since.toISOString()
-        })
+        undefined,              // cursor (first call)
+        expect.any(String),     // types
+        undefined,              // catalogVersion
+        100,                    // limit
+        since.toISOString()     // beginTime
       );
     });
   });
@@ -239,12 +241,12 @@ describe('SquareAdapter', () => {
           restaurantId: mockConnection.restaurantId,
           squareCategoryId: categoryObj.id,
           name: 'Beverages',
-          squareVersion: categoryObj.version,
+          squareVersion: String(categoryObj.version), // Version stored as string
           isDeleted: false,
           squareData: categoryObj
         }),
         expect.objectContaining({
-          conflictFields: ['square_category_id', 'pos_connection_id']
+          conflictFields: ['square_catalog_object_id'] // Updated field name
         })
       );
     });
@@ -285,13 +287,13 @@ describe('SquareAdapter', () => {
           squareCategoryId: 'BJNQCF2FJ6S6VVRSXC2TCMCH',
           priceMoneyAmount: 250,
           priceMoneyAmountCurrency: 'USD',
-          squareVersion: itemObj.version,
+          squareVersion: String(itemObj.version), // Version is stored as string
           isDeleted: false,
           variationIds: ['2TZFAOHWGG7PAK2QEXWYPZSP'],
           squareData: itemObj
         }),
         expect.objectContaining({
-          conflictFields: ['square_item_id', 'pos_connection_id']
+          conflictFields: ['square_catalog_object_id'] // Updated field name
         })
       );
     });
