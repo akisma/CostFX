@@ -107,6 +107,7 @@ Your code must be 100% clean. No exceptions.
 - Re-read this CLAUDE.md file
 - Summarize progress in a PROGRESS.md file in this directory (.claude)
 - Document current state before major changes
+- Add knowledge to your Knowledge Graph MCP as it pertains to what we're working on, decisions made, what's done, what's next, etc; follow best practices.
 
 ### Maintain TODO.md:
 ```
@@ -126,11 +127,11 @@ Your code must be 100% clean. No exceptions.
 
 ### FORBIDDEN - NEVER DO THESE:
 - **NO hardcoding secrets or credentials EVER!!**
-- **NO time.Sleep()** or busy waits - use channels for synchronization!
 - **NO** keeping old and new code together
 - **NO** versioned function names (processV2, handleNew)
 - **NO** leaving test, debug, or scratch files around!
 - **NO** TODOs in final code
+- **NO** files with .skip added or trash lying around
 
 ### Required Standards:
 - **Delete** old code when replacing it
@@ -150,6 +151,7 @@ Your code must be 100% clean. No exceptions.
 - ? Feature works end-to-end
 - ? Old code is deleted
 - ? Documentation has been provided IN context of the files!
+- ? - Knowledge has been added to your Knowledge Graph MCP as it pertains to what we're working on, decisions made, what's done, what's next, etc; follow best practices.
 
 ### Testing Strategy
 - Complex business logic ? Write tests first
@@ -162,6 +164,7 @@ Your code must be 100% clean. No exceptions.
 backend/        # Back end
 frontend/   # Front end
 shared/        # shared code
+docs/ # docs
 ```
 
 ## Problem-Solving Together
@@ -200,16 +203,6 @@ My insights on better approaches are valued - please ask for them!
 ### Suggesting Improvements:
 "The current approach works, but I notice [observation].
 Would you like me to [specific improvement]?"
-
-## Recent Critical Fixes (Sep 19, 2025)
-
-### AWS Deployment Issues Resolved:
-- **SSM Access Denied**: Fixed GitHubActionsRole-CostFX missing SSM permissions
-- **Database Connection**: Corrected SSM parameter path from `/costfx/dev/database/url` to `/costfx/dev/database_url`
-- **Migration Failures**: Resolved localhost connection errors in production deployments
-- **IAM Policy**: Updated CostFX-Deployment-Policy to v2 with SSM permissions
-
-**Lesson**: Always verify IAM permissions match the resources accessed by deployment workflows. Test SSM parameter access locally before deployment.
 
 ## Working Together
 
