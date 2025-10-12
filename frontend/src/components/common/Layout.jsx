@@ -7,7 +7,9 @@ import {
   BarChart3, 
   TrendingUp,
   AlertTriangle,
-  Zap // Changed from Calendar to Zap for forecast to show it's AI-powered
+  Zap, // Changed from Calendar to Zap for forecast to show it's AI-powered
+  Settings,
+  Plug
 } from 'lucide-react'
 
 const Layout = ({ children }) => {
@@ -22,6 +24,13 @@ const Layout = ({ children }) => {
         { name: 'Cost Analysis', href: '/analysis/costs', icon: TrendingUp },
         { name: 'Waste Analysis', href: '/analysis/waste', icon: AlertTriangle },
         { name: 'Forecast Intelligence', href: '/analysis/forecast', icon: Zap }
+      ]
+    },
+    {
+      name: 'Settings',
+      icon: Settings,
+      children: [
+        { name: 'Square Integration', href: '/settings/integrations/square', icon: Plug }
       ]
     }
   ]

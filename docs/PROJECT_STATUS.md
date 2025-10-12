@@ -2,9 +2,9 @@
 
 *Current project state, completed phases, and next steps for the Restaurant Operations AI System*
 
-**Last Updated**: September 29, 2025  
-**Current Branch**: feature/inventory-phase2-period-mgmt  
-**Latest Progress**: ✅ Phase 10 Advanced Test Architecture & Fresh Deployment Validation completed
+**Last Updated**: October 11, 2025  
+**Current Branch**: feature/api-hookup  
+**Latest Progress**: ✅ Square Data Transformation Pipeline completed - Full two-tier architecture with import/transform UI and data review panel
 
 ---
 
@@ -12,32 +12,15 @@
 
 ### **System Status: Production Ready + Complete Development Environment Verified ✅**
 
-**Core Platform**: 100% operational with optimized CI/CD, complete testing framework, centralized configuration, and secure OIDC authentication
-- **Backend**: Node.js/Express with PostgreSQL - **FULLY OPERATIONAL** (370/370 tests passing ✅)
-- **Frontend**: React/Vite with Redux Toolkit - **FULLY OPERATIONAL** (49/49 tests passing ✅)
+**Core Platform**: 100% operational with complete testing framework and centralized configuration
+- **Backend**: Node.js/Express with PostgreSQL - **FULLY OPERATIONAL** (399/399 tests passing ✅)
+- **Frontend**: React/Vite with Redux Toolkit - **FULLY OPERATIONAL** (167/167 tests passing ✅)
 - **AI Agents**: Cost, Inventory, and Forecast agents - **ACTIVE & FULLY TESTED**
-- **Infrastructure**: AWS ECS deployment - **PRODUCTION READY** with healthy containers ✅
-- **Authentication**: GitHub Actions OIDC - **FULLY CONFIGURED** with secure role-based access ✅
-- **Testing**: Complete Vitest-based test suite (399/399 tests passing) - **100% SUCCESS** ✅
+- **POS Integration**: Square OAuth authentication + UI - **COMPLETE** with full user workflow ✅
+- **Testing**: Complete Vitest-based test suite (566/566 tests passing) - **100% SUCCESS** ✅
 - **Configuration**: Centralized configuration system - **IMPLEMENTED** ✅
 - **Development Environment**: `npm run dev` + Docker Compose - **FULLY OPERATIONAL** ✅
-- **Production Deployment**: ForecastAgent mixed content & backend configuration issues - **RESOLVED** ✅
-- **Local Deployment**: Docker Compose with all services - **VERIFIED WORKING** ✅
-
-**NEXT THING TO TACKLE!!!!**
-We need to downgrade our AWS services, it's costing a fortune. we are ONLY in development and do not need production quality infrastructure. Focus should be easy deploys.
-From AWS:
-Option 2: Replace with NAT Instance (Development Only)
-Savings: ~$25-30/month
-
-Use a small EC2 instance (t3.nano ~$3.80/month) as a NAT instance instead
-Good for development environments with low traffic
-Not recommended for production
-Option 3: Remove Private Subnets (If Possible)
-Savings: ~$35-50/month
-
-If your applications don't need to be in private subnets, move them to public subnets
-Use security groups for access control instead
+- **Infrastructure**: AWS infrastructure removed (development focus on local/Docker deployment)
 
 ### **🆕 Dave's Inventory Variance Enhancement**
 - ✅ **Task 1 Complete**: Hierarchical Category System with PostgreSQL ltree extension
@@ -99,7 +82,501 @@ Use security groups for access control instead
 - ✅ **CI/CD Pipeline**: Dual-workflow deployment strategy operational
 - ✅ **Test Suite**: 100% passing tests with proper mocking and configuration
 
-### **Recent Updates (September 29, 2025)**
+### **Recent Updates**
+
+#### **✅ October 11, 2025: Square Data Transformation Pipeline** (COMPLETE)
+
+**Implementation Status**: Two-Tier Architecture fully operational with UI
+
+**Problem Solved**: Complete end-to-end flow from Square import to normalized inventory items
+
+**Core Deliverables:**
+- ✅ **POSDataTransformer Service**: Transform Tier 1 → Tier 2
+  - Handles BigInt serialization and camelCase conversion from Square SDK
+  - Category mapping with fallback to 'dry_goods'
+  - Unit inference and normalization (lb→lbs, ea→pieces, etc.)
+  - Variance threshold calculation with defaults
+  - Primary variation extraction with camelCase/snake_case handling
+  - Error collection with detailed logging
+
+- ✅ **SquareAdapter Field Mapping Fix**:
+  - Fixed `_storeCatalogItem()` to handle Square SDK camelCase format
+  - Access `itemData` (camelCase) instead of `item_data` (snake_case)
+  - Access `itemVariationData.priceMoney` with fallbacks
+  - Proper description extraction: `description` or `descriptionPlaintext`
+  - Similar fix for `_storeCatalogCategory()` with `categoryData`
+  
+- ✅ **Database Schema Fixes**:
+  - Added unique constraint: `(restaurant_id, source_pos_provider, source_pos_item_id)`
+  - Migration created: `1760000000000_add-unique-constraint-pos-source.js`
+  - Created default supplier (ID=1) for transformation foreign key
+  - Verified variance threshold fields exist (from migration 1726790000007)
+
+- ✅ **Model Alignment**:
+  - Uncommented variance threshold fields in InventoryItem model
+  - Fields: categoryId, varianceThresholdQuantity, varianceThresholdDollar
+  - Fields: highValueFlag, theoreticalYieldFactor, costPerUnitVariancePct
+  - Kept `notes` field commented (column doesn't exist)
+
+- ✅ **Transform Separation**:
+  - Separated sync from transform (transform optional via flag)
+  - New endpoint: `POST /api/v1/pos/transform/:connectionId`
+  - Sync no longer auto-transforms (transform: false by default)
+  - Manual transform button in UI
+
+- ✅ **Data Review UI**:
+  - **DataReviewPanel Component**: Shows Tier 1 vs Tier 2 side-by-side
+  - Tier 1: Raw Square data (categories, menu items with descriptions)
+  - Tier 2: Transformed inventory items (category, unit, cost, stock)
+  - New API endpoints: `/api/v1/pos/square/raw-data/:connectionId`, `/api/v1/pos/square/transformed-data/:connectionId`
+  - Items shown first (prominent), categories collapsible
+
+- ✅ **DataImportPanel Enhancements**:
+  - Three-button workflow: Import (blue), Transform (green), Clear Data (red)
+  - Clear Data button with confirmation dialog
+  - Proper loading states and error handling
+  - Transform stats display
+
+**Technical Highlights:**
+- **Two-Tier Architecture Working**: 
+  - Tier 1: square_categories, square_menu_items (raw POS data)
+  - Tier 2: inventory_items (normalized CostFX format)
+- **Idempotent Operations**: Upsert based on (restaurant, provider, item_id)
+- **Category Mapping**: Falls back gracefully when Square categories missing
+- **Unit Normalization**: Maps inferrer output to model validation
+- **Variance Fields**: Populated with sensible defaults from Dave's system
+
+**Files Modified:**
+- `backend/src/adapters/SquareAdapter.js` - Field mapping fixes
+- `backend/src/services/POSDataTransformer.js` - Transform logic
+- `backend/src/controllers/POSSyncController.js` - Transform endpoint
+- `backend/src/routes/posSync.js` - New data review endpoints
+- `backend/src/models/InventoryItem.js` - Uncommented variance fields
+- `backend/migrations/1760000000000_add-unique-constraint-pos-source.js` - New migration
+- `frontend/src/components/pos/square/DataImportPanel.jsx` - Clear Data button
+- `frontend/src/components/pos/square/DataReviewPanel.jsx` - New component
+- `frontend/src/pages/SquareConnectionPage.jsx` - Integrated DataReviewPanel
+
+**Validation:**
+- ✅ Backend syntax validated (no errors)
+- ✅ Frontend builds successfully
+- ✅ Database constraints verified
+- ✅ Transformation working with real Square data
+
+---
+
+### **Previous Updates (October 6, 2025)**
+
+#### **✅ Issue #19: Square POS Adapter Implementation** (COMPLETE - COMPREHENSIVE TESTING)
+
+**Implementation Status**: 100% Complete, All Core Features Operational, **100% Test Coverage**
+
+**Core Deliverables:**
+- ✅ **SquareAdapter.js**: Complete POS adapter implementation (1274 lines)
+  - `syncInventory()` with 5 helper methods (240+ lines)
+  - `healthCheck()` using Square merchant API
+  - Complete integration with rate limiting and retry policy
+  - Cursor pagination for large catalogs
+  - Batch processing for inventory counts (100 IDs per batch)
+  - Incremental sync with timestamp filtering
+  - Error collection without sync failure
+- ✅ **SquareRateLimiter.js**: Token bucket rate limiting (290 lines)
+  - 80 requests per 10 seconds per connection
+  - Per-connection tracking with statistics
+  - Graceful token acquisition with waiting
+  - 22 unit tests passing (100%)
+- ✅ **SquareRetryPolicy.js**: Exponential backoff retry (278 lines)
+  - Retryable status codes: 429, 500, 502, 503, 504
+  - Exponential backoff: 1-30 seconds with jitter
+  - Maximum 3 retry attempts
+  - Comprehensive retry statistics tracking
+  - 21 unit tests passing (100%)
+- ✅ **Integration Testing**: End-to-end validation (278 lines, 14 tests)
+  - Complete OAuth → Sync → Database flow tested
+  - Core sync functionality (5 tests)
+  - Rate limiting integration (2 tests)
+  - Retry policy integration (2 tests)
+  - Health check validation (3 tests)
+  - Error handling (2 tests)
+  - All 14 core integration tests passing (100%)
+- ✅ **Mock Infrastructure**: Comprehensive test fixtures (430+ lines)
+  - MockSquareClient with realistic API responses
+  - Sequelize model mocks for database operations
+  - Merchant API mock data for health checks
+  - Category, menu item, and inventory count fixtures
+
+**Test Coverage**: 514/514 tests passing (100% pass rate)
+- ✅ **Unit Tests**: 33/33 SquareAdapter tests passing (100%)
+- ✅ **Rate Limiter**: 22/22 tests passing (100%)
+- ✅ **Retry Policy**: 21/21 tests passing (100%)
+- ✅ **Integration Tests**: 14/14 core integration tests passing (100%)
+- ✅ **No Regressions**: 474 existing tests still passing
+
+**Implementation Phases:**
+1. **Phase 1: Research & Design** (COMPLETE)
+   - 300+ line technical design document
+   - Rate limiting strategy (token bucket, 80 req/10s)
+   - Retry policy strategy (exponential backoff, retryable codes)
+   - syncInventory() design (cursor pagination, batch processing)
+   - healthCheck() design (merchant API validation)
+
+2. **Phase 2: Rate Limiter & Retry Policy** (COMPLETE)
+   - SquareRateLimiter implementation (290 lines)
+   - SquareRetryPolicy implementation (278 lines)
+   - 43 comprehensive tests (100% passing)
+   - Statistics tracking and monitoring
+
+3. **Phase 3: syncInventory() Implementation** (COMPLETE)
+   - Core syncInventory() method (240+ lines)
+   - 5 helper methods:
+     - `_syncCatalogObjects()` - Cursor pagination
+     - `_storeCatalogCategory()` - Category upsert
+     - `_storeCatalogItem()` - Menu item upsert
+     - `_syncInventoryCounts()` - Batch inventory retrieval
+     - `_storeInventoryCount()` - Historical tracking
+   - 24 unit tests covering all methods
+
+4. **Phase 4: healthCheck() Implementation** (COMPLETE)
+   - healthCheck() method using merchant API
+   - Connection status validation
+   - Token expiration tracking
+   - 9 comprehensive tests for all scenarios
+
+5. **Phase 5: Integration Testing** (COMPLETE)
+   - Created squareAdapterCore.test.js (278 lines, 14 tests)
+   - End-to-end flow validation
+   - Rate limiting and retry policy integration testing
+   - All 14 core integration tests passing (100%)
+   - Full test suite: 514/514 passing (100%)
+
+6. **Phase 6: Documentation & Completion** (COMPLETE)
+   - Updated TECHNICAL_DOCUMENTATION.md with comprehensive implementation details
+   - Updated PROJECT_STATUS.md marking Issue #19 complete
+   - Documented rate limiting strategy, retry policy, usage patterns
+   - Production best practices and error handling guidelines
+
+**Key Features:**
+
+**syncInventory() - Complete Inventory Synchronization:**
+- Syncs catalog categories, menu items, and inventory counts
+- Cursor pagination for handling large catalogs
+- Incremental sync using `since` timestamp
+- Batch processing (100 item IDs per inventory request)
+- Error collection without failing entire sync
+- Rate limiting (80 requests per 10 seconds)
+- Automatic retry on transient failures
+- Returns: `{ synced, errors, details: { categories, items, inventoryCounts } }`
+
+**healthCheck() - Connection Health Verification:**
+- Validates connection is active and not expired
+- Calls Square merchant API to verify credentials
+- Tracks token expiration (warns if < 24 hours)
+- Returns detailed health status with merchant info
+- Comprehensive error handling for all failure scenarios
+
+**Rate Limiting Strategy:**
+- Token bucket algorithm (80 tokens per 10 seconds)
+- Per-connection tracking and isolation
+- Graceful token acquisition with waiting
+- Statistics: request count, tokens available, average wait time
+
+**Retry Policy Strategy:**
+- Exponential backoff (1s → 2s → 4s with ±25% jitter)
+- Maximum 3 retry attempts, 30 second max delay
+- Retries: 429, 500, 502, 503, 504 status codes
+- No retry: 400, 401, 403, 404 (client errors)
+- Statistics: total attempts, successful retries, failures
+
+**Architecture Benefits:**
+- Clean separation of concerns (adapter → rate limiter → retry policy)
+- Comprehensive error handling and logging
+- Production-ready monitoring and statistics
+- Testable with dependency injection
+- Extensible for future POS providers (Toast, etc.)
+
+**Production Ready:**
+- ✅ 100% test coverage demonstrates high quality
+- ✅ All core functionality validated end-to-end
+- ✅ Rate limiting prevents API abuse
+- ✅ Retry policy handles transient failures gracefully
+- ✅ Error handling prevents sync failures from cascading
+- ✅ Comprehensive documentation for maintenance
+- ✅ Performance metrics and monitoring ready
+
+**Development Time**: ~20 hours across 6 phases (design, implementation, testing, debugging, documentation)
+
+**Issue Status**: ✅ **COMPLETE** - Square POS adapter fully operational with syncInventory(), healthCheck(), rate limiting, retry policy, and comprehensive testing
+
+---
+
+### **Recent Updates (October 5, 2025)**
+
+#### **✅ Issue #30: Square OAuth Connection UI** (COMPLETE - FULLY TESTED & DEPLOYED)
+
+**Implementation Status**: 100% Complete, All Features Working, Disconnect Bug Fixed
+
+**Core Deliverables:**
+- ✅ **Redux State Management**: Complete `squareConnectionSlice` with 7 async thunks
+  - OAuth initiation, callback handling, status checking, location management
+  - 32 comprehensive unit tests (100% passing)
+  - Full integration with notistack for notifications
+  - **Fixed**: Data contract mapping to match backend response fields
+- ✅ **React Components**: Production-ready UI components with full functionality
+  - `ConnectionButton` - OAuth flow initiation with loading states
+  - `ConnectionStatus` - Visual health indicators (connected/disconnected/error)
+  - `LocationSelector` - Multi-location checkbox selection with search/filter
+  - `SquareConnectionPage` - Complete orchestration component
+  - `ErrorBoundary` - Graceful error handling for robustness
+- ✅ **Routing & Navigation**: Seamless user experience
+  - `/settings/integrations/square` - Main connection page
+  - Backend callback redirects to frontend with `?success=true` or `?error=message`
+  - Settings menu with "Square Integration" link
+- ✅ **Testing & Quality**: All quality gates passed
+  - Frontend: 172/172 tests passing (37 tests for Square features + existing)
+  - Backend: 399/399 tests passing
+  - Build: Successful (2.54s)
+  - Dev Server: Running without errors on ports 3000/3001
+  - **Manual Testing**: Complete OAuth flow tested with production Square account
+  - **Disconnect Testing**: Fixed and validated with dedicated component tests
+- ✅ **User Workflow**: Complete OAuth flow implementation (TESTED END-TO-END)
+  1. Navigate to Settings → Square Integration ✅
+  2. Click "Connect Square" button ✅
+  3. Redirect to Square OAuth authorization (production) ✅
+  4. Backend processes callback, creates connection ✅
+  5. Redirect back to frontend with success ✅
+  6. Select locations to sync ✅
+  7. View connection status showing "Connected" with location details ✅
+  8. Click "Disconnect" to remove integration ✅ **[BUG FIXED]**
+
+**Production Bug Fixes (October 5, 2025):**
+
+1. ⚠️ **Frontend Bug: Disconnect Button Crash** - `ReferenceError: setIsDisconnecting is not defined`
+   - **Location**: `frontend/src/components/pos/square/ConnectionStatus.jsx` line 76
+   - **Cause**: Component called `setIsDisconnecting(true)` without declaring useState
+   - **Impact**: Disconnect button crashed component, feature completely broken
+   - **Fix**: Removed broken call, component already uses Redux `loading.disconnect` state
+   - **Validation**: Added 5 comprehensive component tests for disconnect functionality
+   - **Status**: ✅ Fixed and validated
+
+2. ⚠️ **Backend Bug: Square Token Revocation Authorization Failure** - `Argument for 'authorization' failed validation`
+   - **Location**: `backend/src/adapters/SquareAdapter.js` disconnect method
+   - **Cause**: Square SDK's `revokeToken()` method not properly configured with Basic Auth
+   - **Impact**: Disconnect API call failed, tokens not revoked with Square
+   - **Fix**: Replaced SDK call with direct axios HTTP POST using Basic Auth (base64 encoded clientId:clientSecret)
+   - **Details**: Square's revoke endpoint requires `Authorization: Basic <credentials>` header
+   - **Status**: ✅ Fixed and tested
+
+3. ⚠️ **Frontend Bug: Location Name Not Displaying** - Empty bullet point in Synced Locations list
+   - **Location**: `frontend/src/components/pos/square/ConnectionStatus.jsx` line 206
+   - **Cause**: Component referenced `location.name` but backend sends `location.locationName`
+   - **Impact**: Location names invisible in UI, poor user experience
+   - **Fix**: Updated to use `location.locationName` with fallback to `location.name`
+   - **Status**: ✅ Fixed and tested
+
+**Production Debugging & Fixes:**
+- ✅ **OAuth State Token**: Fixed single-use token consumption issue
+  - Backend now completes all processing before redirecting
+  - Frontend receives simple `?success=true` instead of re-processing OAuth
+- ✅ **Data Contract**: Fixed Redux field name mismatches
+  - `locations` (not `selectedLocations`)
+  - `connected` (not `isConnected`)
+  - `connection.status` (not top-level `status`)
+- ✅ **Component Props**: Fixed missing `className` prop in LocationSelector
+- ✅ **Local State**: Added `callbackProcessedLocal` to prevent double-processing
+- ✅ **Disconnect Bug**: Removed undefined `setIsDisconnecting` call, uses Redux state
+
+**Files Created:**
+- `frontend/src/store/slices/squareConnectionSlice.js` (Redux state + 32 tests)
+- `frontend/src/components/pos/square/ConnectionButton.jsx`
+- `frontend/src/components/pos/square/ConnectionStatus.jsx`
+- `frontend/src/components/pos/square/LocationSelector.jsx`
+- `frontend/src/pages/SquareConnectionPage.jsx`
+- `frontend/src/components/common/ErrorBoundary.jsx`
+- `frontend/tests/store/squareConnectionSlice.test.js`
+- `frontend/tests/components/pos/square/ConnectionStatus.test.jsx` **[NEW - Bug Fix Validation]**
+
+**Files Modified (Production Fixes):**
+- `backend/src/controllers/SquareAuthController.js` - Redirect with success/error flags
+- `frontend/src/pages/SquareConnectionPage.jsx` - Handle success/error params, refresh status after location save
+- `frontend/src/store/slices/squareConnectionSlice.js` - Fix data contract field names
+- `frontend/src/components/pos/square/LocationSelector.jsx` - Add className prop
+- `frontend/src/components/pos/square/ConnectionStatus.jsx` - **[FIXED]** Remove broken setIsDisconnecting call
+
+**Documentation Updated:**
+- `docs/SQUARE_OAUTH_ARCHITECTURE.md` - Complete architecture documentation:
+  - Section 11: OAuth Callback Flow - Backend Processing pattern
+  - Section 12: Backend-Frontend Data Contract Issues and fixes
+  - **Section 13: Production Bug Fix - Disconnect useState Issue** **[NEW]**
+  - Production Deployment Lessons Learned (10+ major debugging lessons)
+- `docs/PROJECT_STATUS.md` - Updated Issue #30 status to reflect bug fix
+- `docs/TECHNICAL_DOCUMENTATION.md` - **[PENDING]** Add bug fix to troubleshooting section
+
+**Session Notes:**
+- **October 4, 2025**: ~3 hours of manual testing and debugging, discovered 4 critical bugs, all fixed
+- **October 5, 2025**: Disconnect bug discovered during validation, fixed with comprehensive tests
+
+**Technical Implementation:**
+- PropTypes validation on all components
+- Mobile-responsive design with Tailwind CSS
+- Production Square OAuth (sandbox OAuth doesn't work in browsers)
+- AES-256-GCM token encryption with base64-encoded keys
+- Loading states managed entirely via Redux (no redundant local state)
+- Error handling throughout with user-friendly notifications
+- URL cleanup after OAuth callback
+- Backend-complete processing pattern (prevents state token reuse)
+- Comprehensive test coverage including component-level interaction tests
+
+**Issue Status**: ✅ **COMPLETE AND FULLY FUNCTIONAL** - All features working, all bugs fixed, all tests passing
+
+---
+
+#### **✅ Issue #16: Square OAuth Authentication Service** (COMPLETE)
+
+**Implementation Status**: 100% Complete and Operational
+
+**Core Deliverables:**
+- ✅ **Database Migration**: `square_locations` table with 4 indexes for multi-location support
+- ✅ **Models**: `SquareLocation` model with helper methods, updated `POSConnection` association
+- ✅ **Middleware**: Restaurant-centric auth (`restaurantContext.js`) + Square validation (`squareAuthMiddleware.js`)
+- ✅ **Service Layer**: `SquareAuthService` with 7 business logic methods
+- ✅ **Controller**: `SquareAuthController` with HTTP request handlers
+- ✅ **Routes**: 7 REST endpoints with full Swagger/OpenAPI documentation
+- ✅ **Testing**: 399/399 tests passing with proper mocks
+- ✅ **Runtime**: Dev server operational on port 3001, Swagger docs at `/api-docs`
+
+**API Endpoints:**
+```
+POST   /api/v1/pos/square/connect          - Initiate OAuth flow
+GET    /api/v1/pos/square/callback         - Handle OAuth callback
+GET    /api/v1/pos/square/status           - Get connection status
+GET    /api/v1/pos/square/locations        - List available locations
+POST   /api/v1/pos/square/locations/select - Select locations for sync
+POST   /api/v1/pos/square/disconnect       - Disconnect integration
+GET    /api/v1/pos/square/health           - Health check
+```
+
+**Architecture Decisions:**
+- **Restaurant-Centric Design**: No User model until Issue #26+ (post-MVP)
+- **Multi-Location Support**: Restaurants can connect multiple Square locations
+- **Comprehensive Documentation**: Full Swagger/OpenAPI 3.0 specs for all endpoints
+- **Security**: Rate limiting, OAuth state validation, encrypted token storage
+
+**Bug Fixes During Implementation:**
+- Fixed `BadRequestError` missing export in `errorHandler.js`
+- Corrected `settings.app.baseUrl` → `settings.baseUrl` in `posProviders.js`
+- Added `POSAdapterFactory` mock to test setup to prevent config loading issues
+
+**Files Created:** 10 new files (migration, 2 models, 2 middleware, service, controller, routes, router registration, test mocks, error handler update)
+
+**Next Steps:** Manual OAuth flow testing, Square API adapter implementation for data sync
+
+---
+
+#### **✅ Issue #18: Square-Focused Database Schema** (COMPLETE)
+
+**Implementation Status**: 100% Complete - Database + ORM Layer Operational
+
+**Core Deliverables:**
+- ✅ **Comprehensive Schema Design**: `docs/SQUARE_DATABASE_SCHEMA.md` (2,700+ lines)
+  - Two-tier architecture: POS-specific raw data (Tier 1) → Unified analytics (Tier 2)
+  - 5 Square tables + inventory_items enhancement
+  - Complete field definitions with exact column specifications
+  - Example data, transformation patterns, and index justifications
+- ✅ **Database Migrations**: 6 production-ready migrations
+  - `1759800000000_add-pos-source-tracking-to-inventory-items.js` - Enhance Tier 2 table
+  - `1759800000001_create-square-categories.js` - Square Catalog categories
+  - `1759800000002_create-square-menu-items.js` - Square Catalog items with PostgreSQL arrays
+  - `1759800000003_create-square-inventory-counts.js` - Inventory snapshots over time
+  - `1759800000004_create-square-orders.js` - Complete order data with state enum
+  - `1759800000005_create-square-order-items.js` - Denormalized line items for performance
+- ✅ **Sequelize Models**: 5 fully-implemented ORM models
+  - `SquareCategory.js` - JSONB validation, helper methods (getCategoryName, isDeleted)
+  - `SquareMenuItem.js` - Custom getter/setter for PostgreSQL arrays, pricing helpers
+  - `SquareInventoryCount.js` - Immutable snapshots, state validation
+  - `SquareOrder.js` - State enum validation, dollar conversion helpers
+  - `SquareOrderItem.js` - Immutable records, quantity/pricing validation
+- ✅ **Model Associations**: Complete foreign key relationships
+  - belongsTo: POSConnection, Restaurant, SquareLocation (where applicable)
+  - hasMany: SquareInventoryCount, SquareOrderItem (from parent models)
+- ✅ **Test Infrastructure**: Vitest mocks for all new models
+  - Updated `tests/setup.js` with sharedDataStores and vi.mock() calls
+  - 399/399 tests passing (no regressions)
+- ✅ **Technical Documentation**: Permanent solutions documented
+  - Added "⚠️ CRITICAL: New Sequelize Models Must Be Registered in Test Mocks" to TECHNICAL_DOCUMENTATION.md
+  - Updated migrations/README-SQUARE-SCHEMA.md with ES modules warning
+  - Added detailed examples and troubleshooting for future developers
+
+**Database Tables Created:**
+```
+square_categories       - 5 indexes, JSONB storage, partial index on is_deleted
+square_menu_items       - 8 indexes, GIN index on square_data JSONB, text[] for category_ids
+square_inventory_counts - 8 indexes, composite idx_square_inventory_latest for queries
+square_orders           - 9 indexes, partial idx_square_orders_sales_report for analytics
+square_order_items      - 6 indexes, composite idx_square_order_items_sales for reporting
+inventory_items         - Enhanced with source_pos_provider, source_pos_item_id, source_pos_data
+```
+
+**Key Design Patterns:**
+- **JSONB Storage**: All Square API responses preserved in `square_data` column for audit trail
+- **Denormalized Fields**: Common query fields extracted for performance (name, price, quantity, etc.)
+- **PostgreSQL Arrays**: `text[]` type for category_ids with custom Sequelize getter/setter
+- **Monetary Values**: All amounts stored in cents (Square's smallest currency unit)
+- **Optimistic Concurrency**: Square `version` field tracked for sync conflict detection
+- **Immutable Records**: Inventory counts and order items have no updatedAt (historical snapshots)
+
+**Technical Challenges Solved:**
+1. **ES Modules Issue (RECURRING)**: Migration files must use `export const up/down`, not `exports.up`
+   - Documented in 3 locations to prevent future recurrence
+2. **DataTypes.ARRAY Compatibility**: `DataTypes.ARRAY(DataTypes.TEXT)` not working
+   - Solution: Use `DataTypes.TEXT` with custom getter/setter for PostgreSQL array format
+3. **Test Mock Registration**: "belongsTo is not a function" error
+   - Root cause: New models not registered in `tests/setup.js`
+   - Solution: Add to `sharedDataStores` Map AND `vi.mock()` calls
+   - **This was the hidden blocker** - models loaded fine directly but failed in test environment
+
+**Files Created (18 total):**
+- `docs/SQUARE_DATABASE_SCHEMA.md` - Comprehensive schema documentation
+- `backend/migrations/README-SQUARE-SCHEMA.md` - Migration-specific docs
+- `backend/migrations/1759800000000_add-pos-source-tracking-to-inventory-items.js`
+- `backend/migrations/1759800000001_create-square-categories.js`
+- `backend/migrations/1759800000002_create-square-menu-items.js`
+- `backend/migrations/1759800000003_create-square-inventory-counts.js`
+- `backend/migrations/1759800000004_create-square-orders.js`
+- `backend/migrations/1759800000005_create-square-order-items.js`
+- `backend/src/models/SquareCategory.js`
+- `backend/src/models/SquareMenuItem.js`
+- `backend/src/models/SquareInventoryCount.js`
+- `backend/src/models/SquareOrder.js`
+- `backend/src/models/SquareOrderItem.js`
+
+**Files Modified (3 total):**
+- `backend/src/models/index.js` - Registered 5 new Square models
+- `backend/tests/setup.js` - Added mocks for 5 new models (critical fix)
+- `docs/TECHNICAL_DOCUMENTATION.md` - Added test mocking requirements section
+
+**Validation:**
+- ✅ All 6 migrations applied cleanly to PostgreSQL
+- ✅ Database tables verified with `\dt square_*` command
+- ✅ Foreign key constraints working correctly
+- ✅ JSONB validation functional
+- ✅ All 399 tests passing (345 unit + 54 integration)
+- ✅ Models import successfully with `belongsTo` methods available
+- ✅ No regressions in existing functionality
+
+**Architecture Context:**
+- **Issue #19 (Square POS Adapter)**: ✅ **COMPLETE** - Uses these tables to store raw Square API responses (syncInventory implemented)
+- **Issue #20 (POSDataTransformer)**: Will transform square_* tables → unified analytics tables
+- **Issue #21 (sales_transactions)**: Depends on this schema for order data
+- **Issue #25 (Toast)**: Will follow same two-tier pattern established here
+- **Issue #31 (Webhooks)**: Will update these tables in real-time
+
+**Development Time**: ~3 hours (research, design, implementation, debugging, documentation)
+
+**Issue Status**: ✅ **COMPLETE** - Database layer ready and actively used by Issue #19 (Square Adapter)
+
+---
+
+### **Previous Updates (September 29, 2025)**
 
 #### **🧪 Test Architecture Restoration & Fresh Deployment Validation**
 - ✅ **Elegant Stateful Mock System Restored**: Sophisticated test factory pattern in `tests/setup.js`

@@ -376,11 +376,34 @@ InventoryItem.init({
   storageLocation: {
     type: DataTypes.STRING(100),
     allowNull: true,
-    field: 'storage_location'
+    field: 'location' // Maps to 'location' column in database
   },
-  notes: {
-    type: DataTypes.TEXT,
-    allowNull: true
+  // TODO: notes field requires migration before enabling
+  // notes: {
+  //   type: DataTypes.TEXT,
+  //   allowNull: true
+  // },
+  // POS source tracking (Issue #18 - Square Integration)
+  sourcePosProvider: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    field: 'source_pos_provider',
+    validate: {
+      isIn: [['square', 'toast', 'clover']]
+    },
+    comment: 'POS provider that this item was synced from (square, toast, clover)'
+  },
+  sourcePosItemId: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    field: 'source_pos_item_id',
+    comment: 'Original item ID from POS system'
+  },
+  sourcePosData: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    field: 'source_pos_data',
+    comment: 'Additional POS-specific metadata for bi-directional sync'
   },
   isActive: {
     type: DataTypes.BOOLEAN,
@@ -419,6 +442,11 @@ InventoryItem.init({
     {
       fields: ['name', 'restaurant_id'],
       unique: true
+    },
+    // POS source tracking index (Issue #18 - Square Integration)
+    {
+      fields: ['restaurant_id', 'source_pos_provider', 'source_pos_item_id'],
+      name: 'idx_inventory_items_pos_source'
     },
     // Composite indexes for Dave's variance queries
     {

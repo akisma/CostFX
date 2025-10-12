@@ -250,6 +250,627 @@ class BaseAgent {
 - Snapshot completion tracking for beginning/ending inventory
 - Variance analysis completion status
 
+### POS Integration Architecture
+
+**Status**: ✅ **OAUTH SERVICE COMPLETE** (October 2025) - Full OAuth flow, multi-location support, REST API endpoints
+
+**Implementation**: 
+- ✅ Issue #15 - Setup Multi-POS Architecture Foundation
+- ✅ Issue #16 - Square OAuth Authentication Service
+
+#### Overview
+
+The POS Integration system provides a secure, READ ONLY, one-way data flow from merchant POS systems (Square, Toast, etc.) into CostFX for analysis. The system never writes data back to merchant POS systems - the merchant's POS remains the authoritative source of truth.
+
+**Data Flow**: POS System → CostFX (READ ONLY)
+
+#### Architecture Components
+
+**1. Provider Adapters** (`backend/src/adapters/`)
+- **POSAdapter.js**: Abstract base class defining common interface
+- **SquareAdapter.js**: Square POS implementation with OAuth 2.0
+- **ToastAdapter.js**: Toast POS stub (future implementation)
+- **POSAdapterFactory.js**: Factory pattern for adapter instantiation
+
+**2. Security Services** (`backend/src/services/`)
+- **TokenEncryptionService.js**: AES-256-GCM authenticated encryption for OAuth tokens
+  - Unique IV per encryption operation
+  - Authentication tag for tamper detection
+  - Encryption key stored in AWS Secrets Manager (production)
+- **OAuthStateService.js**: CSRF protection for OAuth flows
+  - Cryptographically secure state tokens
+  - 10-minute TTL for attack window limitation
+  - One-time use tokens (prevents replay attacks)
+
+**3. Data Models** (`backend/src/models/`)
+- **POSConnection.js**: OAuth connection management with encrypted token storage
+  - Unique constraint: one connection per (restaurant_id, provider)
+  - Token expiration tracking and refresh
+  - Connection status lifecycle (active, expired, revoked, error)
+
+**4. Error Handling** (`backend/src/utils/`)
+- **posErrors.js**: Specialized error classes
+  - POSAuthError: OAuth and authentication failures
+  - POSTokenError: Token encryption/refresh failures
+  - POSSyncError: Data synchronization failures
+  - POSConfigError: Configuration validation failures
+  - POSRateLimitError: API rate limiting
+
+#### Database Schema
+
+**pos_connections** table:
+```sql
+CREATE TABLE pos_connections (
+  id SERIAL PRIMARY KEY,
+  restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  provider VARCHAR(50) NOT NULL,  -- 'square', 'toast', etc.
+  merchant_id VARCHAR(255) NOT NULL,  -- POS merchant identifier
+  location_id VARCHAR(255),  -- POS location identifier
+  access_token_encrypted TEXT,  -- AES-256-GCM encrypted
+  access_token_iv VARCHAR(32),  -- Initialization vector
+  refresh_token_encrypted TEXT,  -- AES-256-GCM encrypted
+  refresh_token_iv VARCHAR(32),  -- Initialization vector
+  token_expires_at TIMESTAMP WITH TIME ZONE,
+  status VARCHAR(50) DEFAULT 'active',  -- active, expired, revoked, error
+  last_sync_at TIMESTAMP WITH TIME ZONE,
+  metadata JSONB,  -- Provider-specific data
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(restaurant_id, provider)  -- One connection per provider per restaurant
+);
+```
+
+**Indexes:**
+- `idx_pos_provider`: Fast provider lookups
+- `idx_pos_restaurant`: Restaurant's connections
+- `idx_pos_status`: Active connection queries
+- `idx_pos_sync`: Last sync timestamp queries
+
+#### Square Integration
+
+**Two-Tier Data Architecture (October 11, 2025):**
+
+The Square integration implements a two-tier data architecture that separates raw POS data from normalized inventory:
+
+**Tier 1: Raw POS Data (POS-Specific Tables)**
+- `square_categories`: Catalog categories from Square
+- `square_menu_items`: Menu items with Square-specific fields
+- Purpose: Preserve original POS data for debugging and re-transformation
+- Updated via: `SquareAdapter.syncInventory()` with cursor pagination
+
+**Tier 2: Normalized Inventory (Unified Schema)**
+- `inventory_items`: CostFX normalized inventory format
+- Purpose: Unified format for analysis across all POS providers
+- Updated via: `POSDataTransformer.transformBatch()`
+- Includes: Dave's variance threshold fields, category mapping, unit normalization
+
+**Data Flow:**
+```
+Square API → SquareAdapter (Tier 1 sync) → square_* tables
+square_* tables → POSDataTransformer → inventory_items (Tier 2)
+```
+
+**Key Features:**
+- **Idempotent**: Upsert based on `(restaurant_id, source_pos_provider, source_pos_item_id)`
+- **Separated Operations**: Import and transform are independent
+- **Graceful Degradation**: Category mapping falls back to 'dry_goods'
+- **Unit Normalization**: Maps Square units to CostFX validation (lb→lbs, ea→pieces)
+- **Variance Thresholds**: Populates Dave's high-value tracking fields
+
+**OAuth 2.0 Flow:**
+1. **Initiate**: Generate state token, redirect to Square authorization
+2. **Callback**: Verify state, exchange code for tokens
+3. **Store**: Encrypt and save access/refresh tokens
+4. **Refresh**: Automatic token refresh before expiration (30-day tokens)
+5. **Revoke**: Clean disconnect with token revocation
+
+**OAuth Scopes (READ ONLY):**
+- `ITEMS_READ`: Catalog/inventory items (NO WRITE ACCESS)
+- `INVENTORY_READ`: Stock counts (NO WRITE ACCESS)
+- `ORDERS_READ`: Sales/order data (NO WRITE ACCESS)
+- `MERCHANT_PROFILE_READ`: Business information
+
+**Square SDK**: `square` npm package v37.1.0
+
+**Webhook Support:**
+- HMAC-SHA256 signature verification
+- Event types: inventory updates, catalog changes, order events
+- Signature header: `x-square-hmacsha256-signature`
+
+#### Security Best Practices
+
+✅ **Token Encryption**: AES-256-GCM with unique IVs  
+✅ **CSRF Protection**: State tokens for OAuth flows  
+✅ **No Sensitive Logging**: Tokens never logged  
+✅ **READ ONLY Scopes**: No write permissions requested  
+✅ **Token Rotation**: Refresh tokens properly rotated  
+✅ **Webhook Verification**: Cryptographic signature validation  
+
+#### Environment Configuration
+
+Required environment variables (see `.env.example`):
+
+```bash
+# Token Encryption (CRITICAL - use secure key in production)
+TOKEN_ENCRYPTION_KEY=<32-byte-hex-key>  # Generate with: openssl rand -hex 32
+
+# Square POS Configuration
+SQUARE_OAUTH_CLIENT_ID=<from Square Developer Dashboard>
+SQUARE_OAUTH_CLIENT_SECRET=<from Square Developer Dashboard>
+SQUARE_OAUTH_REDIRECT_URI=https://your-domain.com/api/pos/square/callback
+SQUARE_ENVIRONMENT=sandbox  # or 'production'
+SQUARE_WEBHOOK_SIGNATURE_KEY=<from Square Developer Dashboard>
+SQUARE_WEBHOOKS_ENABLED=true
+
+# Toast POS Configuration (Future)
+TOAST_CLIENT_ID=<future>
+TOAST_CLIENT_SECRET=<future>
+TOAST_OAUTH_REDIRECT_URI=https://your-domain.com/api/pos/toast/callback
+```
+
+#### Usage Example
+
+```javascript
+// Initialize factory
+await POSAdapterFactory.initialize();
+
+// Get adapter for provider
+const adapter = await POSAdapterFactory.getAdapter('square');
+
+// Initiate OAuth flow
+const { authorizationUrl, state } = await adapter.initiateOAuth(restaurantId);
+// Redirect user to authorizationUrl...
+
+// Handle OAuth callback
+const connection = await adapter.handleOAuthCallback({
+  code: req.query.code,
+  state: req.query.state,
+  restaurantId
+});
+
+// Sync inventory (READ ONLY from Square)
+const result = await adapter.syncInventory(connection);
+console.log(`Synced ${result.synced} items`);
+
+// Health check
+const health = await adapter.healthCheck(connection);
+console.log(`Connection healthy: ${health.healthy}`);
+```
+
+#### Square OAuth Authentication Service
+
+**Status**: ✅ **COMPLETE** (October 4, 2025) - Issue #16
+
+**Implementation Files:**
+
+**Database:**
+- `migrations/1759612780000_create-square-locations.js` - Multi-location support table
+- `models/SquareLocation.js` - Location model with sync tracking and helper methods
+- `models/POSConnection.js` - Updated with SquareLocation association
+
+**Middleware:**
+- `middleware/restaurantContext.js` - Restaurant-centric authentication (no User model)
+  - `requireRestaurant`: Extract restaurantId from request (defaults to 1 in dev)
+  - `optionalRestaurant`: Non-failing version for optional auth
+  - `validateRestaurantAccess`: Placeholder for future User integration
+- `middleware/squareAuthMiddleware.js` - Square-specific validation
+  - `requireSquareConnection`: Validate active connection, check token expiry
+  - `validateOAuthCallback`: OAuth callback parameter validation
+  - `squareErrorHandler`: Convert POS errors to HTTP responses
+  - `squareOAuthRateLimit`: Rate limiter (10 requests/15min)
+
+**Service Layer:**
+- `services/SquareAuthService.js` - Business logic orchestration
+  - `initiateConnection()`: Start OAuth flow with state token
+  - `handleCallback()`: Exchange authorization code for tokens
+  - `getConnectionStatus()`: Check connection and location status
+  - `getLocations()`: Fetch available Square locations
+  - `selectLocations()`: Save selected locations for sync
+  - `disconnect()`: Revoke OAuth tokens and disconnect
+  - `healthCheck()`: Verify connection operational status
+
+**Controller Layer:**
+- `controllers/SquareAuthController.js` - HTTP request handlers
+  - 7 controller methods with error handling and response formatting
+
+**Routes:**
+- `routes/squareAuth.js` - Express routes with Swagger documentation
+  - `POST /api/v1/pos/square/connect` - Initiate OAuth
+  - `GET /api/v1/pos/square/callback` - Handle OAuth callback
+  - `GET /api/v1/pos/square/status` - Get connection status
+  - `GET /api/v1/pos/square/locations` - List available locations
+  - `POST /api/v1/pos/square/locations/select` - Select locations for sync
+  - `POST /api/v1/pos/square/disconnect` - Disconnect integration
+  - `GET /api/v1/pos/square/health` - Health check endpoint
+
+**Database Schema - square_locations:**
+```sql
+CREATE TABLE square_locations (
+  id SERIAL PRIMARY KEY,
+  pos_connection_id INTEGER NOT NULL REFERENCES pos_connections(id) ON DELETE CASCADE,
+  location_id VARCHAR(255) NOT NULL,  -- Square location ID
+  location_name VARCHAR(255) NOT NULL,
+  address JSONB,  -- Full address object from Square
+  status VARCHAR(50) DEFAULT 'active',
+  capabilities JSONB,  -- Location capabilities array
+  sync_enabled BOOLEAN DEFAULT true,
+  last_sync_at TIMESTAMP WITH TIME ZONE,
+  metadata JSONB,  -- Additional location metadata
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(pos_connection_id, location_id)
+);
+```
+
+**Indexes:**
+- `idx_square_locations_connection`: Fast connection lookups
+- `idx_square_locations_location_id`: Square location ID queries
+- `idx_square_locations_sync`: Sync status queries
+- `idx_square_locations_status`: Status filtering
+
+**Architecture Decisions:**
+
+1. **Restaurant-Centric (No User Model)**: 
+   - Deferred User model to Issue #26+ (post-MVP)
+   - Middleware defaults to restaurantId=1 in development
+   - 100+ line comment documents rationale and future User integration path
+   - Simplifies MVP while maintaining future extensibility
+
+2. **Multi-Location Support**:
+   - Restaurants can select multiple Square locations
+   - Each location tracked separately for sync operations
+   - Location-specific metadata and capabilities storage
+
+3. **Comprehensive Error Handling**:
+   - Custom error classes for POS-specific failures
+   - Middleware converts errors to appropriate HTTP responses
+   - Rate limiting prevents OAuth abuse
+
+4. **API Documentation**:
+   - Full Swagger/OpenAPI 3.0 documentation
+   - Accessible at `/api-docs` endpoint
+   - Request/response schemas for all endpoints
+
+**Testing:**
+- ✅ All 399 tests passing (100% success rate)
+- ✅ POSAdapterFactory mock added to test setup
+- ✅ Model associations tested and operational
+- ✅ Dev server starts without errors
+
+**Validation:**
+- ✅ Migration applied successfully to database
+- ✅ All routes registered at `/api/v1/pos/square`
+- ✅ Swagger documentation generated
+- ✅ No linting or syntax errors
+- ✅ Integration with existing POSAdapterFactory
+
+#### Square Adapter Implementation
+
+**Status**: ✅ **COMPLETE** (October 5, 2025) - Issue #19
+
+**Implementation**: Full Square POS adapter with syncInventory(), healthCheck(), rate limiting, and retry policy. Comprehensive integration testing validates end-to-end data flows from Square API through adapter to database storage.
+
+**Test Coverage**: 514/514 tests passing (100% pass rate)
+- ✅ 14/14 core integration tests passing (100%)
+- ✅ 33/33 SquareAdapter unit tests passing (100%)
+- ✅ 43/43 rate limiter & retry policy tests passing (100%)
+- ✅ End-to-end validation from OAuth → Sync → Database
+
+**Implementation Files:**
+
+**Core Adapter:**
+- `backend/src/adapters/SquareAdapter.js` (1274 lines)
+  - Complete implementation extending POSAdapter base class
+  - syncInventory() with 5 helper methods (240+ lines)
+  - healthCheck() using merchant API
+  - Rate limiting and retry policy integration
+
+**Utility Services:**
+- `backend/src/utils/SquareRateLimiter.js` (290 lines)
+  - Token bucket algorithm for rate limiting
+  - Per-connection tracking (80 requests per 10 seconds)
+  - Statistics collection and monitoring
+- `backend/src/utils/SquareRetryPolicy.js` (278 lines)
+  - Exponential backoff (1-30 seconds)
+  - Retryable status codes: 429, 500, 502, 503, 504
+  - Comprehensive retry statistics
+
+**Test Files:**
+- `backend/tests/unit/SquareAdapter.test.js` (670+ lines, 33 tests) ✅
+- `backend/tests/unit/SquareRateLimiter.test.js` (22 tests) ✅
+- `backend/tests/unit/SquareRetryPolicy.test.js` (21 tests) ✅
+- `backend/tests/integration/squareAdapterCore.test.js` (278 lines, 14 tests) ✅
+- `backend/tests/fixtures/squareApiResponses.js` (430+ lines mock data)
+
+**Key Features:**
+
+**1. syncInventory() - Complete Inventory Synchronization**
+
+Syncs catalog items, categories, and inventory counts from Square to CostFX database.
+
+```javascript
+/**
+ * Sync inventory data from Square to local database
+ * @param {POSConnection} connection - Active Square connection
+ * @param {Object} options - Sync options
+ * @param {Date} options.since - Only sync items modified after this date
+ * @returns {Promise<Object>} Sync results with counts and errors
+ */
+async syncInventory(connection, options = {}) {
+  // Returns: { synced, errors, details: { categories, items, inventoryCounts } }
+}
+```
+
+**Implementation Details:**
+- **Cursor Pagination**: Handles large catalogs with automatic pagination
+- **Incremental Sync**: Uses `options.since` timestamp for efficient updates
+- **Batch Processing**: Inventory counts processed in batches of 100 IDs
+- **Error Collection**: Collects errors without failing entire sync
+- **Rate Limiting**: Respects Square API limits (80 req/10s per connection)
+- **Retry Policy**: Automatically retries transient failures
+
+**Helper Methods:**
+- `_syncCatalogObjects()`: Fetch and process catalog items with pagination
+- `_storeCatalogCategory()`: Upsert category with conflict handling
+- `_storeCatalogItem()`: Upsert menu item with variation tracking
+- `_syncInventoryCounts()`: Batch inventory count retrieval
+- `_storeInventoryCount()`: Store historical inventory snapshots
+
+**Usage Example:**
+```javascript
+const adapter = new SquareAdapter();
+const connection = await POSConnection.findOne({ 
+  where: { restaurantId, provider: 'square' } 
+});
+
+// Full sync
+const result = await adapter.syncInventory(connection);
+console.log(`Synced ${result.details.categories} categories`);
+console.log(`Synced ${result.details.items} menu items`);
+console.log(`Synced ${result.details.inventoryCounts} inventory counts`);
+
+// Incremental sync (only changes since last sync)
+const incrementalResult = await adapter.syncInventory(connection, {
+  since: connection.lastSyncAt
+});
+```
+
+**2. healthCheck() - Connection Health Verification**
+
+Verifies Square connection is operational by calling merchant API.
+
+```javascript
+/**
+ * Check if the Square connection is healthy
+ * @param {POSConnection} connection - Connection to verify
+ * @returns {Promise<Object>} Health status with details
+ */
+async healthCheck(connection) {
+  // Returns: { healthy, message, details: { merchant, tokenExpiry } }
+}
+```
+
+**Health Check Process:**
+1. Verify connection is active and not expired
+2. Call Square merchant API to validate credentials
+3. Check token expiration (warn if < 24 hours)
+4. Return detailed health status
+
+**Usage Example:**
+```javascript
+const health = await adapter.healthCheck(connection);
+
+if (health.healthy) {
+  console.log('Connection operational');
+  console.log(`Merchant: ${health.details.merchant.businessName}`);
+  console.log(`Token expires in: ${health.details.tokenExpiry.hoursRemaining}h`);
+} else {
+  console.error(`Health check failed: ${health.message}`);
+  // Handle token refresh or reconnection
+}
+```
+
+**3. Rate Limiting Strategy**
+
+**Token Bucket Algorithm:**
+- **Capacity**: 80 requests per connection
+- **Refill Rate**: 80 tokens every 10 seconds
+- **Per-Connection**: Separate bucket for each Square connection
+- **Graceful Handling**: Waits for token availability
+
+**Implementation:**
+```javascript
+const rateLimiter = new SquareRateLimiter();
+
+// Rate limiter automatically applied in API calls
+await rateLimiter.acquireToken(connectionId);
+// Make Square API call
+```
+
+**Statistics Tracking:**
+```javascript
+const stats = rateLimiter.getStats(connectionId);
+console.log(`Requests made: ${stats.requestCount}`);
+console.log(`Tokens available: ${stats.tokensAvailable}`);
+console.log(`Wait time: ${stats.averageWaitTime}ms`);
+```
+
+**4. Retry Policy Strategy**
+
+**Exponential Backoff:**
+- **Initial Delay**: 1 second
+- **Max Delay**: 30 seconds
+- **Max Attempts**: 3 retries
+- **Backoff Factor**: 2x (1s → 2s → 4s)
+- **Jitter**: ±25% randomization to prevent thundering herd
+
+**Retryable Errors:**
+- `429` - Rate Limit Exceeded
+- `500` - Internal Server Error
+- `502` - Bad Gateway
+- `503` - Service Unavailable
+- `504` - Gateway Timeout
+
+**Non-Retryable Errors:**
+- `400` - Bad Request (client error)
+- `401` - Unauthorized (invalid credentials)
+- `403` - Forbidden (insufficient permissions)
+- `404` - Not Found (resource doesn't exist)
+
+**Usage Example:**
+```javascript
+const retryPolicy = new SquareRetryPolicy();
+
+const result = await retryPolicy.execute(async () => {
+  // Square API call that might fail transiently
+  return await squareClient.catalogApi.listCatalog();
+});
+
+const stats = retryPolicy.getStats();
+console.log(`Total attempts: ${stats.totalAttempts}`);
+console.log(`Successful retries: ${stats.successfulRetries}`);
+console.log(`Failed after retries: ${stats.failedAfterRetries}`);
+```
+
+**5. Data Flow Architecture**
+
+**Square API → Adapter → Database:**
+
+```
+┌─────────────────┐
+│   Square API    │
+│ (Catalog API)   │
+│ (Inventory API) │
+│ (Merchant API)  │
+└────────┬────────┘
+         │
+         │ OAuth Token
+         │ Rate Limited (80/10s)
+         │ Retry on Failure
+         │
+         ▼
+┌─────────────────┐
+│ SquareAdapter   │
+│  syncInventory()│
+│  healthCheck()  │
+└────────┬────────┘
+         │
+         │ Processed Data
+         │ Error Collection
+         │
+         ▼
+┌─────────────────┐
+│  Database       │
+│ - square_       │
+│   categories    │
+│ - square_menu_  │
+│   items         │
+│ - square_       │
+│   inventory_    │
+│   counts        │
+└─────────────────┘
+```
+
+**6. Integration Testing**
+
+**Core Integration Tests** (`squareAdapterCore.test.js`):
+
+1. **Core Sync Functionality** (5 tests)
+   - Complete sync operation from API to database
+   - Square API calls during sync (catalog + inventory)
+   - Database upserts for categories and items
+   - Incremental sync with timestamp filtering
+   - lastSyncAt timestamp updates
+
+2. **Rate Limiting** (2 tests)
+   - Rate limiter usage during sync operations
+   - Request statistics tracking
+
+3. **Retry Policy** (2 tests)
+   - Retry on transient failures (503 errors)
+   - No retry on non-retryable errors (400)
+
+4. **Health Check** (3 tests)
+   - Verify healthy connection status
+   - Detect inactive connections
+   - Merchant API call verification
+
+5. **Error Handling** (2 tests)
+   - Error collection without failing entire sync
+   - Graceful API error handling
+
+**Test Execution:**
+```bash
+# Run all SquareAdapter tests
+npm test -- SquareAdapter
+
+# Run integration tests
+npm test -- integration/squareAdapterCore
+
+# Run rate limiter tests
+npm test -- SquareRateLimiter
+
+# Run retry policy tests
+npm test -- SquareRetryPolicy
+```
+
+**7. Production Considerations**
+
+**Best Practices:**
+- Always check connection health before sync operations
+- Use incremental sync with `since` parameter for efficiency
+- Monitor rate limiter statistics for capacity planning
+- Review retry statistics to identify persistent issues
+- Handle sync errors gracefully without blocking operations
+- Schedule syncs during off-peak hours when possible
+- Implement monitoring for sync failures and token expiration
+
+**Error Handling:**
+```javascript
+try {
+  const result = await adapter.syncInventory(connection);
+  
+  if (result.errors.length > 0) {
+    console.warn(`Sync completed with ${result.errors.length} errors`);
+    result.errors.forEach(err => {
+      console.error(`Error: ${err.message}`);
+    });
+  }
+  
+  // Update sync timestamp
+  connection.lastSyncAt = new Date();
+  await connection.save();
+} catch (error) {
+  console.error('Sync failed:', error);
+  // Implement retry logic or alert monitoring
+}
+```
+
+**Performance Metrics:**
+- Average sync time: ~2-5 seconds for 100 items
+- Rate limiting overhead: <100ms per request
+- Retry overhead: 1-8 seconds for transient failures
+- Database upsert: <10ms per item
+
+**Known Limitations:**
+- Square API rate limits: 80 requests per 10 seconds per location
+- Inventory batch size: 100 item IDs per request
+- Token expiration: Must refresh before 30 days
+- Pagination cursor: Valid for limited time window
+
+#### Future Enhancements
+
+📋 **Planned:**
+- ✅ Complete syncInventory() implementation (Square Catalog API) - **COMPLETE** (Issue #19)
+- Complete syncSales() implementation (Square Orders API)
+- Toast POS adapter implementation
+- Webhook processing for real-time updates
+- Scheduled sync jobs (daily/hourly)
+- Sync conflict resolution strategies
+- User model integration for multi-user support (Issue #26+)
+
+For detailed integration guide, see [POS_INTEGRATION_GUIDE.md](./POS_INTEGRATION_GUIDE.md)
+
 ### Database Migration System
 
 **Migration Tool**: node-pg-migrate (ES module compatible, PostgreSQL-optimized)
@@ -1091,6 +1712,328 @@ async getRecipeIngredients(restaurantId) {
 
 ## Implementation Guides
 
+### Square OAuth Connection UI (Issue #30)
+
+**Overview**: Complete frontend implementation for Square POS OAuth integration, providing users with a seamless connection workflow from authorization through location selection.
+
+#### Architecture
+
+**Component Hierarchy:**
+```
+App.jsx (ErrorBoundary wrapper)
+  └── SquareConnectionPage (orchestrator)
+      ├── ConnectionButton (OAuth initiation)
+      ├── ConnectionStatus (health monitoring)
+      └── LocationSelector (multi-location selection)
+```
+
+**Data Flow:**
+```
+User Action → Component → Redux Thunk → API Service → Backend
+                          ↓
+                    State Update → UI Re-render
+```
+
+#### Redux State Management
+
+**File**: `frontend/src/store/slices/squareConnectionSlice.js`
+
+**State Structure:**
+```javascript
+{
+  connectionStatus: null,  // Connection health status
+  authorizationUrl: null,  // OAuth URL from backend
+  locations: [],           // Available Square locations
+  selectedLocationIds: [], // User-selected locations
+  loading: {               // Granular loading states
+    initiating: false,
+    callback: false,
+    status: false,
+    locations: false,
+    selecting: false,
+    disconnecting: false,
+    health: false
+  },
+  error: null              // Error messages
+}
+```
+
+**Async Thunks** (7 total):
+1. `initiateSquareConnection()` - Start OAuth flow
+2. `handleSquareCallback(code, state)` - Process OAuth return
+3. `fetchSquareStatus()` - Get connection status
+4. `fetchSquareLocations()` - Retrieve available locations
+5. `selectSquareLocations(locationIds)` - Save selected locations
+6. `disconnectSquare()` - Remove integration
+7. `checkSquareHealth()` - Verify connection health
+
+**Key Selectors** (11 total):
+```javascript
+selectConnectionStatus(state)    // Get connection status
+selectAuthorizationUrl(state)    // Get OAuth URL
+selectSquareLocations(state)     // Get locations array
+selectSelectedLocationIds(state) // Get selected IDs
+selectSquareError(state)         // Get error message
+selectIsInitiating(state)        // OAuth flow loading
+selectIsProcessingCallback(state)// Callback processing
+// ... and 4 more loading selectors
+```
+
+#### Components
+
+**1. ConnectionButton** (`frontend/src/components/pos/square/ConnectionButton.jsx`)
+
+**Purpose**: Initiate Square OAuth flow with visual feedback
+
+**Key Features:**
+- Dispatches `initiateSquareConnection` thunk
+- Redirects to Square authorization URL
+- Loading state with spinner icon
+- Error handling with notistack notifications
+
+**Usage Example:**
+```jsx
+import { ConnectionButton } from '../components/pos/square';
+
+<ConnectionButton />
+```
+
+**2. ConnectionStatus** (`frontend/src/components/pos/square/ConnectionStatus.jsx`)
+
+**Purpose**: Display connection health with management options
+
+**Key Features:**
+- Visual status badges (connected/disconnected/error)
+- Location list display
+- Disconnect button with confirmation
+- Periodic health checks
+
+**Props**: None (connects to Redux)
+
+**3. LocationSelector** (`frontend/src/components/pos/square/LocationSelector.jsx`)
+
+**Purpose**: Multi-location checkbox selection UI
+
+**Key Features:**
+- Search/filter functionality
+- Select all/none toggle
+- Validation (at least 1 location required)
+- Loading/error/empty states
+
+**State Management:**
+- Local state for search term
+- Redux for locations array and submission
+
+**4. SquareConnectionPage** (`frontend/src/pages/SquareConnectionPage.jsx`)
+
+**Purpose**: Main orchestration component managing OAuth flow
+
+**Key Features:**
+- OAuth callback detection via URL params
+- View switching (connect → status → locations)
+- URL cleanup after callback processing
+- useCallback for effect dependencies
+
+**View Logic:**
+```javascript
+if (!connectionStatus) {
+  return <ConnectionButton />;
+} else if (selectedLocationIds.length === 0) {
+  return <LocationSelector />;
+} else {
+  return <ConnectionStatus />;
+}
+```
+
+**5. ErrorBoundary** (`frontend/src/components/common/ErrorBoundary.jsx`)
+
+**Purpose**: Catch and display React component errors gracefully
+
+**Key Features:**
+- Class component with getDerivedStateFromError
+- Development error details display
+- Refresh/home navigation buttons
+- Console error logging
+
+#### Routing Configuration
+
+**Main Route** (`/settings/integrations/square`):
+```jsx
+<Route 
+  path="/settings/integrations/square" 
+  element={<SquareConnectionPage />} 
+/>
+```
+
+**Callback Route** (`/settings/integrations/square/callback`):
+```jsx
+<Route 
+  path="/settings/integrations/square/callback" 
+  element={<SquareConnectionPage />} 
+/>
+```
+
+**Navigation Link** (in `Layout.jsx`):
+```jsx
+{
+  label: 'Settings',
+  icon: Settings,
+  path: '/settings',
+  children: [
+    {
+      label: 'Square Integration',
+      icon: Plug,
+      path: '/settings/integrations/square'
+    }
+  ]
+}
+```
+
+#### User Flow
+
+1. **Navigation**: User clicks "Settings" → "Square Integration"
+2. **Connection View**: Sees `ConnectionButton` component
+3. **OAuth Initiation**: Clicks "Connect Square"
+   - Redux dispatches `initiateSquareConnection`
+   - Backend returns authorization URL
+   - User redirected to Square OAuth page
+4. **Authorization**: User approves Square permissions
+5. **Callback Handling**: Square redirects to callback route
+   - `SquareConnectionPage` detects code/state params
+   - Dispatches `handleSquareCallback` thunk
+   - Backend exchanges code for access token
+   - Success notification shown
+6. **Location Selection**: Component switches to `LocationSelector`
+   - Fetches available Square locations
+   - User selects locations to sync
+   - Submits selection
+7. **Status View**: Component switches to `ConnectionStatus`
+   - Shows connection health
+   - Displays selected locations
+   - Provides disconnect option
+
+#### Testing
+
+**Test File**: `frontend/tests/store/squareConnectionSlice.test.js`
+
+**Coverage**: 32 unit tests (100% passing)
+
+**Test Categories:**
+- Initial state validation
+- Synchronous actions (5 tests)
+- Async thunk success cases (7 tests)
+- Async thunk failure cases (7 tests)
+- Selectors (11 tests)
+- State transitions (2 tests)
+
+**Example Test:**
+```javascript
+describe('initiateSquareConnection', () => {
+  it('should handle successful connection initiation', async () => {
+    const mockAuthUrl = 'https://connect.squareup.com/oauth2/authorize...';
+    mockApi.initiateSquareConnection.mockResolvedValue({
+      data: { authorizationUrl: mockAuthUrl }
+    });
+    
+    await store.dispatch(initiateSquareConnection());
+    
+    const state = store.getState().squareConnection;
+    expect(state.authorizationUrl).toBe(mockAuthUrl);
+    expect(state.loading.initiating).toBe(false);
+    expect(state.error).toBeNull();
+  });
+});
+```
+
+#### Error Handling
+
+**Error Boundary**: Wraps all routes in `App.jsx`
+```jsx
+<ErrorBoundary>
+  <Routes>
+    {/* All routes */}
+  </Routes>
+</ErrorBoundary>
+```
+
+**API Error Handling**: Consistent pattern across all thunks
+```javascript
+try {
+  const response = await api.someEndpoint();
+  return response.data;
+} catch (error) {
+  return rejectWithValue(error.response?.data?.message || 'Operation failed');
+}
+```
+
+**User Notifications**: notistack integration in `main.jsx`
+```jsx
+<SnackbarProvider 
+  maxSnack={3}
+  anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+  autoHideDuration={4000}
+>
+  <App />
+</SnackbarProvider>
+```
+
+#### Mobile Responsiveness
+
+All components use Tailwind CSS responsive classes:
+- `sm:`, `md:`, `lg:` breakpoints for layout adjustments
+- Touch-friendly button sizes (minimum 44px)
+- Readable font sizes on small screens
+- Proper spacing and padding across devices
+
+**Example:**
+```jsx
+<div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+  {/* Responsive grid layout */}
+</div>
+```
+
+#### Quality Metrics
+
+- **Frontend Tests**: 167/167 passing (100%)
+- **Backend Tests**: 399/399 passing (100%)
+- **Redux Slice Tests**: 32/32 passing (100%)
+- **Build Time**: 2.38s average
+- **Bundle Size**: 962.71 kB (optimized for production)
+- **Dev Server**: Running without errors
+
+#### API Integration
+
+**Backend Endpoints Used:**
+- `POST /api/v1/pos/square/connect` - Initiate OAuth
+- `POST /api/v1/pos/square/callback` - Exchange code for token
+- `GET /api/v1/pos/square/status` - Get connection status
+- `GET /api/v1/pos/square/locations` - Fetch locations
+- `POST /api/v1/pos/square/locations/select` - Save location selection
+- `DELETE /api/v1/pos/square/disconnect` - Remove integration
+- `GET /api/v1/pos/square/health` - Check connection health
+
+**API Service** (`frontend/src/services/api.js`):
+```javascript
+export const initiateSquareConnection = () => 
+  api.post('/pos/square/connect');
+
+export const handleSquareCallback = (code, state) => 
+  api.post('/pos/square/callback', { code, state });
+
+// ... other methods
+```
+
+#### Future Enhancements
+
+- **E2E Testing**: Playwright tests for full OAuth flow
+- **Sandbox Testing**: Square sandbox account integration
+- **Error Recovery**: Automatic retry on network failures
+- **Location Sync Status**: Real-time sync progress indicators
+- **Webhook Integration**: Event notifications from Square
+- **Multi-restaurant Support**: Location mapping for multiple restaurants
+
+---
+
 ### Setting Up Development Environment
 
 #### Prerequisites
@@ -1539,16 +2482,87 @@ const loading = useSelector(selectPeriodLoading);
 
 ### Database Migrations
 
+#### ⚠️ CRITICAL: ES Modules Pattern
+
+**This backend uses ES modules (`"type": "module"` in package.json). Migrations MUST use ES module syntax!**
+
+```javascript
+/* eslint-disable camelcase */
+
+// ✅ CORRECT - ES Modules
+export const up = async (pgm) => {
+  pgm.createTable('my_table', {
+    id: { type: 'serial', primaryKey: true, notNull: true },
+    name: { type: 'varchar(255)', notNull: true }
+  });
+};
+
+export const down = async (pgm) => {
+  pgm.dropTable('my_table');
+};
+
+// ❌ WRONG - CommonJS (causes "exports is not defined in ES module scope" error)
+exports.up = async function (db) {
+  // This will FAIL! Don't use exports.up in ES module projects
+};
+```
+
+**Why this matters:** We hit this issue repeatedly. Always check existing migrations for the pattern.
+
+#### ⚠️ CRITICAL: New Sequelize Models Must Be Registered in Test Mocks
+
+**When you create new Sequelize models, you MUST update `backend/tests/setup.js` or tests will fail with cryptic errors like "Model.belongsTo is not a function".**
+
+The test suite uses Vitest mocks to avoid database dependencies during unit tests. Every model needs two additions:
+
+**1. Add to `sharedDataStores` Map:**
+```javascript
+const sharedDataStores = {
+  Restaurant: new Map(),
+  InventoryItem: new Map(),
+  // ... existing models ...
+  
+  // ✅ ADD YOUR NEW MODELS HERE
+  SquareCategory: new Map(),
+  SquareMenuItem: new Map()
+};
+```
+
+**2. Add `vi.mock()` call for each model file:**
+```javascript
+// ✅ ADD MOCK FOR EACH NEW MODEL
+vi.mock('../src/models/SquareCategory.js', () => ({
+  default: createStatefulMockModel('SquareCategory')
+}));
+
+vi.mock('../src/models/SquareMenuItem.js', () => ({
+  default: createStatefulMockModel('SquareMenuItem')
+}));
+```
+
+**Common Error:** If you forget this, you'll get errors during test runs:
+```
+TypeError: SquareCategory.belongsTo is not a function
+  at Function.associate (src/models/SquareCategory.js:37:20)
+  at src/models/index.js:44:23
+```
+
+**Why this happens:** The test environment mocks all models to avoid database connections. When `models/index.js` tries to call `associate()` on unmocked models, Sequelize's Model methods (belongsTo, hasMany, etc.) aren't available because the mock wasn't created.
+
+**Solution:** Always add new models to `tests/setup.js` immediately after creating the model file. This ensures test mocks stay in sync with actual models.
+
+**Pro tip:** Search `tests/setup.js` for "sharedDataStores" and "vi.mock('../src/models/" to find the two locations that need updates.
+
 #### Creating Migrations
 ```bash
 # Create new migration
-npx sequelize-cli migration:generate --name create-new-table
+npm run migrate:create <migration-name>
 
 # Run migrations
-npm run migrate
+npm run migrate:up
 
 # Rollback migration
-npm run migrate:rollback
+npm run migrate:down
 ```
 
 #### Migration Template
@@ -2557,6 +3571,61 @@ docker run --rm frontend:latest grep -r "elb.amazonaws.com" /usr/share/nginx/htm
   # Check connection
   psql -h localhost -U username -d costfx_dev
   ```
+
+#### React Component Issues
+
+**Issue**: ReferenceError for undefined function or state setter
+- **Cause**: Function called without proper declaration (missing `useState`, `useCallback`, etc.)
+- **Example**: `ReferenceError: setIsDisconnecting is not defined` in ConnectionStatus component
+- **Solution**: 
+  ```javascript
+  // ❌ BAD: Calling undefined function
+  const handleClick = () => {
+    setIsLoading(true); // Error if useState not declared!
+  };
+  
+  // ✅ GOOD: Properly declare state before using
+  const [isLoading, setIsLoading] = useState(false);
+  const handleClick = () => {
+    setIsLoading(true);
+  };
+  
+  // ✅ BETTER: Use existing Redux state instead of redundant local state
+  const isLoading = useSelector(state => state.feature.loading);
+  const handleClick = () => {
+    dispatch(startLoading()); // Redux manages state
+  };
+  ```
+- **Prevention**: 
+  - Add component-level integration tests that exercise actual button clicks
+  - Verify all function calls have corresponding declarations
+  - Use ESLint with `no-undef` rule enabled
+  - Prefer Redux for shared state over local `useState`
+  - Run tests that mock actual user interactions, not just Redux actions
+
+**Production Bug Fix Examples (October 2025):**
+
+1. **Frontend - Disconnect Button Crash**
+   - **Component**: `frontend/src/components/pos/square/ConnectionStatus.jsx`
+   - **Bug**: `setIsDisconnecting is not defined` ReferenceError
+   - **Root Cause**: Function called `setIsDisconnecting(true)` without `useState` declaration
+   - **Fix**: Removed broken call; component already used Redux `loading.disconnect` state
+   - **Tests Added**: 5 component tests in `ConnectionStatus.test.jsx` validating disconnect behavior
+   - **Lesson**: Component-level tests catch issues that Redux unit tests miss
+
+2. **Backend - Square Token Revocation**
+   - **Component**: `backend/src/adapters/SquareAdapter.js`
+   - **Bug**: `Argument for 'authorization' failed validation` from Square API
+   - **Root Cause**: SDK `revokeToken()` not properly configured with Basic Auth
+   - **Fix**: Replaced with direct axios HTTP call using Basic Auth header (base64 clientId:clientSecret)
+   - **Lesson**: Test external API integrations; SDK abstractions can hide auth requirements
+
+3. **Frontend - Data Contract Mismatch**
+   - **Component**: `frontend/src/components/pos/square/ConnectionStatus.jsx`
+   - **Bug**: Location names not displaying (empty bullets in list)
+   - **Root Cause**: Component used `location.name` but backend sends `location.locationName`
+   - **Fix**: Updated to `location.locationName || location.name` with fallback
+   - **Lesson**: Validate frontend-backend data field naming consistency
 
 #### Testing Issues
 

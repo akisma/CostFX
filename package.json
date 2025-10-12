@@ -39,5 +39,9 @@
     "inflight": "npm:@aashutoshrathi/word-wrap@1.2.6",
     "glob": "^10.4.5",
     "rimraf": "^5.0.10"
+  },
+  "dependencies": {
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   }
 }

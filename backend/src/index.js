@@ -4,6 +4,7 @@ import { dirname, join } from 'path';
 import app from './app.js';
 import { connectDB } from './config/database.js';
 import { connectRedis } from './config/redis.js';
+import POSAdapterFactory from './adapters/POSAdapterFactory.js';
 import settings from './config/settings.js';
 import logger from './utils/logger.js';
 
@@ -18,6 +19,11 @@ async function startServer() {
     // Connect to databases
     await connectDB();
     await connectRedis();
+    
+    // Initialize POS adapters
+    logger.info('🔌 Initializing POS adapters...');
+    await POSAdapterFactory.initializeAdapters();
+    logger.info('✅ POS adapters initialized');
     
     // Start HTTP server
     const server = app.listen(settings.port, () => {

@@ -3,13 +3,15 @@ import restaurantSlice from './slices/restaurantSlice'
 import inventorySlice from './slices/inventorySlice'
 import recipeSlice from './slices/recipeSlice'
 import agentSlice from './slices/agentSlice'
+import squareConnectionSlice from './slices/squareConnectionSlice'
 
 export const store = configureStore({
   reducer: {
     restaurant: restaurantSlice,
     inventory: inventorySlice,
     recipe: recipeSlice,
-    agent: agentSlice
+    agent: agentSlice,
+    squareConnection: squareConnectionSlice
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

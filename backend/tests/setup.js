@@ -22,7 +22,15 @@ const sharedDataStores = {
   InventoryTransaction: new Map(),
   Supplier: new Map(),
   IngredientCategory: new Map(),
-  TheoreticalUsageAnalysis: new Map()
+  TheoreticalUsageAnalysis: new Map(),
+  POSConnection: new Map(),
+  SquareLocation: new Map(),
+  // Square POS Models (Issue #18)
+  SquareCategory: new Map(),
+  SquareMenuItem: new Map(),
+  SquareInventoryCount: new Map(),
+  SquareOrder: new Map(),
+  SquareOrderItem: new Map()
 };
 
 // Helper to generate unique IDs
@@ -208,6 +216,40 @@ const createStatefulMockModel = (modelName, customMethods = {}) => {
       }
       return Promise.resolve(0);
     }),
+
+    upsert: vi.fn().mockImplementation((data, options = {}) => {
+      // Find existing record based on conflict fields
+      const conflictFields = options.conflictFields || ['id'];
+      let existing = null;
+      
+      for (const item of store.values()) {
+        const matches = conflictFields.every(field => item[field] === data[field]);
+        if (matches) {
+          existing = item;
+          break;
+        }
+      }
+
+      const now = new Date();
+      
+      if (existing) {
+        // Update existing record
+        Object.assign(existing, data, { updatedAt: now });
+        store.set(existing.id, existing);
+        return Promise.resolve([existing, false]); // [instance, created=false]
+      } else {
+        // Create new record
+        const id = generateId();
+        const item = {
+          id,
+          ...data,
+          createdAt: now,
+          updatedAt: now
+        };
+        store.set(id, item);
+        return Promise.resolve([item, true]); // [instance, created=true]
+      }
+    }),
     
     // Add custom methods
     ...customMethods
@@ -231,18 +273,33 @@ vi.mock('sequelize', () => {
     )
   }));
   
+  // Mock Model class for Sequelize ORM
+  class MockModel {
+    static associate() {}
+    static init() { return this; }
+  }
+  
+  // Mock DataTypes functions
+  const createDataType = (type) => {
+    const fn = (length) => `${type}(${length || ''})`;
+    fn.toString = () => type;
+    return fn;
+  };
+  
   return {
     default: mockSequelize,
     Sequelize: mockSequelize,
+    Model: MockModel,
     DataTypes: {
-      INTEGER: 'INTEGER',
-      STRING: 'STRING',
-      TEXT: 'TEXT',
-      BOOLEAN: 'BOOLEAN',
-      DATE: 'DATE',
-      DECIMAL: 'DECIMAL',
-      FLOAT: 'FLOAT',
-      ENUM: 'ENUM'
+      INTEGER: createDataType('INTEGER'),
+      STRING: createDataType('STRING'),
+      TEXT: createDataType('TEXT'),
+      BOOLEAN: createDataType('BOOLEAN'),
+      DATE: createDataType('DATE'),
+      DECIMAL: createDataType('DECIMAL'),
+      FLOAT: createDataType('FLOAT'),
+      ENUM: (...values) => `ENUM(${values.join(',')})`,
+      JSONB: createDataType('JSONB')
     },
     Op: {
       between: 'between',
@@ -368,6 +425,69 @@ vi.mock('../src/models/PeriodInventorySnapshot.js', () => ({
 
 vi.mock('../src/models/TheoreticalUsageAnalysis.js', () => ({
   default: createStatefulMockModel('TheoreticalUsageAnalysis')
+}));
+
+vi.mock('../src/models/POSConnection.js', () => ({
+  default: createStatefulMockModel('POSConnection')
+}));
+
+vi.mock('../src/models/SquareLocation.js', () => ({
+  default: createStatefulMockModel('SquareLocation')
+}));
+
+// Square POS Models (Issue #18)
+vi.mock('../src/models/SquareCategory.js', () => ({
+  default: createStatefulMockModel('SquareCategory')
+}));
+
+vi.mock('../src/models/SquareMenuItem.js', () => ({
+  default: createStatefulMockModel('SquareMenuItem')
+}));
+
+vi.mock('../src/models/SquareInventoryCount.js', () => ({
+  default: createStatefulMockModel('SquareInventoryCount')
+}));
+
+vi.mock('../src/models/SquareOrder.js', () => ({
+  default: createStatefulMockModel('SquareOrder')
+}));
+
+vi.mock('../src/models/SquareOrderItem.js', () => ({
+  default: createStatefulMockModel('SquareOrderItem')
+}));
+
+// Mock POSAdapterFactory to avoid loading posProviders config
+vi.mock('../src/adapters/POSAdapterFactory.js', () => ({
+  default: {
+    getAdapter: vi.fn().mockReturnValue({
+      initialize: vi.fn().mockResolvedValue(undefined),
+      initiateOAuth: vi.fn().mockResolvedValue({
+        authorizationUrl: 'https://connect.squareup.com/oauth2/authorize?test',
+        state: 'test-state-token'
+      }),
+      handleOAuthCallback: vi.fn().mockResolvedValue({
+        id: 1,
+        provider: 'square',
+        status: 'active',
+        isActive: vi.fn().mockReturnValue(true)
+      }),
+      getLocations: vi.fn().mockResolvedValue([
+        {
+          id: 'L123',
+          name: 'Test Location',
+          address: {},
+          isActive: true,
+          capabilities: ['CREDIT_CARD_PROCESSING']
+        }
+      ]),
+      disconnect: vi.fn().mockResolvedValue(undefined),
+      healthCheck: vi.fn().mockResolvedValue({
+        healthy: true,
+        message: 'Connection healthy',
+        details: {}
+      })
+    })
+  }
 }));
 
 // Mock OpenAI
