@@ -48,6 +48,13 @@ describe('Square Adapter Integration Tests', () => {
     await adapter.initialize();
   });
 
+  afterAll(() => {
+    // Cleanup rate limiter to prevent test hanging
+    if (adapter && adapter.rateLimiter) {
+      adapter.rateLimiter.clearAllBuckets();
+    }
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -156,9 +163,11 @@ describe('Square Adapter Integration Tests', () => {
 
       expect(result).toBeDefined();
       expect(mockClient.catalogApi.listCatalog).toHaveBeenCalledWith(
-        expect.objectContaining({
-          beginTime: since.toISOString()
-        })
+        undefined,              // cursor (first call)
+        expect.any(String),     // types
+        undefined,              // catalogVersion
+        100,                    // limit
+        since.toISOString()     // beginTime
       );
     });
 
@@ -422,7 +431,7 @@ describe('Square Adapter Integration Tests', () => {
   describe('Pagination Integration', () => {
     test('should handle paginated catalog responses', async () => {
       let callCount = 0;
-      vi.spyOn(mockClient.catalogApi, 'listCatalog').mockImplementation(async ({ cursor }) => {
+      vi.spyOn(mockClient.catalogApi, 'listCatalog').mockImplementation(async (cursor, types, catalogVersion, limit, beginTime) => {
         callCount++;
         if (callCount === 1) {
           return {
@@ -445,9 +454,11 @@ describe('Square Adapter Integration Tests', () => {
 
       expect(callCount).toBe(2); // Initial call + pagination call
       expect(mockClient.catalogApi.listCatalog).toHaveBeenCalledWith(
-        expect.objectContaining({
-          cursor: 'NEXT_PAGE_CURSOR'
-        })
+        'NEXT_PAGE_CURSOR', // cursor parameter
+        expect.any(String),  // types
+        undefined,          // catalogVersion
+        100,                // limit
+        undefined           // beginTime
       );
     });
 

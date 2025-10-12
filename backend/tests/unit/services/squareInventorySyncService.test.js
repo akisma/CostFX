@@ -240,7 +240,12 @@ describe('SquareInventorySyncService', () => {
         new Error('Database error')
       );
 
-      await expect(service.syncAndTransform(1)).rejects.toThrow('Square sync failed');
+      // Service now collects errors instead of throwing
+      const result = await service.syncAndTransform(1);
+      
+      expect(result.status).toBe('completed');
+      expect(result.transform.errors).toBeDefined();
+      expect(result.transform.errors.length).toBeGreaterThan(0);
     });
 
     it('should return error details in result on failure', async () => {

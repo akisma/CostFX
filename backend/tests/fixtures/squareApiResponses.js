@@ -353,7 +353,8 @@ export class MockSquareClient {
     
     // Mock API clients
     this.catalogApi = {
-      listCatalog: async ({ cursor } = {}) => {
+      listCatalog: async (cursor, types, catalogVersion, limit, beginTime) => {
+        // Square SDK uses positional parameters, not object destructuring
         if (cursor === 'NEXT_PAGE_CURSOR_TOKEN') {
           return { result: { objects: [] } }; // No more pages
         }

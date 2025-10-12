@@ -8,7 +8,7 @@
  * Phase 5: Integration Testing (Simplified Core Tests)
  */
 
-import { vi, describe, test, expect, beforeAll, beforeEach, afterEach } from 'vitest';
+import { vi, describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import SquareAdapter from '../../src/adapters/SquareAdapter.js';
 import POSConnection from '../../src/models/POSConnection.js';
 import SquareCategory from '../../src/models/SquareCategory.js';
@@ -45,6 +45,13 @@ describe('Square Adapter Core Integration', () => {
 
     adapter = new SquareAdapter(config);
     await adapter.initialize();
+  });
+
+  afterAll(() => {
+    // Cleanup rate limiter to prevent test hanging
+    if (adapter && adapter.rateLimiter) {
+      adapter.rateLimiter.clearAllBuckets();
+    }
   });
 
   beforeEach(() => {
@@ -120,9 +127,11 @@ describe('Square Adapter Core Integration', () => {
       await adapter.syncInventory(mockConnection, since);
 
       expect(catalogSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          beginTime: since.toISOString()
-        })
+        undefined,              // cursor (first call)
+        expect.any(String),     // types
+        undefined,              // catalogVersion
+        100,                    // limit
+        since.toISOString()     // beginTime
       );
     });
 
