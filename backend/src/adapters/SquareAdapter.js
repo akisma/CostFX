@@ -89,6 +89,38 @@ class SquareAdapter extends POSAdapter {
   }
 
   /**
+   * Convert BigInt values to strings for JSON serialization
+   * Square API returns version numbers as BigInt which can't be serialized to JSON
+   * 
+   * @private
+   * @param {*} obj - Object to sanitize
+   * @returns {*} Sanitized object with BigInt converted to string
+   */
+  _sanitizeBigInt(obj) {
+    if (obj === null || obj === undefined) {
+      return obj;
+    }
+    
+    if (typeof obj === 'bigint') {
+      return obj.toString();
+    }
+    
+    if (Array.isArray(obj)) {
+      return obj.map(item => this._sanitizeBigInt(item));
+    }
+    
+    if (typeof obj === 'object') {
+      const sanitized = {};
+      for (const [key, value] of Object.entries(obj)) {
+        sanitized[key] = this._sanitizeBigInt(value);
+      }
+      return sanitized;
+    }
+    
+    return obj;
+  }
+
+  /**
    * Initialize Square adapter
    * Validates configuration and creates Square SDK client
    * 
@@ -691,7 +723,9 @@ class SquareAdapter extends POSAdapter {
       
       throw new POSSyncError(
         `Failed to sync Square inventory: ${error.message}`,
-        true // retryable
+        true, // retryable
+        null, // result
+        'square' // provider
       );
     }
   }
@@ -706,7 +740,7 @@ class SquareAdapter extends POSAdapter {
    * @param {Object} stats - Statistics object to update
    */
   async _syncCatalogObjects(client, connection, since, stats) {
-    let cursor = null;
+    let cursor = undefined;  // Use undefined for optional parameters, not null
     const types = 'CATEGORY,ITEM';
     
     do {
@@ -716,20 +750,22 @@ class SquareAdapter extends POSAdapter {
       // Make API call with retry policy
       const response = await this.retryPolicy.executeWithRetry(
         async () => {
-          const params = {
+          this._logOperation('listCatalog', {
+            connectionId: connection.id,
+            cursor: cursor || undefined,
             types,
-            limit: 100 // Square's max per page
-          };
+            since: since ? since.toISOString() : undefined
+          });
           
-          if (cursor) {
-            params.cursor = cursor;
-          }
-          
-          if (since) {
-            params.beginTime = since.toISOString();
-          }
-          
-          return await client.catalogApi.listCatalog(params);
+          // Square SDK expects individual parameters, not an object
+          // Use undefined for optional parameters (null is treated as an object)
+          return await client.catalogApi.listCatalog(
+            cursor,              // cursor: Optional<string>
+            types,               // types: Optional<string>
+            undefined,           // catalogVersion: Optional<bigint>
+            100,                 // limit: Optional<number>
+            since ? since.toISOString() : undefined  // beginTime: Optional<string>
+          );
         },
         {
           method: 'catalog.listCatalog',
@@ -737,6 +773,13 @@ class SquareAdapter extends POSAdapter {
           cursor
         }
       );
+      
+      this._logOperation('listCatalogResponse', {
+        connectionId: connection.id,
+        objectCount: response.result.objects?.length || 0,
+        hasCursor: !!response.result.cursor,
+        cursorValue: response.result.cursor
+      });
       
       const objects = response.result.objects || [];
       
@@ -764,7 +807,7 @@ class SquareAdapter extends POSAdapter {
         }
       }
       
-      cursor = response.result.cursor || null;
+      cursor = response.result.cursor || undefined;
       
     } while (cursor);
   }
@@ -777,20 +820,22 @@ class SquareAdapter extends POSAdapter {
    * @param {Object} categoryObj - Square catalog category object
    */
   async _storeCatalogCategory(connection, categoryObj) {
+    // Square SDK returns camelCase keys
     const categoryData = {
       posConnectionId: connection.id,
       restaurantId: connection.restaurantId,
-      squareCategoryId: categoryObj.id,
-      name: categoryObj.category_data?.name || 'Unnamed Category',
-      squareVersion: categoryObj.version,
-      isDeleted: categoryObj.is_deleted || false,
-      squareUpdatedAt: categoryObj.updated_at ? new Date(categoryObj.updated_at) : new Date(),
-      squareData: categoryObj
+      squareCatalogObjectId: categoryObj.id,  // Catalog object ID (main unique ID)
+      squareCategoryId: categoryObj.id,        // Same as catalog object ID for categories
+      name: categoryObj.categoryData?.name || categoryObj.category_data?.name || 'Unnamed Category',
+      squareVersion: categoryObj.version ? categoryObj.version.toString() : null,
+      isDeleted: categoryObj.isDeleted || categoryObj.is_deleted || false,
+      squareUpdatedAt: categoryObj.updatedAt || categoryObj.updated_at ? new Date(categoryObj.updatedAt || categoryObj.updated_at) : new Date(),
+      squareData: this._sanitizeBigInt(categoryObj)
     };
     
-    // Upsert: create or update based on squareCategoryId
+    // Upsert: create or update based on unique constraint
     await SquareCategory.upsert(categoryData, {
-      conflictFields: ['square_category_id', 'pos_connection_id']
+      conflictFields: ['square_catalog_object_id']
     });
   }
   
@@ -802,34 +847,36 @@ class SquareAdapter extends POSAdapter {
    * @param {Object} itemObj - Square catalog item object
    */
   async _storeCatalogItem(connection, itemObj) {
-    const itemData = itemObj.item_data || {};
+    // Square SDK returns camelCase keys
+    const itemData = itemObj.itemData || itemObj.item_data || {};
     const primaryVariation = itemData.variations?.[0];
-    const variationData = primaryVariation?.item_variation_data || {};
+    const variationData = primaryVariation?.itemVariationData || primaryVariation?.item_variation_data || {};
     
     // Extract price from primary variation
-    const priceAmount = variationData.price_money?.amount || 0;
-    const priceCurrency = variationData.price_money?.currency || 'USD';
+    const priceAmount = variationData.priceMoney?.amount || variationData.price_money?.amount || 0;
+    const priceCurrency = variationData.priceMoney?.currency || variationData.price_money?.currency || 'USD';
     
     const menuItemData = {
       posConnectionId: connection.id,
       restaurantId: connection.restaurantId,
-      squareItemId: itemObj.id,
+      squareCatalogObjectId: itemObj.id,  // Catalog object ID (main unique ID)
+      squareItemId: itemObj.id,            // Same as catalog object ID for items
       name: itemData.name || 'Unnamed Item',
-      description: itemData.description || null,
-      squareCategoryId: itemData.category_id || null,
+      description: itemData.description || itemData.descriptionPlaintext || null,
+      squareCategoryId: itemData.categoryId || itemData.category_id || null,
       priceMoneyAmount: priceAmount,
       priceMoneyAmountCurrency: priceCurrency,
-      squareVersion: itemObj.version,
-      isDeleted: itemObj.is_deleted || false,
-      squareUpdatedAt: itemObj.updated_at ? new Date(itemObj.updated_at) : new Date(),
+      squareVersion: itemObj.version ? itemObj.version.toString() : null,
+      isDeleted: itemObj.isDeleted || itemObj.is_deleted || false,
+      squareUpdatedAt: itemObj.updatedAt || itemObj.updated_at ? new Date(itemObj.updatedAt || itemObj.updated_at) : new Date(),
       // Store variation IDs as PostgreSQL array
       variationIds: itemData.variations?.map(v => v.id) || [],
-      squareData: itemObj
+      squareData: this._sanitizeBigInt(itemObj)
     };
     
-    // Upsert: create or update based on squareItemId
+    // Upsert: create or update based on unique constraint
     await SquareMenuItem.upsert(menuItemData, {
-      conflictFields: ['square_item_id', 'pos_connection_id']
+      conflictFields: ['square_catalog_object_id']
     });
   }
   
@@ -1026,7 +1073,9 @@ class SquareAdapter extends POSAdapter {
       
       throw new POSSyncError(
         `Failed to sync Square sales: ${error.message}`,
-        true // retryable
+        true, // retryable
+        null, // result
+        'square' // provider
       );
     }
   }

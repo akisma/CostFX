@@ -70,13 +70,12 @@ export class POSTokenError extends POSError {
 }
 
 /**
- * Synchronization failures
+ * POS synchronization errors
  * 
  * Used when:
- * - Inventory sync fails
- * - Sales data sync encounters errors
- * - Network issues during data transfer
- * - POS API temporary unavailability
+ * - Sync operations fail
+ * - Data transformation errors
+ * - API timeouts during sync
  * 
  * The retryable flag indicates whether the operation should be retried:
  * - true: Network issues, temporary API failures (default)
@@ -85,10 +84,11 @@ export class POSTokenError extends POSError {
  * HTTP Status: 503 Service Unavailable
  */
 export class POSSyncError extends POSError {
-  constructor(message, provider = null, retryable = true) {
+  constructor(message, retryable = true, result = null, provider = null) {
     super(message, 503, provider);
     this.name = 'POSSyncError';
     this.retryable = retryable;
+    this.result = result; // Attach sync result for detailed error reporting
   }
 }
 

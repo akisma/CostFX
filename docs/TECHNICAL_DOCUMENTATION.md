@@ -328,6 +328,35 @@ CREATE TABLE pos_connections (
 
 #### Square Integration
 
+**Two-Tier Data Architecture (October 11, 2025):**
+
+The Square integration implements a two-tier data architecture that separates raw POS data from normalized inventory:
+
+**Tier 1: Raw POS Data (POS-Specific Tables)**
+- `square_categories`: Catalog categories from Square
+- `square_menu_items`: Menu items with Square-specific fields
+- Purpose: Preserve original POS data for debugging and re-transformation
+- Updated via: `SquareAdapter.syncInventory()` with cursor pagination
+
+**Tier 2: Normalized Inventory (Unified Schema)**
+- `inventory_items`: CostFX normalized inventory format
+- Purpose: Unified format for analysis across all POS providers
+- Updated via: `POSDataTransformer.transformBatch()`
+- Includes: Dave's variance threshold fields, category mapping, unit normalization
+
+**Data Flow:**
+```
+Square API → SquareAdapter (Tier 1 sync) → square_* tables
+square_* tables → POSDataTransformer → inventory_items (Tier 2)
+```
+
+**Key Features:**
+- **Idempotent**: Upsert based on `(restaurant_id, source_pos_provider, source_pos_item_id)`
+- **Separated Operations**: Import and transform are independent
+- **Graceful Degradation**: Category mapping falls back to 'dry_goods'
+- **Unit Normalization**: Maps Square units to CostFX validation (lb→lbs, ea→pieces)
+- **Variance Thresholds**: Populates Dave's high-value tracking fields
+
 **OAuth 2.0 Flow:**
 1. **Initiate**: Generate state token, redirect to Square authorization
 2. **Callback**: Verify state, exchange code for tokens

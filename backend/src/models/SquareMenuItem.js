@@ -74,7 +74,10 @@ class SquareMenuItem extends Model {
    */
   getPrimaryVariation() {
     try {
-      return this.squareData?.item_data?.variations?.[0];
+      // Try both snake_case and camelCase (depends on how data was sanitized)
+      const variations = this.squareData?.item_data?.variations 
+        || this.squareData?.itemData?.variations;
+      return variations?.[0] || null;
     } catch (error) {
       return null;
     }

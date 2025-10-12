@@ -6,7 +6,10 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 import {
   ConnectionButton,
   ConnectionStatus,
-  LocationSelector
+  LocationSelector,
+  DataImportPanel,
+  TransformationPanel,
+  DataReviewPanel
 } from '../components/pos/square'
 import {
   selectSquareLocations,
@@ -14,6 +17,7 @@ import {
   selectIsConnected,
   selectShowLocationSelector,
   selectCallbackProcessed,
+  selectConnection,
   toggleLocationSelector
 } from '../store/slices/squareConnectionSlice'
 
@@ -42,10 +46,12 @@ const SquareConnectionPage = () => {
   const isConnected = useSelector(selectIsConnected)
   const showLocationSelector = useSelector(selectShowLocationSelector)
   const callbackProcessed = useSelector(selectCallbackProcessed)
+  const connection = useSelector(selectConnection)
 
   const [view, setView] = useState('status') // 'status' | 'connect' | 'locations'
   const [isHandlingCallback, setIsHandlingCallback] = useState(false)
   const [callbackProcessedLocal, setCallbackProcessed] = useState(false)
+  const [syncRefreshTrigger, setSyncRefreshTrigger] = useState(0)
 
   /**
    * Handle OAuth callback from Square
@@ -169,6 +175,14 @@ const SquareConnectionPage = () => {
     setView('connect')
   }
 
+  /**
+   * Handle sync completion
+   * Triggers refresh of transformation panel
+   */
+  const handleSyncComplete = () => {
+    setSyncRefreshTrigger(prev => prev + 1)
+  }
+
   // Callback processing state
   if (isHandlingCallback) {
     return (
@@ -252,22 +266,43 @@ const SquareConnectionPage = () => {
               />
 
               {isConnected && (
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Manage Integration
-                  </h3>
-                  <div className="space-y-3">
-                    <button
-                      onClick={handleChangeLocations}
-                      className="w-full px-4 py-3 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <p className="font-medium text-gray-900">Change Synced Locations</p>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Select different Square locations to sync data from
-                      </p>
-                    </button>
+                <>
+                  <div className="bg-white rounded-lg shadow-sm p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Manage Integration
+                    </h3>
+                    <div className="space-y-3">
+                      <button
+                        onClick={handleChangeLocations}
+                        className="w-full px-4 py-3 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <p className="font-medium text-gray-900">Change Synced Locations</p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Select different Square locations to sync data from
+                        </p>
+                      </button>
+                    </div>
                   </div>
-                </div>
+
+                  {/* Data Import Panel */}
+                  <DataImportPanel
+                    connectionId={connection?.id}
+                    restaurantId={1} // Default restaurant ID for MVP
+                    onSyncComplete={handleSyncComplete}
+                  />
+
+                  {/* Transformation Panel */}
+                  <TransformationPanel
+                    connectionId={connection?.id}
+                    restaurantId={1} // Default restaurant ID for MVP
+                    refreshTrigger={syncRefreshTrigger}
+                  />
+
+                  {/* Data Review Panel - Shows Tier 1 vs Tier 2 */}
+                  <DataReviewPanel
+                    connectionId={connection?.id}
+                  />
+                </>
               )}
             </>
           )}

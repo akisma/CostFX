@@ -34,21 +34,34 @@ The POS Integration system allows CostFX to import inventory and sales data from
 
 ### Architecture
 
+**Two-Tier Data Architecture (Updated October 11, 2025):**
+
 ```
 Merchant's POS System (Square/Toast)
-           ↓ (READ ONLY)
-    OAuth 2.0 Authentication
+           ↓ (READ ONLY via OAuth 2.0)
+    POS Adapter (SquareAdapter.syncInventory)
            ↓
-   POS Adapter (SquareAdapter)
+  TIER 1: Raw POS Data (square_categories, square_menu_items)
            ↓
-   Token Encryption (AES-256-GCM)
+  POSDataTransformer.transformBatch()
            ↓
-   Database (pos_connections table)
+  TIER 2: Normalized Inventory (inventory_items)
            ↓
    CostFX Analysis & Reports
 ```
 
-**Data Flow**: POS → CostFX (one-way only)
+**Tier 1 (Raw POS Data)**:
+- Preserves original POS format for debugging
+- Tables: `square_categories`, `square_menu_items`
+- Updated via: `SquareAdapter.syncInventory()`
+
+**Tier 2 (Normalized Inventory)**:
+- Unified CostFX format for analysis
+- Table: `inventory_items`
+- Updated via: `POSDataTransformer.transformBatch()`
+- Includes: Category mapping, unit normalization, variance thresholds
+
+**Data Flow**: POS → Tier 1 (import) → Tier 2 (transform) → Analysis (one-way only)
 
 ---
 

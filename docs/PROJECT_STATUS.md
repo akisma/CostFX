@@ -2,9 +2,9 @@
 
 *Current project state, completed phases, and next steps for the Restaurant Operations AI System*
 
-**Last Updated**: October 6, 2025  
+**Last Updated**: October 11, 2025  
 **Current Branch**: feature/api-hookup  
-**Latest Progress**: ✅ Issue #19 Square POS Adapter Implementation completed (syncInventory + healthCheck with 100% test coverage)
+**Latest Progress**: ✅ Square Data Transformation Pipeline completed - Full two-tier architecture with import/transform UI and data review panel
 
 ---
 
@@ -82,7 +82,90 @@
 - ✅ **CI/CD Pipeline**: Dual-workflow deployment strategy operational
 - ✅ **Test Suite**: 100% passing tests with proper mocking and configuration
 
-### **Recent Updates (October 6, 2025)**
+### **Recent Updates**
+
+#### **✅ October 11, 2025: Square Data Transformation Pipeline** (COMPLETE)
+
+**Implementation Status**: Two-Tier Architecture fully operational with UI
+
+**Problem Solved**: Complete end-to-end flow from Square import to normalized inventory items
+
+**Core Deliverables:**
+- ✅ **POSDataTransformer Service**: Transform Tier 1 → Tier 2
+  - Handles BigInt serialization and camelCase conversion from Square SDK
+  - Category mapping with fallback to 'dry_goods'
+  - Unit inference and normalization (lb→lbs, ea→pieces, etc.)
+  - Variance threshold calculation with defaults
+  - Primary variation extraction with camelCase/snake_case handling
+  - Error collection with detailed logging
+
+- ✅ **SquareAdapter Field Mapping Fix**:
+  - Fixed `_storeCatalogItem()` to handle Square SDK camelCase format
+  - Access `itemData` (camelCase) instead of `item_data` (snake_case)
+  - Access `itemVariationData.priceMoney` with fallbacks
+  - Proper description extraction: `description` or `descriptionPlaintext`
+  - Similar fix for `_storeCatalogCategory()` with `categoryData`
+  
+- ✅ **Database Schema Fixes**:
+  - Added unique constraint: `(restaurant_id, source_pos_provider, source_pos_item_id)`
+  - Migration created: `1760000000000_add-unique-constraint-pos-source.js`
+  - Created default supplier (ID=1) for transformation foreign key
+  - Verified variance threshold fields exist (from migration 1726790000007)
+
+- ✅ **Model Alignment**:
+  - Uncommented variance threshold fields in InventoryItem model
+  - Fields: categoryId, varianceThresholdQuantity, varianceThresholdDollar
+  - Fields: highValueFlag, theoreticalYieldFactor, costPerUnitVariancePct
+  - Kept `notes` field commented (column doesn't exist)
+
+- ✅ **Transform Separation**:
+  - Separated sync from transform (transform optional via flag)
+  - New endpoint: `POST /api/v1/pos/transform/:connectionId`
+  - Sync no longer auto-transforms (transform: false by default)
+  - Manual transform button in UI
+
+- ✅ **Data Review UI**:
+  - **DataReviewPanel Component**: Shows Tier 1 vs Tier 2 side-by-side
+  - Tier 1: Raw Square data (categories, menu items with descriptions)
+  - Tier 2: Transformed inventory items (category, unit, cost, stock)
+  - New API endpoints: `/api/v1/pos/square/raw-data/:connectionId`, `/api/v1/pos/square/transformed-data/:connectionId`
+  - Items shown first (prominent), categories collapsible
+
+- ✅ **DataImportPanel Enhancements**:
+  - Three-button workflow: Import (blue), Transform (green), Clear Data (red)
+  - Clear Data button with confirmation dialog
+  - Proper loading states and error handling
+  - Transform stats display
+
+**Technical Highlights:**
+- **Two-Tier Architecture Working**: 
+  - Tier 1: square_categories, square_menu_items (raw POS data)
+  - Tier 2: inventory_items (normalized CostFX format)
+- **Idempotent Operations**: Upsert based on (restaurant, provider, item_id)
+- **Category Mapping**: Falls back gracefully when Square categories missing
+- **Unit Normalization**: Maps inferrer output to model validation
+- **Variance Fields**: Populated with sensible defaults from Dave's system
+
+**Files Modified:**
+- `backend/src/adapters/SquareAdapter.js` - Field mapping fixes
+- `backend/src/services/POSDataTransformer.js` - Transform logic
+- `backend/src/controllers/POSSyncController.js` - Transform endpoint
+- `backend/src/routes/posSync.js` - New data review endpoints
+- `backend/src/models/InventoryItem.js` - Uncommented variance fields
+- `backend/migrations/1760000000000_add-unique-constraint-pos-source.js` - New migration
+- `frontend/src/components/pos/square/DataImportPanel.jsx` - Clear Data button
+- `frontend/src/components/pos/square/DataReviewPanel.jsx` - New component
+- `frontend/src/pages/SquareConnectionPage.jsx` - Integrated DataReviewPanel
+
+**Validation:**
+- ✅ Backend syntax validated (no errors)
+- ✅ Frontend builds successfully
+- ✅ Database constraints verified
+- ✅ Transformation working with real Square data
+
+---
+
+### **Previous Updates (October 6, 2025)**
 
 #### **✅ Issue #19: Square POS Adapter Implementation** (COMPLETE - COMPREHENSIVE TESTING)
 

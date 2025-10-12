@@ -14,7 +14,7 @@ function getStatusText(statusCode) {
   return statusTexts[statusCode] || 'Error';
 }
 
-export function errorHandler(err, req, res) {
+export function errorHandler(err, req, res, next) {
   logger.error('Error occurred:', {
     error: err.message,
     stack: err.stack,
@@ -63,6 +63,26 @@ export function errorHandler(err, req, res) {
   // Custom application errors with status codes
   if (err.status || err.statusCode) {
     const statusCode = err.status || err.statusCode;
+    
+    // For custom error classes, use the error name as the error field
+    // Convert from camelCase/PascalCase to Title Case with spaces
+    let errorName = err.name;
+    if (errorName && errorName !== 'AppError' && errorName !== 'Error') {
+      // Remove "Error" suffix if present (e.g., "NotFoundError" -> "NotFound")
+      errorName = errorName.replace(/Error$/, '');
+      // Insert spaces before capital letters (e.g., "NotFound" -> "Not Found")
+      errorName = errorName.replace(/([A-Z])/g, ' $1').trim();
+      // Special case: "Validation" -> "Validation Error" for clarity
+      if (errorName === 'Validation') {
+        errorName = 'Validation Error';
+      }
+      return res.status(statusCode).json({
+        error: errorName,
+        message: err.message
+      });
+    }
+    
+    // Fallback to status text for generic errors
     const statusText = getStatusText(statusCode);
     return res.status(statusCode).json({
       error: statusText,

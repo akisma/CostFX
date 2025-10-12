@@ -26,7 +26,8 @@
  * @see https://developer.squareup.com/docs/build-basics/handling-errors
  */
 
-import { SquareError } from 'square';
+import pkg from 'square';
+const { SquareError } = pkg;
 import logger from './logger.js';
 
 class SquareRetryPolicy {
