@@ -23,6 +23,7 @@ import UnitInferrer from './helpers/UnitInferrer.js';
 import VarianceCalculator from './helpers/VarianceCalculator.js';
 import InventoryItem from '../models/InventoryItem.js';
 import SquareMenuItem from '../models/SquareMenuItem.js';
+import SalesTransaction from '../models/SalesTransaction.js';
 
 /**
  * Error threshold before failing entire transformation
@@ -459,6 +460,136 @@ class POSDataTransformer {
         if (!priceMoney || !priceMoney.amount) return 0.0;
         
         return priceMoney.amount / 100.0;
+    }
+
+    /**
+     * Transform Square order line items to sales_transactions (Tier 2)
+     * 
+     * Maps square_order_items → sales_transactions for recipe variance analysis.
+     * Skips line items that cannot be mapped to inventory_items (modifiers, ad-hoc items).
+     * 
+     * @param {Object} order - SquareOrder instance with SquareOrderItems included
+     * @param {Object} options - Transform options
+     * @param {boolean} options.dryRun - If true, don't save to database (default: false)
+     * @returns {Promise<Object>} { created, skipped, errors }
+     */
+    async squareOrderToSalesTransactions(order, options = {}) {
+        const { dryRun = false } = options;
+        
+        const results = {
+            created: 0,
+            skipped: 0,
+            errors: []
+        };
+
+        // Validate order has line items
+        if (!order.SquareOrderItems || order.SquareOrderItems.length === 0) {
+            logger.debug('POSDataTransformer: Order has no line items', {
+                orderId: order.squareOrderId
+            });
+            return results;
+        }
+
+        for (const lineItem of order.SquareOrderItems) {
+            try {
+                // Skip if no catalog object ID (modifiers, ad-hoc items, custom charges)
+                if (!lineItem.squareCatalogObjectId) {
+                    results.skipped++;
+                    logger.debug('POSDataTransformer: Skipping line item without catalog ID', {
+                        orderId: order.squareOrderId,
+                        lineItemName: lineItem.name,
+                        reason: 'No catalog_object_id (likely modifier or ad-hoc item)'
+                    });
+                    continue;
+                }
+
+                // Map Square catalog ID → inventory_item_id
+                const inventoryItem = await InventoryItem.findOne({
+                    where: {
+                        restaurantId: order.restaurantId,
+                        sourcePosProvider: 'square',
+                        sourcePosItemId: lineItem.squareCatalogObjectId
+                    }
+                });
+
+                if (!inventoryItem) {
+                    // Cannot map to inventory - skip gracefully
+                    results.skipped++;
+                    logger.debug('POSDataTransformer: Cannot map line item to inventory', {
+                        orderId: order.squareOrderId,
+                        catalogObjectId: lineItem.squareCatalogObjectId,
+                        lineItemName: lineItem.name,
+                        reason: 'No matching inventory_item found (item may need to be synced first)'
+                    });
+                    continue;
+                }
+
+                // Build sales transaction
+                const transaction = {
+                    restaurantId: order.restaurantId,
+                    inventoryItemId: inventoryItem.id,
+                    transactionDate: order.closedAt || order.createdAt,
+                    quantity: lineItem.quantity.toString(),  // Keep as string for decimal precision
+                    unitPrice: lineItem.basePriceMoneyAmount / 100.0,  // Convert cents → dollars
+                    totalAmount: lineItem.totalMoneyAmount / 100.0,
+                    sourcePosProvider: 'square',
+                    sourcePosOrderId: order.squareOrderId,
+                    sourcePosLineItemId: `square-${lineItem.squareLineItemUid}`,
+                    sourcePosData: {
+                        variationId: lineItem.squareVariationId,
+                        variationName: lineItem.variationName,
+                        tax: lineItem.totalTaxMoneyAmount / 100.0,
+                        discount: lineItem.totalDiscountMoneyAmount / 100.0,
+                        grossSales: lineItem.grossSalesMoneyAmount / 100.0
+                    }
+                };
+
+                if (!dryRun) {
+                    await SalesTransaction.upsert(transaction, {
+                        conflictFields: ['sourcePosProvider', 'sourcePosLineItemId']
+                    });
+                }
+
+                results.created++;
+                
+                logger.debug('POSDataTransformer: Created sales transaction', {
+                    orderId: order.squareOrderId,
+                    lineItemUid: lineItem.squareLineItemUid,
+                    inventoryItemId: inventoryItem.id,
+                    quantity: transaction.quantity,
+                    totalAmount: transaction.totalAmount,
+                    dryRun
+                });
+
+            } catch (error) {
+                results.errors.push({
+                    orderId: order.squareOrderId,
+                    lineItemId: lineItem.squareLineItemUid,
+                    lineItemUid: lineItem.squareLineItemUid,
+                    error: error.message
+                });
+
+                logger.error('POSDataTransformer: Failed to transform line item', {
+                    orderId: order.squareOrderId,
+                    lineItemUid: lineItem.squareLineItemUid,
+                    error: error.message,
+                    stack: error.stack
+                });
+            }
+        }
+
+        logger.info('POSDataTransformer: Order transformation complete', {
+            orderId: order.squareOrderId,
+            totalLineItems: order.SquareOrderItems.length,
+            created: results.created,
+            skipped: results.skipped,
+            errors: results.errors.length,
+            mappingRate: order.SquareOrderItems.length > 0
+                ? ((results.created / order.SquareOrderItems.length) * 100).toFixed(1) + '%'
+                : '0%'
+        });
+
+        return results;
     }
 }
 

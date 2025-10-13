@@ -40,6 +40,8 @@ import SquareCategory from '../models/SquareCategory.js';
 import SquareMenuItem from '../models/SquareMenuItem.js';
 import SquareInventoryCount from '../models/SquareInventoryCount.js';
 import SquareLocation from '../models/SquareLocation.js';
+import SquareOrder from '../models/SquareOrder.js';
+import SquareOrderItem from '../models/SquareOrderItem.js';
 import OAuthStateService from '../services/OAuthStateService.js';
 import TokenEncryptionService from '../services/TokenEncryptionService.js';
 import SquareRateLimiter from '../utils/squareRateLimiter.js';
@@ -1034,50 +1036,183 @@ class SquareAdapter extends POSAdapter {
   async syncSales(connection, startDate, endDate) {
     this._ensureInitialized();
     await this._validateConnection(connection);
+    
+    const syncResult = {
+      synced: { orders: 0, lineItems: 0 },
+      errors: [],
+      details: { apiCalls: 0, pages: 0, cursor: null }
+    };
+    
     this._logOperation('syncSales', {
       connectionId: connection.id,
       restaurantId: connection.restaurantId,
+      locationId: connection.squareLocationId,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString()
     });
     
     try {
       const client = await this._getClientForConnection(connection);
-      const synced = 0;
-      const errors = [];
       
-      // Progress Note: Full READ ONLY implementation would:
-      // 1. Use ordersApi.searchOrders() with date range (READ from Square)
-      // 2. Filter by location_id from connection
-      // 3. Map Square orders to Sales model in OUR database (future)
-      // 4. Extract item-level sales for usage calculation (stored in CostFX)
-      // 5. Handle pagination for large date ranges
-      // 
-      // CRITICAL: We ONLY read from Square, never write back.
-      // Square POS remains the authoritative source for sales/order data.
+      let cursor = null;
       
+      do {
+        // Rate limiting
+        await this.rateLimiter.acquireToken(connection.merchantId);
+        
+        // Search orders with retry policy
+        const response = await this.retryPolicy.executeWithRetry(async () => {
+          return await client.ordersApi.searchOrders({
+            locationIds: [connection.squareLocationId],
+            query: {
+              filter: {
+                dateTimeFilter: {
+                  closedAt: {
+                    startAt: startDate.toISOString(),
+                    endAt: endDate.toISOString()
+                  }
+                },
+                stateFilter: {
+                  states: ['COMPLETED', 'OPEN']  // Include OPEN for real-time sync
+                }
+              },
+              sort: {
+                sortField: 'CLOSED_AT',
+                sortOrder: 'ASC'
+              }
+            },
+            limit: 500,  // Max allowed by Square API
+            cursor
+          });
+        });
+
+        const orders = response.result.orders || [];
+        syncResult.details.apiCalls++;
+        syncResult.details.pages++;
+        
+        this._logOperation('syncSales', {
+          message: `Processing page ${syncResult.details.pages}`,
+          ordersInPage: orders.length
+        });
+
+        // Process each order
+        for (const orderData of orders) {
+          try {
+            // Upsert to Tier 1: square_orders
+            const [order] = await SquareOrder.upsert({
+              restaurantId: connection.restaurantId,
+              posConnectionId: connection.id,
+              squareOrderId: orderData.id,
+              locationId: orderData.locationId,
+              state: orderData.state,
+              totalMoneyAmount: orderData.totalMoney?.amount || 0,
+              totalTaxMoneyAmount: orderData.totalTaxMoney?.amount || 0,
+              totalDiscountMoneyAmount: orderData.totalDiscountMoney?.amount || 0,
+              closedAt: orderData.closedAt ? new Date(orderData.closedAt) : null,
+              squareData: orderData  // Full JSONB response
+            }, {
+              conflictFields: ['squareOrderId']
+            });
+
+            syncResult.synced.orders++;
+
+            // Process line items
+            for (const lineItem of orderData.lineItems || []) {
+              try {
+                await SquareOrderItem.upsert({
+                  squareOrderId: order.id,
+                  restaurantId: connection.restaurantId,
+                  squareLineItemUid: lineItem.uid,
+                  squareCatalogObjectId: lineItem.catalogObjectId || null,
+                  squareVariationId: lineItem.variationId || null,
+                  lineItemData: lineItem,  // Full JSONB response
+                  name: lineItem.name,
+                  variationName: lineItem.variationName || null,
+                  quantity: parseFloat(lineItem.quantity),
+                  basePriceMoneyAmount: lineItem.basePriceMoney?.amount || 0,
+                  grossSalesMoneyAmount: lineItem.grossSalesMoney?.amount || 0,
+                  totalTaxMoneyAmount: lineItem.totalTaxMoney?.amount || 0,
+                  totalDiscountMoneyAmount: lineItem.totalDiscountMoney?.amount || 0,
+                  totalMoneyAmount: lineItem.totalMoney?.amount || 0
+                }, {
+                  conflictFields: ['squareLineItemUid']
+                });
+
+                syncResult.synced.lineItems++;
+                
+              } catch (lineItemError) {
+                syncResult.errors.push({
+                  orderId: orderData.id,
+                  lineItemUid: lineItem.uid,
+                  error: lineItemError.message
+                });
+                
+                this._logOperation('syncSales', {
+                  level: 'warn',
+                  message: 'Line item upsert failed',
+                  lineItemUid: lineItem.uid,
+                  error: lineItemError.message
+                });
+              }
+            }
+            
+          } catch (orderError) {
+            syncResult.errors.push({
+              orderId: orderData.id,
+              error: orderError.message
+            });
+            
+            this._logOperation('syncSales', {
+              level: 'error',
+              message: 'Order upsert failed',
+              orderId: orderData.id,
+              error: orderError.message
+            });
+          }
+        }
+
+        cursor = response.result.cursor;
+        if (cursor) {
+          syncResult.details.cursor = cursor;
+        }
+        
+      } while (cursor);
+
+      // Update connection lastSyncAt
+      connection.lastSyncAt = new Date();
+      await connection.save();
+
       this._logOperation('syncSales', {
-        connectionId: connection.id,
-        synced,
-        errors: errors.length,
-        status: 'TODO - Full implementation in progress'
-      }, 'warn');
-      
-      return { synced, errors };
-      
+        level: 'info',
+        message: 'Sync completed',
+        synced: syncResult.synced,
+        errorCount: syncResult.errors.length,
+        apiCalls: syncResult.details.apiCalls
+      });
+
     } catch (error) {
       this._logOperation('syncSales', {
-        connectionId: connection.id,
-        error: error.message
-      }, 'error');
+        level: 'error',
+        message: 'Sync failed',
+        error: error.message,
+        stack: error.stack
+      });
+      
+      syncResult.errors.push({
+        phase: 'api_call',
+        error: error.message,
+        stack: error.stack
+      });
       
       throw new POSSyncError(
         `Failed to sync Square sales: ${error.message}`,
         true, // retryable
-        null, // result
+        syncResult, // result
         'square' // provider
       );
     }
+
+    return syncResult;
   }
 
   /**
