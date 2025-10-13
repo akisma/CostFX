@@ -17,6 +17,8 @@ import SquareMenuItem from './SquareMenuItem.js';
 import SquareInventoryCount from './SquareInventoryCount.js';
 import SquareOrder from './SquareOrder.js';
 import SquareOrderItem from './SquareOrderItem.js';
+// Sales Data Models (Issue #21)
+import SalesTransaction from './SalesTransaction.js';
 
 // Collect all models
 const models = {
@@ -35,7 +37,9 @@ const models = {
   SquareMenuItem,
   SquareInventoryCount,
   SquareOrder,
-  SquareOrderItem
+  SquareOrderItem,
+  // Sales Data Models
+  SalesTransaction
 };
 
 // Initialize associations
@@ -66,7 +70,8 @@ export {
   SquareMenuItem,
   SquareInventoryCount,
   SquareOrder,
-  SquareOrderItem
+  SquareOrderItem,
+  SalesTransaction
 };
 
 export default models;
