@@ -336,6 +336,70 @@ class SquareSalesSyncService {
   }
 
   /**
+   * Clear all sales data for a restaurant
+   * 
+   * Deletes both Tier 1 (square_orders, square_order_items) and 
+   * Tier 2 (sales_transactions) data with transaction support.
+   * 
+   * @param {number} restaurantId - Restaurant ID
+   * @returns {Promise<Object>} Deletion counts
+   */
+  async clearSalesData(restaurantId) {
+    logger.info('SquareSalesSyncService: Clearing sales data', { restaurantId });
+
+    const transaction = await sequelize.transaction();
+
+    try {
+      const deletionCounts = {
+        squareOrders: 0,
+        squareOrderItems: 0,
+        salesTransactions: 0
+      };
+
+      // Delete from Tier 2 (sales_transactions with square source)
+      deletionCounts.salesTransactions = await SalesTransaction.destroy({
+        where: {
+          restaurantId,
+          sourcePosProvider: 'square'
+        },
+        transaction
+      });
+
+      // Delete from Tier 1 (square_order_items)
+      deletionCounts.squareOrderItems = await SquareOrderItem.destroy({
+        where: { restaurantId },
+        transaction
+      });
+
+      // Delete from Tier 1 (square_orders)
+      deletionCounts.squareOrders = await SquareOrder.destroy({
+        where: { restaurantId },
+        transaction
+      });
+
+      await transaction.commit();
+
+      logger.info('SquareSalesSyncService: Sales data cleared', {
+        restaurantId,
+        ...deletionCounts
+      });
+
+      return deletionCounts;
+
+    } catch (error) {
+      await transaction.rollback();
+      
+      logger.error('SquareSalesSyncService: Failed to clear sales data', {
+        restaurantId,
+        error: error.message,
+        stack: error.stack
+      });
+      
+      throw error;
+    }
+  }
+
+  /**
    * Generate unique sync ID
    * @private
    */

@@ -32,6 +32,7 @@ import {
   getSyncStatus,
   getTransformationStats,
   clearPOSData,
+  clearSalesData,
   validateTransformation
 } from '../controllers/POSSyncController.js';
 
@@ -370,6 +371,44 @@ router.get('/stats/:restaurantId', getTransformationStats);
  *         description: No POS connection found for restaurant
  */
 router.post('/clear/:restaurantId', clearPOSData);
+
+/**
+ * @swagger
+ * /api/v1/pos/clear-sales/{restaurantId}:
+ *   post:
+ *     summary: Clear all sales data
+ *     description: Deletes Tier 1 (square_orders, square_order_items) and Tier 2 (sales_transactions) sales data
+ *     tags: [POS Sync]
+ *     parameters:
+ *       - in: path
+ *         name: restaurantId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Restaurant ID
+ *     responses:
+ *       200:
+ *         description: Deletion successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 restaurantId:
+ *                   type: integer
+ *                 deleted:
+ *                   type: object
+ *                   properties:
+ *                     squareOrders:
+ *                       type: integer
+ *                     squareOrderItems:
+ *                       type: integer
+ *                     salesTransactions:
+ *                       type: integer
+ *       404:
+ *         description: No POS connection found for restaurant
+ */
+router.post('/clear-sales/:restaurantId', clearSalesData);
 
 /**
  * @swagger

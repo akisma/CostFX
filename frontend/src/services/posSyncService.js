@@ -125,10 +125,88 @@ export const validateTransformation = async (restaurantId) => {
   return response.data
 }
 
+/**
+ * Trigger sales data sync for a POS connection
+ * 
+ * Fetches orders from Square Orders API and optionally transforms to unified sales_transactions format.
+ * Requires date range parameters.
+ * 
+ * @param {number} connectionId - POS connection ID
+ * @param {Object} options - Sync options
+ * @param {string} options.startDate - Start date (ISO 8601 format, e.g., '2025-10-01')
+ * @param {string} options.endDate - End date (ISO 8601 format, e.g., '2025-10-07')
+ * @param {boolean} options.transform - Transform to sales_transactions (default: true)
+ * @param {boolean} options.dryRun - Simulate without saving (default: false)
+ * @returns {Promise<Object>} Sync result with orders/lineItems synced, transactions created, errors
+ * @throws {Error} If startDate or endDate is missing
+ */
+export const syncSales = async (connectionId, options = {}) => {
+  const {
+    startDate,
+    endDate,
+    transform = true,
+    dryRun = false
+  } = options
+
+  // Validate required parameters
+  if (!startDate) {
+    throw new Error('startDate is required for sales sync')
+  }
+
+  if (!endDate) {
+    throw new Error('endDate is required for sales sync')
+  }
+
+  const response = await api.post(`/pos/sync-sales/${connectionId}`, {
+    startDate,
+    endDate,
+    transform,
+    dryRun
+  })
+  
+  return response.data
+}
+
+/**
+ * Get sales sync status for a POS connection
+ * 
+ * Returns counts for both Tier 1 (square_orders/square_order_items) 
+ * and Tier 2 (sales_transactions) data.
+ * 
+ * @param {number} connectionId - POS connection ID
+ * @returns {Promise<Object>} Status with tier counts, last sync time, etc.
+ */
+export const getSalesStatus = async (connectionId) => {
+  const response = await api.get(`/pos/sales-status/${connectionId}`)
+  return response.data
+}
+
+/**
+ * Clear sales data for a restaurant
+ * 
+ * Deletes all sales-related data:
+ * - Tier 1: square_orders, square_order_items
+ * - Tier 2: sales_transactions
+ * 
+ * @param {number} restaurantId - Restaurant ID
+ * @returns {Promise<Object>} Result with deletion counts
+ */
+export const clearSalesData = async (restaurantId) => {
+  const response = await api.post(`/pos/clear-sales/${restaurantId}`)
+  return response.data
+}
+
 export default {
+  // Inventory sync methods
   syncInventory,
+  transformInventory,
   getSyncStatus,
   getTransformationStats,
   clearPOSData,
-  validateTransformation
+  validateTransformation,
+  
+  // Sales sync methods
+  syncSales,
+  getSalesStatus,
+  clearSalesData
 }

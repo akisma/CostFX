@@ -30,7 +30,9 @@ const sharedDataStores = {
   SquareMenuItem: new Map(),
   SquareInventoryCount: new Map(),
   SquareOrder: new Map(),
-  SquareOrderItem: new Map()
+  SquareOrderItem: new Map(),
+  // Sales Models (Issue #21)
+  SalesTransaction: new Map()
 };
 
 // Helper to generate unique IDs
@@ -314,18 +316,27 @@ vi.mock('sequelize', () => {
 
 // Mock database connection
 vi.mock('../src/config/database.js', () => {
+  const mockTransaction = {
+    commit: vi.fn().mockResolvedValue(),
+    rollback: vi.fn().mockResolvedValue()
+  };
+  
   const mockSequelize = {
     define: vi.fn(),
     models: {},
     authenticate: vi.fn().mockResolvedValue(),
     sync: vi.fn().mockResolvedValue(),
     close: vi.fn().mockResolvedValue(),
-    transaction: vi.fn().mockImplementation((callback) => 
-      callback({
-        commit: vi.fn().mockResolvedValue(),
-        rollback: vi.fn().mockResolvedValue()
-      })
-    )
+    transaction: vi.fn().mockImplementation((callback) => {
+      // Support both callback and promise patterns
+      if (typeof callback === 'function') {
+        // Callback pattern: transaction(callback)
+        return callback(mockTransaction);
+      } else {
+        // Promise pattern: await transaction()
+        return Promise.resolve(mockTransaction);
+      }
+    })
   };
   
   return {
@@ -454,6 +465,10 @@ vi.mock('../src/models/SquareOrder.js', () => ({
 
 vi.mock('../src/models/SquareOrderItem.js', () => ({
   default: createStatefulMockModel('SquareOrderItem')
+}));
+
+vi.mock('../src/models/SalesTransaction.js', () => ({
+  default: createStatefulMockModel('SalesTransaction')
 }));
 
 // Mock POSAdapterFactory to avoid loading posProviders config

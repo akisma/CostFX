@@ -484,6 +484,67 @@ export async function clearPOSData(req, res, next) {
 }
 
 /**
+ * POST /api/v1/pos/clear-sales/:restaurantId
+ * 
+ * Clear all sales data for a restaurant
+ * 
+ * Deletes both Tier 1 (square_orders, square_order_items) and
+ * Tier 2 (sales_transactions) sales data.
+ * 
+ * Response: 200 OK
+ * {
+ *   restaurantId: 1,
+ *   deleted: {
+ *     squareOrders: 50,
+ *     squareOrderItems: 200,
+ *     salesTransactions: 180
+ *   }
+ * }
+ */
+export async function clearSalesData(req, res, next) {
+  try {
+    const { restaurantId } = req.params;
+
+    // Find a POS connection for this restaurant
+    const connection = await POSConnection.findOne({
+      where: { restaurantId }
+    });
+
+    if (!connection) {
+      throw new NotFoundError(`No POS connection found for restaurant ${restaurantId}`);
+    }
+
+    logger.info('POSSyncController: Clearing sales data', {
+      restaurantId,
+      provider: connection.provider
+    });
+
+    // Get Square sales sync service
+    const adapter = POSAdapterFactory.getAdapter('square');
+    const salesSyncService = new SquareSalesSyncService(adapter);
+
+    // Clear sales data
+    const result = await salesSyncService.clearSalesData(restaurantId);
+
+    logger.info('POSSyncController: Sales data cleared', {
+      restaurantId,
+      deleted: result
+    });
+
+    res.json({
+      restaurantId: parseInt(restaurantId),
+      deleted: result
+    });
+  } catch (error) {
+    logger.error('POSSyncController: Failed to clear sales data', {
+      restaurantId: req.params.restaurantId,
+      error: error.message
+    });
+    next(error);
+  }
+}
+
+/**
  * GET /api/v1/pos/validate/:restaurantId
  * 
  * Validate transformation accuracy for a restaurant
