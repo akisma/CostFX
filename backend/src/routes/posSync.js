@@ -8,6 +8,7 @@
  * 
  * Routes:
  * - POST   /sync/:connectionId        - Trigger sync and transform
+ * - POST   /sync-sales/:connectionId  - Trigger sales data sync (Square only)
  * - GET    /status/:connectionId      - Get sync status
  * - GET    /stats/:restaurantId       - Get transformation stats
  * - POST   /clear/:restaurantId       - Clear POS data
@@ -15,8 +16,10 @@
  * 
  * Related:
  * - Issue #20: Square Inventory Synchronization
+ * - Issue #21: Square Sales Data Synchronization
  * - POSSyncController: Request handling
  * - SquareInventorySyncService: Square orchestration
+ * - SquareSalesSyncService: Square sales orchestration
  * 
  * Created: 2025-10-06
  */
@@ -24,6 +27,7 @@
 import express from 'express';
 import {
   syncInventory,
+  syncSales,
   transformInventory,
   getSyncStatus,
   getTransformationStats,
@@ -111,6 +115,89 @@ const router = express.Router();
  *         description: Sync failed
  */
 router.post('/sync/:connectionId', syncInventory);
+
+/**
+ * @swagger
+ * /api/v1/pos/sync-sales/{connectionId}:
+ *   post:
+ *     summary: Trigger sales data sync and transformation
+ *     description: Syncs Square order data and transforms to SalesTransaction records
+ *     tags: [POS Sync]
+ *     parameters:
+ *       - in: path
+ *         name: connectionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: POS connection ID (Square only)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - startDate
+ *               - endDate
+ *             properties:
+ *               startDate:
+ *                 type: string
+ *                 format: date
+ *                 description: Start date (ISO 8601)
+ *                 example: "2023-10-01"
+ *               endDate:
+ *                 type: string
+ *                 format: date
+ *                 description: End date (ISO 8601)
+ *                 example: "2023-10-31"
+ *               dryRun:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Simulate without saving to database
+ *               transform:
+ *                 type: boolean
+ *                 default: true
+ *                 description: Transform to SalesTransaction records
+ *     responses:
+ *       200:
+ *         description: Sales sync completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 syncId:
+ *                   type: string
+ *                 connectionId:
+ *                   type: integer
+ *                 restaurantId:
+ *                   type: integer
+ *                 status:
+ *                   type: string
+ *                 sync:
+ *                   type: object
+ *                   properties:
+ *                     orders:
+ *                       type: integer
+ *                     lineItems:
+ *                       type: integer
+ *                 transform:
+ *                   type: object
+ *                   properties:
+ *                     created:
+ *                       type: integer
+ *                     skipped:
+ *                       type: integer
+ *                     errors:
+ *                       type: integer
+ *       400:
+ *         description: Invalid parameters or non-Square connection
+ *       404:
+ *         description: POS connection not found
+ *       503:
+ *         description: Sales sync failed
+ */
+router.post('/sync-sales/:connectionId', syncSales);
 
 /**
  * @swagger

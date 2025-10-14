@@ -219,35 +219,35 @@ export const ordersSearchResponse = {
   orders: [
     {
       id: 'ORDER123456',
-      location_id: 'L72T9RBYVQG4J',
-      reference_id: 'order-ref-1',
+      locationId: 'L72T9RBYVQG4J',
+      referenceId: 'order-ref-1',
       source: {
         name: 'Square Point of Sale'
       },
-      line_items: [
+      lineItems: [
         {
           uid: 'LINE_ITEM_UID_1',
           name: 'Coffee',
           quantity: '2',
-          catalog_object_id: '2TZFAOHWGG7PAK2QEXWYPZSP',
-          variation_name: 'Regular',
-          base_price_money: {
+          catalogObjectId: '2TZFAOHWGG7PAK2QEXWYPZSP',
+          variationName: 'Regular',
+          basePriceMoney: {
             amount: 250,
             currency: 'USD'
           },
-          gross_sales_money: {
+          grossSalesMoney: {
             amount: 500,
             currency: 'USD'
           },
-          total_tax_money: {
+          totalTaxMoney: {
             amount: 40,
             currency: 'USD'
           },
-          total_discount_money: {
+          totalDiscountMoney: {
             amount: 0,
             currency: 'USD'
           },
-          total_money: {
+          totalMoney: {
             amount: 540,
             currency: 'USD'
           }
@@ -258,42 +258,42 @@ export const ordersSearchResponse = {
           uid: 'FULFILLMENT_UID_1',
           type: 'PICKUP',
           state: 'COMPLETED',
-          pickup_details: {
+          pickupDetails: {
             recipient: {
-              display_name: 'John Doe'
+              displayName: 'John Doe'
             },
-            placed_at: '2023-10-05T10:30:00Z',
-            pickup_at: '2023-10-05T11:00:00Z'
+            placedAt: '2023-10-05T10:30:00Z',
+            pickupAt: '2023-10-05T11:00:00Z'
           }
         }
       ],
-      created_at: '2023-10-05T10:30:00Z',
-      updated_at: '2023-10-05T11:05:00Z',
+      createdAt: '2023-10-05T10:30:00Z',
+      updatedAt: '2023-10-05T11:05:00Z',
       state: 'COMPLETED',
-      total_money: {
+      totalMoney: {
         amount: 540,
         currency: 'USD'
       },
-      total_tax_money: {
+      totalTaxMoney: {
         amount: 40,
         currency: 'USD'
       },
-      total_discount_money: {
+      totalDiscountMoney: {
         amount: 0,
         currency: 'USD'
       },
       tenders: [
         {
           id: 'TENDER_ID_1',
-          location_id: 'L72T9RBYVQG4J',
-          transaction_id: 'TRANSACTION_ID_1',
-          created_at: '2023-10-05T11:00:00Z',
-          amount_money: {
+          locationId: 'L72T9RBYVQG4J',
+          transactionId: 'TRANSACTION_ID_1',
+          createdAt: '2023-10-05T11:00:00Z',
+          amountMoney: {
             amount: 540,
             currency: 'USD'
           },
           type: 'CARD',
-          card_details: {
+          cardDetails: {
             status: 'CAPTURED'
           }
         }
