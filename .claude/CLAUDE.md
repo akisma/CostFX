@@ -167,6 +167,10 @@ shared/        # shared code
 docs/ # docs
 ```
 
+### Environment
+1. You are working on MAC OS - NOT linux! Don't try to use linux commands locally. Use the Mac OS equivalents.
+2. our database is in a DOCKER CONTAINER - interact with it there, not via `psql`.
+
 ## Problem-Solving Together
 
 When you're stuck or confused:
