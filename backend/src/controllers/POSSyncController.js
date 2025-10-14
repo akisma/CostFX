@@ -6,6 +6,7 @@
  * 
  * Routes:
  * - POST   /api/v1/pos/sync/:connectionId        - Trigger sync and transform
+ * - POST   /api/v1/pos/sync-sales/:connectionId  - Trigger sales data sync
  * - GET    /api/v1/pos/status/:connectionId      - Get sync status
  * - GET    /api/v1/pos/stats/:restaurantId       - Get transformation stats
  * - POST   /api/v1/pos/clear/:restaurantId       - Clear POS data
@@ -14,11 +15,14 @@
  * Architecture:
  * - Controller dispatches to appropriate service based on connection.provider
  * - SquareInventorySyncService for Square connections
+ * - SquareSalesSyncService for Square sales data (Issue #21)
  * - Future: ToastInventorySyncService, CloverInventorySyncService, etc.
  * 
  * Related:
  * - Issue #20: Square Inventory Synchronization
+ * - Issue #21: Square Sales Data Synchronization
  * - SquareInventorySyncService: Square-specific orchestration
+ * - SquareSalesSyncService: Square sales data orchestration
  * - POSDataTransformer: Provider → unified format transformation
  * 
  * Created: 2025-10-06
@@ -27,6 +31,7 @@
 import POSConnection from '../models/POSConnection.js';
 import POSAdapterFactory from '../adapters/POSAdapterFactory.js';
 import SquareInventorySyncService from '../services/SquareInventorySyncService.js';
+import SquareSalesSyncService from '../services/SquareSalesSyncService.js';
 import { ValidationError, NotFoundError } from '../middleware/errorHandler.js';
 import logger from '../utils/logger.js';
 
@@ -125,6 +130,113 @@ export async function syncInventory(req, res, next) {
     res.json(result);
   } catch (error) {
     logger.error('POSSyncController: Sync failed', {
+      connectionId: req.params.connectionId,
+      error: error.message,
+      stack: error.stack
+    });
+    next(error);
+  }
+}
+
+/**
+ * POST /api/v1/pos/sync-sales/:connectionId
+ * 
+ * Trigger sales data sync and transformation for a POS connection
+ * 
+ * Request Body:
+ * - startDate: ISO date string (required) - Start of date range
+ * - endDate: ISO date string (required) - End of date range
+ * - dryRun: boolean (default: false) - Simulate without saving
+ * - transform: boolean (default: true) - Transform to SalesTransaction records
+ * 
+ * Response: 200 OK
+ * {
+ *   syncId: "sales-sync-abc123",
+ *   connectionId: 1,
+ *   restaurantId: 1,
+ *   status: "completed",
+ *   phase: "complete",
+ *   sync: {
+ *     orders: 150,
+ *     lineItems: 450,
+ *     errors: []
+ *   },
+ *   transform: {
+ *     created: 450,
+ *     skipped: 0,
+ *     errors: 0
+ *   },
+ *   duration: 5432
+ * }
+ */
+export async function syncSales(req, res, next) {
+  try {
+    const { connectionId } = req.params;
+    const { startDate, endDate, dryRun = false, transform = true } = req.body;
+
+    // Validate required parameters
+    if (!startDate || !endDate) {
+      throw new ValidationError('startDate and endDate are required');
+    }
+
+    // Validate date format
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      throw new ValidationError('Invalid date format. Use ISO 8601 format (e.g., 2023-10-01)');
+    }
+
+    if (start > end) {
+      throw new ValidationError('startDate must be before endDate');
+    }
+
+    // Validate connection exists
+    const connection = await POSConnection.findByPk(connectionId);
+    if (!connection) {
+      throw new NotFoundError(`POS connection ${connectionId} not found`);
+    }
+
+    if (!connection.isActive()) {
+      throw new ValidationError(`POS connection ${connectionId} is not active`);
+    }
+
+    if (connection.provider !== 'square') {
+      throw new ValidationError(`Sales sync only supported for Square connections (provider: ${connection.provider})`);
+    }
+
+    logger.info('POSSyncController: Starting sales sync', {
+      connectionId,
+      restaurantId: connection.restaurantId,
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+      dryRun,
+      transform
+    });
+
+    // Get Square sales sync service
+    const adapter = POSAdapterFactory.getAdapter('square');
+    const salesSyncService = new SquareSalesSyncService(adapter);
+
+    // Execute sync and transform
+    const result = await salesSyncService.syncAndTransform(connectionId, {
+      startDate: start,
+      endDate: end,
+      dryRun: dryRun === 'true' || dryRun === true,
+      transform: transform === 'true' || transform === true || transform === undefined
+    });
+
+    logger.info('POSSyncController: Sales sync complete', {
+      syncId: result.syncId,
+      status: result.status,
+      ordersSynced: result.sync?.orders,
+      transactionsCreated: result.transform?.created,
+      duration: result.duration
+    });
+
+    res.json(result);
+  } catch (error) {
+    logger.error('POSSyncController: Sales sync failed', {
       connectionId: req.params.connectionId,
       error: error.message,
       stack: error.stack
