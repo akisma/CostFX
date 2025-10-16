@@ -19,6 +19,9 @@ import SquareOrder from './SquareOrder.js';
 import SquareOrderItem from './SquareOrderItem.js';
 // Sales Data Models (Issue #21)
 import SalesTransaction from './SalesTransaction.js';
+// CSV Upload Models (Issue #47)
+import CsvUpload from './CsvUpload.js';
+import CsvUploadBatch from './CsvUploadBatch.js';
 
 // Collect all models
 const models = {
@@ -39,7 +42,10 @@ const models = {
   SquareOrder,
   SquareOrderItem,
   // Sales Data Models
-  SalesTransaction
+  SalesTransaction,
+  // CSV Upload Models
+  CsvUpload,
+  CsvUploadBatch
 };
 
 // Initialize associations
@@ -71,7 +77,9 @@ export {
   SquareInventoryCount,
   SquareOrder,
   SquareOrderItem,
-  SalesTransaction
+  SalesTransaction,
+  CsvUpload,
+  CsvUploadBatch
 };
 
 export default models;

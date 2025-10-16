@@ -32,7 +32,10 @@ const sharedDataStores = {
   SquareOrder: new Map(),
   SquareOrderItem: new Map(),
   // Sales Models (Issue #21)
-  SalesTransaction: new Map()
+  SalesTransaction: new Map(),
+  // CSV Upload Models (Issue #47)
+  CsvUpload: new Map(),
+  CsvUploadBatch: new Map()
 };
 
 // Helper to generate unique IDs

@@ -8,6 +8,7 @@ import agentRoutes from './agents.js';
 import periodRoutes from './periods.js';
 import varianceRoutes from './variance.js';
 import squareRoutes from './pos/square/index.js'; // RESTful Square routes
+import csvDataRoutes from './data/csv.js';
 
 const router = express.Router();
 
@@ -20,6 +21,7 @@ router.use('/sales', salesRoutes);
 router.use('/agents', agentRoutes);
 router.use('/periods', periodRoutes);
 router.use('/variance', varianceRoutes);
+router.use('/data/csv', csvDataRoutes);
 
 // RESTful Square POS routes (Issue #16, #20, #21, #46)
 router.use('/pos/square', squareRoutes);
@@ -38,6 +40,9 @@ router.get('/', (req, res) => {
       agents: '/api/v1/agents',
       periods: '/api/v1/periods',
       variance: '/api/v1/variance',
+      data: {
+        csv: '/api/v1/data/csv'
+      },
       // POS Integration (Square)
       square: {
         connections: '/api/v1/pos/square/connections',

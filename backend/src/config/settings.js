@@ -37,6 +37,21 @@ const settings = {
     indexName: process.env.PINECONE_INDEX_NAME || 'restaurant-ai'
   },
 
+  // File Uploads
+  uploads: {
+    csv: {
+      maxFileSizeBytes: parseInt(process.env.CSV_UPLOAD_MAX_BYTES, 10) || 10 * 1024 * 1024, // 10 MB default
+      allowedMimeTypes: (process.env.CSV_UPLOAD_ALLOWED_MIME_TYPES || 'text/csv,application/vnd.ms-excel')
+        .split(',')
+        .map(type => type.trim())
+        .filter(Boolean),
+      allowedExtensions: (process.env.CSV_UPLOAD_ALLOWED_EXTENSIONS || '.csv')
+        .split(',')
+        .map(ext => ext.trim().toLowerCase())
+        .filter(Boolean)
+    }
+  },
+
   // Logging
   logLevel: process.env.LOG_LEVEL || 'info',
 
