@@ -22,6 +22,7 @@ import SalesTransaction from './SalesTransaction.js';
 // CSV Upload Models (Issue #47)
 import CsvUpload from './CsvUpload.js';
 import CsvUploadBatch from './CsvUploadBatch.js';
+import CsvTransform from './CsvTransform.js';
 
 // Collect all models
 const models = {
@@ -45,7 +46,8 @@ const models = {
   SalesTransaction,
   // CSV Upload Models
   CsvUpload,
-  CsvUploadBatch
+  CsvUploadBatch,
+  CsvTransform
 };
 
 // Initialize associations
@@ -79,7 +81,8 @@ export {
   SquareOrderItem,
   SalesTransaction,
   CsvUpload,
-  CsvUploadBatch
+  CsvUploadBatch,
+  CsvTransform
 };
 
 export default models;

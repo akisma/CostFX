@@ -12,6 +12,11 @@ class CsvUpload extends Model {
       foreignKey: 'uploadId',
       as: 'batches'
     });
+
+    CsvUpload.hasMany(models.CsvTransform, {
+      foreignKey: 'uploadId',
+      as: 'transforms'
+    });
   }
 
   isValidated() {
@@ -34,6 +39,15 @@ class CsvUpload extends Model {
   markFailed(errorSummary) {
     this.status = 'failed';
     this.validationErrors = errorSummary;
+    return this.save();
+  }
+
+  markTransformed(summary = {}) {
+    this.status = 'transformed';
+    this.metadata = {
+      ...(this.metadata || {}),
+      lastTransformSummary: summary
+    };
     return this.save();
   }
 }

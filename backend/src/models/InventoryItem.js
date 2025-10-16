@@ -332,6 +332,15 @@ InventoryItem.init({
       isIn: [['lbs', 'oz', 'kg', 'g', 'gallons', 'liters', 'cups', 'pieces', 'boxes', 'cases']]
     }
   },
+  currentStock: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    defaultValue: 0,
+    field: 'current_stock',
+    validate: {
+      min: 0
+    }
+  },
   minimumStock: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
@@ -389,9 +398,9 @@ InventoryItem.init({
     allowNull: true,
     field: 'source_pos_provider',
     validate: {
-      isIn: [['square', 'toast', 'clover']]
+      isIn: [['square', 'toast', 'clover', 'csv']]
     },
-    comment: 'POS provider that this item was synced from (square, toast, clover)'
+    comment: 'POS provider that this item was synced from (square, toast, clover, csv)'
   },
   sourcePosItemId: {
     type: DataTypes.STRING(255),
