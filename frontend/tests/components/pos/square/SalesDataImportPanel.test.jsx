@@ -6,12 +6,13 @@ import { SnackbarProvider } from 'notistack'
 // Mock API services before imports
 vi.mock('../../../../src/services/posSyncService', () => ({
   syncSales: vi.fn(),
+  transformSales: vi.fn(),
   getSalesStatus: vi.fn(),
   clearSalesData: vi.fn()
 }))
 
 import SalesDataImportPanel from '../../../../src/components/pos/square/SalesDataImportPanel'
-import { syncSales, getSalesStatus, clearSalesData } from '../../../../src/services/posSyncService'
+import { syncSales, transformSales, getSalesStatus, clearSalesData } from '../../../../src/services/posSyncService'
 
 /**
  * SalesDataImportPanel Component Tests (TDD)
@@ -164,7 +165,6 @@ describe('SalesDataImportPanel Component', () => {
         expect(syncSales).toHaveBeenCalledWith(1, {
           startDate: '2025-10-01',
           endDate: '2025-10-07',
-          transform: false, // STAGED: Import does NOT auto-transform
           dryRun: false
         })
       })
@@ -264,6 +264,205 @@ describe('SalesDataImportPanel Component', () => {
       
       await waitFor(() => {
         expect(onSyncComplete).toHaveBeenCalledWith(mockResult)
+      })
+    })
+  })
+
+  describe('Transform Functionality', () => {
+    it('should call transformSales with correct date parameters when Transform is clicked', async () => {
+      // First, mock a successful import to enable Transform button
+      const mockImportResult = {
+        syncId: 'sales_sync_123',
+        status: 'completed',
+        sync: {
+          synced: { orders: 50, lineItems: 200 },
+          errors: []
+        },
+        transform: null,
+        duration: 2500
+      }
+      
+      const mockTransformResult = {
+        syncId: 'sales_transform_456',
+        status: 'completed',
+        sync: null, // No sync on transform
+        transform: {
+          created: 180,
+          skipped: 20,
+          errors: []
+        },
+        duration: 1500
+      }
+      
+      syncSales.mockResolvedValue(mockImportResult)
+      transformSales.mockResolvedValue(mockTransformResult)
+      
+      renderComponent()
+      
+      const startDateInput = screen.getByLabelText(/start date/i)
+      const endDateInput = screen.getByLabelText(/end date/i)
+      
+      await user.type(startDateInput, '2025-10-01')
+      await user.type(endDateInput, '2025-10-07')
+      
+      // First import to enable transform
+      const importButton = screen.getByRole('button', { name: /import/i })
+      await user.click(importButton)
+      
+      await waitFor(() => {
+        expect(syncSales).toHaveBeenCalled()
+      })
+      
+      // Now click Transform
+      const transformButton = screen.getByRole('button', { name: /^transform$/i })
+      await user.click(transformButton)
+      
+      await waitFor(() => {
+        expect(transformSales).toHaveBeenCalledWith(1, {
+          startDate: '2025-10-01',
+          endDate: '2025-10-07',
+          dryRun: false
+        })
+      })
+    })
+
+    it('should show loading state during transformation', async () => {
+      // First, mock a successful import to enable Transform button
+      const mockImportResult = {
+        syncId: 'sales_sync_123',
+        status: 'completed',
+        sync: {
+          synced: { orders: 50, lineItems: 200 },
+          errors: []
+        },
+        transform: null,
+        duration: 2500
+      }
+      
+      syncSales.mockResolvedValue(mockImportResult)
+      transformSales.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)))
+      
+      renderComponent()
+      
+      const startDateInput = screen.getByLabelText(/start date/i)
+      const endDateInput = screen.getByLabelText(/end date/i)
+      
+      await user.type(startDateInput, '2025-10-01')
+      await user.type(endDateInput, '2025-10-07')
+      
+      // First import to enable transform
+      const importButton = screen.getByRole('button', { name: /import/i })
+      await user.click(importButton)
+      
+      await waitFor(() => {
+        expect(syncSales).toHaveBeenCalled()
+      })
+      
+      const transformButton = screen.getByRole('button', { name: /^transform$/i })
+      await user.click(transformButton)
+      
+      expect(screen.getByText(/transforming\.\.\./i)).toBeInTheDocument()
+      const transformingButton = screen.getByRole('button', { name: /transforming\.\.\./i })
+      expect(transformingButton).toBeDisabled()
+    })
+
+    it('should display transformation stats after successful transform', async () => {
+      // First, mock a successful import to enable Transform button
+      const mockImportResult = {
+        syncId: 'sales_sync_123',
+        status: 'completed',
+        sync: {
+          synced: { orders: 50, lineItems: 200 },
+          errors: []
+        },
+        transform: null,
+        duration: 2500
+      }
+      
+      const mockTransformResult = {
+        syncId: 'sales_transform_456',
+        status: 'completed',
+        sync: null,
+        transform: {
+          created: 180,
+          skipped: 20,
+          errors: []
+        },
+        duration: 1500
+      }
+      
+      syncSales.mockResolvedValue(mockImportResult)
+      transformSales.mockResolvedValue(mockTransformResult)
+      
+      renderComponent()
+      
+      const startDateInput = screen.getByLabelText(/start date/i)
+      const endDateInput = screen.getByLabelText(/end date/i)
+      
+      await user.type(startDateInput, '2025-10-01')
+      await user.type(endDateInput, '2025-10-07')
+      
+      // First import to enable transform
+      const importButton = screen.getByRole('button', { name: /import/i })
+      await user.click(importButton)
+      
+      await waitFor(() => {
+        expect(syncSales).toHaveBeenCalled()
+      })
+      
+      const transformButton = screen.getByRole('button', { name: /^transform$/i })
+      await user.click(transformButton)
+      
+      await waitFor(() => {
+        // Look for the "Created" label and the value "180"
+        expect(screen.getByText('Created')).toBeInTheDocument()
+        expect(screen.getByText('180')).toBeInTheDocument()
+      })
+    })
+
+    it('should handle transformation errors gracefully', async () => {
+      // First, mock a successful import to enable Transform button
+      const mockImportResult = {
+        syncId: 'sales_sync_123',
+        status: 'completed',
+        sync: {
+          synced: { orders: 50, lineItems: 200 },
+          errors: []
+        },
+        transform: null,
+        duration: 2500
+      }
+      
+      syncSales.mockResolvedValue(mockImportResult)
+      
+      const mockError = new Error('Transform failed')
+      mockError.response = { data: { message: 'No raw data found' } }
+      
+      transformSales.mockRejectedValue(mockError)
+      
+      renderComponent()
+      
+      const startDateInput = screen.getByLabelText(/start date/i)
+      const endDateInput = screen.getByLabelText(/end date/i)
+      
+      await user.type(startDateInput, '2025-10-01')
+      await user.type(endDateInput, '2025-10-07')
+      
+      // First import to enable transform
+      const importButton = screen.getByRole('button', { name: /import/i })
+      await user.click(importButton)
+      
+      await waitFor(() => {
+        expect(syncSales).toHaveBeenCalled()
+      })
+      
+      const transformButton = screen.getByRole('button', { name: /^transform$/i })
+      await user.click(transformButton)
+      
+      await waitFor(() => {
+        // Error should be displayed in the error section
+        expect(screen.getByText(/import error/i)).toBeInTheDocument()
+        expect(screen.getByText(/no raw data found/i)).toBeInTheDocument()
       })
     })
   })

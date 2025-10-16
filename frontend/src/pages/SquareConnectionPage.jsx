@@ -9,7 +9,9 @@ import {
   LocationSelector,
   DataImportPanel,
   TransformationPanel,
-  DataReviewPanel
+  DataReviewPanel,
+  SalesDataImportPanel,
+  SalesDataReviewPanel
 } from '../components/pos/square'
 import {
   selectSquareLocations,
@@ -52,6 +54,7 @@ const SquareConnectionPage = () => {
   const [isHandlingCallback, setIsHandlingCallback] = useState(false)
   const [callbackProcessedLocal, setCallbackProcessed] = useState(false)
   const [syncRefreshTrigger, setSyncRefreshTrigger] = useState(0)
+  const [activeTab, setActiveTab] = useState('inventory') // 'inventory' | 'sales'
 
   /**
    * Handle OAuth callback from Square
@@ -284,24 +287,77 @@ const SquareConnectionPage = () => {
                     </div>
                   </div>
 
-                  {/* Data Import Panel */}
-                  <DataImportPanel
-                    connectionId={connection?.id}
-                    restaurantId={1} // Default restaurant ID for MVP
-                    onSyncComplete={handleSyncComplete}
-                  />
+                  {/* Tab Navigation */}
+                  <div className="mb-6">
+                    <div className="border-b border-gray-200">
+                      <nav className="-mb-px flex space-x-8">
+                        <button
+                          onClick={() => setActiveTab('inventory')}
+                          className={`
+                            py-4 px-1 border-b-2 font-medium text-sm transition-colors
+                            ${activeTab === 'inventory'
+                              ? 'border-blue-500 text-blue-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }
+                          `}
+                        >
+                          Inventory Data
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('sales')}
+                          className={`
+                            py-4 px-1 border-b-2 font-medium text-sm transition-colors
+                            ${activeTab === 'sales'
+                              ? 'border-blue-500 text-blue-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }
+                          `}
+                        >
+                          Sales Data
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
 
-                  {/* Transformation Panel */}
-                  <TransformationPanel
-                    connectionId={connection?.id}
-                    restaurantId={1} // Default restaurant ID for MVP
-                    refreshTrigger={syncRefreshTrigger}
-                  />
+                  {/* Inventory Tab Content */}
+                  {activeTab === 'inventory' && (
+                    <>
+                      {/* Data Import Panel */}
+                      <DataImportPanel
+                        connectionId={connection?.id}
+                        restaurantId={1} // Default restaurant ID for MVP
+                        onSyncComplete={handleSyncComplete}
+                      />
 
-                  {/* Data Review Panel - Shows Tier 1 vs Tier 2 */}
-                  <DataReviewPanel
-                    connectionId={connection?.id}
-                  />
+                      {/* Transformation Panel */}
+                      <TransformationPanel
+                        connectionId={connection?.id}
+                        restaurantId={1} // Default restaurant ID for MVP
+                        refreshTrigger={syncRefreshTrigger}
+                      />
+
+                      {/* Data Review Panel - Shows Tier 1 vs Tier 2 */}
+                      <DataReviewPanel
+                        connectionId={connection?.id}
+                      />
+                    </>
+                  )}
+
+                  {/* Sales Tab Content */}
+                  {activeTab === 'sales' && (
+                    <>
+                      {/* Sales Data Import Panel */}
+                      <SalesDataImportPanel
+                        connectionId={connection?.id}
+                        restaurantId={1} // Default restaurant ID for MVP
+                      />
+
+                      {/* Sales Data Review Panel - Shows Tier 1 vs Tier 2 */}
+                      <SalesDataReviewPanel
+                        connectionId={connection?.id}
+                      />
+                    </>
+                  )}
                 </>
               )}
             </>

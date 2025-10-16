@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSnackbar } from 'notistack'
 import { Loader2, Download, CheckCircle, AlertCircle, RefreshCw, Trash2 } from 'lucide-react'
 import PropTypes from 'prop-types'
-import { syncInventory, transformInventory, getSyncStatus } from '../../../services/posSyncService'
+import { syncInventory, transformInventory, getSyncStatus, clearPOSData } from '../../../services/posSyncService'
 
 /**
  * DataImportPanel Component
@@ -109,17 +109,8 @@ const DataImportPanel = ({ connectionId, restaurantId, onSyncComplete }) => {
       
       enqueueSnackbar('Clearing all Square data...', { variant: 'info' })
       
-      // Call clear API
-      const response = await fetch(`/api/v1/pos/clear/${restaurantId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to clear data')
-      }
+      // Call clear API via service
+      await clearPOSData(restaurantId)
       
       // Clear local state
       setSyncResult(null)

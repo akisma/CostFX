@@ -7,12 +7,11 @@ import salesRoutes from './sales.js';
 import agentRoutes from './agents.js';
 import periodRoutes from './periods.js';
 import varianceRoutes from './variance.js';
-import squareAuthRoutes from './squareAuth.js'; // Issue #16: Square OAuth routes
-import posSyncRoutes from './posSync.js'; // Issue #20: POS Sync routes
+import squareRoutes from './pos/square/index.js'; // RESTful Square routes
 
 const router = express.Router();
 
-// Mount all route modules
+// Core resource routes
 router.use('/restaurants', restaurantRoutes);
 router.use('/ingredients', ingredientRoutes);
 router.use('/recipes', recipeRoutes);
@@ -21,8 +20,9 @@ router.use('/sales', salesRoutes);
 router.use('/agents', agentRoutes);
 router.use('/periods', periodRoutes);
 router.use('/variance', varianceRoutes);
-router.use('/pos/square', squareAuthRoutes); // Issue #16: Square OAuth endpoints
-router.use('/pos', posSyncRoutes); // Issue #20: POS Sync endpoints
+
+// RESTful Square POS routes (Issue #16, #20, #21, #46)
+router.use('/pos/square', squareRoutes);
 
 // API info endpoint
 router.get('/', (req, res) => {
@@ -38,8 +38,12 @@ router.get('/', (req, res) => {
       agents: '/api/v1/agents',
       periods: '/api/v1/periods',
       variance: '/api/v1/variance',
-      squareAuth: '/api/v1/pos/square', // Issue #16: Square OAuth
-      posSync: '/api/v1/pos' // Issue #20: POS Sync
+      // POS Integration (Square)
+      square: {
+        connections: '/api/v1/pos/square/connections',
+        inventory: '/api/v1/pos/square/inventory',
+        sales: '/api/v1/pos/square/sales'
+      }
     }
   });
 });

@@ -23,13 +23,13 @@ import api from '../../services/api'
 
 /**
  * Initiate Square OAuth connection flow
- * POST /api/v1/pos/square/connect
+ * POST /api/v1/pos/square/connections
  */
 export const initiateSquareConnection = createAsyncThunk(
   'squareConnection/initiate',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.post('/pos/square/connect')
+      const response = await api.post('/pos/square/connections')
       return response.data.data
     } catch (error) {
       return rejectWithValue(
@@ -41,13 +41,13 @@ export const initiateSquareConnection = createAsyncThunk(
 
 /**
  * Handle OAuth callback from Square
- * GET /api/v1/pos/square/callback
+ * GET /api/v1/pos/square/connections/callback
  */
 export const handleSquareCallback = createAsyncThunk(
   'squareConnection/callback',
   async ({ code, state }, { rejectWithValue }) => {
     try {
-      const response = await api.get('/pos/square/callback', {
+      const response = await api.get('/pos/square/connections/callback', {
         params: { code, state }
       })
       return response.data.data
@@ -61,13 +61,13 @@ export const handleSquareCallback = createAsyncThunk(
 
 /**
  * Fetch current Square connection status
- * GET /api/v1/pos/square/status
+ * GET /api/v1/pos/square/connections/status
  */
 export const fetchSquareStatus = createAsyncThunk(
   'squareConnection/fetchStatus',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/pos/square/status')
+      const response = await api.get('/pos/square/connections/status')
       return response.data.data
     } catch (error) {
       return rejectWithValue(
@@ -79,13 +79,13 @@ export const fetchSquareStatus = createAsyncThunk(
 
 /**
  * Fetch available Square locations
- * GET /api/v1/pos/square/locations
+ * GET /api/v1/pos/square/connections/locations
  */
 export const fetchSquareLocations = createAsyncThunk(
   'squareConnection/fetchLocations',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/pos/square/locations')
+      const response = await api.get('/pos/square/connections/locations')
       return response.data.data.locations
     } catch (error) {
       return rejectWithValue(
@@ -97,13 +97,13 @@ export const fetchSquareLocations = createAsyncThunk(
 
 /**
  * Select Square locations for sync
- * POST /api/v1/pos/square/locations/select
+ * POST /api/v1/pos/square/connections/locations
  */
 export const selectSquareLocations = createAsyncThunk(
   'squareConnection/selectLocations',
   async (locationIds, { rejectWithValue }) => {
     try {
-      const response = await api.post('/pos/square/locations/select', {
+      const response = await api.post('/pos/square/connections/locations', {
         locationIds
       })
       return response.data.data.locations
@@ -117,13 +117,13 @@ export const selectSquareLocations = createAsyncThunk(
 
 /**
  * Disconnect Square integration
- * POST /api/v1/pos/square/disconnect
+ * DELETE /api/v1/pos/square/connections
  */
 export const disconnectSquare = createAsyncThunk(
   'squareConnection/disconnect',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.post('/pos/square/disconnect')
+      const response = await api.delete('/pos/square/connections')
       return response.data.data
     } catch (error) {
       return rejectWithValue(

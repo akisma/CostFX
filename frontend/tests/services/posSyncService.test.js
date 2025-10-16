@@ -5,7 +5,8 @@ import * as posSyncService from '../../src/services/posSyncService'
 vi.mock('../../src/services/api', () => ({
   default: {
     post: vi.fn(),
-    get: vi.fn()
+    get: vi.fn(),
+    delete: vi.fn()
   }
 }))
 
@@ -39,7 +40,7 @@ describe('posSyncService', () => {
 
       const result = await posSyncService.syncInventory(1)
 
-      expect(api.post).toHaveBeenCalledWith('/pos/sync/1', {}, {
+      expect(api.post).toHaveBeenCalledWith('/pos/square/inventory/sync/1', {}, {
         params: { incremental: true, dryRun: false, clearBeforeSync: false }
       })
       expect(result).toEqual(mockResponse.data)
@@ -55,7 +56,7 @@ describe('posSyncService', () => {
         clearBeforeSync: true
       })
 
-      expect(api.post).toHaveBeenCalledWith('/pos/sync/1', {}, {
+      expect(api.post).toHaveBeenCalledWith('/pos/square/inventory/sync/1', {}, {
         params: { incremental: false, dryRun: true, clearBeforeSync: true }
       })
     })
@@ -75,7 +76,7 @@ describe('posSyncService', () => {
 
       const result = await posSyncService.transformInventory(1)
 
-      expect(api.post).toHaveBeenCalledWith('/pos/transform/1', {}, {
+      expect(api.post).toHaveBeenCalledWith('/pos/square/inventory/transform/1', {}, {
         params: { dryRun: false }
       })
       expect(result).toEqual(mockResponse.data)
@@ -87,7 +88,7 @@ describe('posSyncService', () => {
 
       await posSyncService.transformInventory(1, { dryRun: true })
 
-      expect(api.post).toHaveBeenCalledWith('/pos/transform/1', {}, {
+      expect(api.post).toHaveBeenCalledWith('/pos/square/inventory/transform/1', {}, {
         params: { dryRun: true }
       })
     })
@@ -107,7 +108,7 @@ describe('posSyncService', () => {
 
       const result = await posSyncService.getSyncStatus(1)
 
-      expect(api.get).toHaveBeenCalledWith('/pos/status/1')
+      expect(api.get).toHaveBeenCalledWith('/pos/square/inventory/status/1')
       expect(result).toEqual(mockResponse.data)
     })
   })
@@ -120,11 +121,11 @@ describe('posSyncService', () => {
         }
       }
       
-      api.post.mockResolvedValue(mockResponse)
+      api.delete.mockResolvedValue(mockResponse)
 
       const result = await posSyncService.clearPOSData(1)
 
-      expect(api.post).toHaveBeenCalledWith('/pos/clear/1')
+      expect(api.delete).toHaveBeenCalledWith('/pos/square/inventory/1')
       expect(result).toEqual(mockResponse.data)
     })
   })
@@ -159,10 +160,9 @@ describe('posSyncService', () => {
         endDate: '2025-10-07'
       })
 
-      expect(api.post).toHaveBeenCalledWith('/pos/sync-sales/1', {
+      expect(api.post).toHaveBeenCalledWith('/pos/square/sales/sync/1', {
         startDate: '2025-10-01',
         endDate: '2025-10-07',
-        transform: true,
         dryRun: false
       })
       expect(result).toEqual(mockResponse.data)
@@ -179,10 +179,9 @@ describe('posSyncService', () => {
         dryRun: true
       })
 
-      expect(api.post).toHaveBeenCalledWith('/pos/sync-sales/1', {
+      expect(api.post).toHaveBeenCalledWith('/pos/square/sales/sync/1', {
         startDate: '2025-10-01',
         endDate: '2025-10-07',
-        transform: false,
         dryRun: true
       })
     })
@@ -291,7 +290,7 @@ describe('posSyncService', () => {
 
       const result = await posSyncService.getSalesStatus(1)
 
-      expect(api.get).toHaveBeenCalledWith('/pos/sales-status/1')
+      expect(api.get).toHaveBeenCalledWith('/pos/square/sales/status/1')
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -327,11 +326,11 @@ describe('posSyncService', () => {
         }
       }
       
-      api.post.mockResolvedValue(mockResponse)
+      api.delete.mockResolvedValue(mockResponse)
 
       const result = await posSyncService.clearSalesData(1)
 
-      expect(api.post).toHaveBeenCalledWith('/pos/clear-sales/1')
+      expect(api.delete).toHaveBeenCalledWith('/pos/square/sales/1')
       expect(result).toEqual(mockResponse.data)
     })
 
@@ -342,7 +341,7 @@ describe('posSyncService', () => {
         data: { error: 'Database error' }
       }
       
-      api.post.mockRejectedValue(mockError)
+      api.delete.mockRejectedValue(mockError)
 
       await expect(
         posSyncService.clearSalesData(1)

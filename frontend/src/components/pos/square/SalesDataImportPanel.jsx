@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSnackbar } from 'notistack'
 import { Loader2, Download, AlertCircle, Calendar, Trash2, RefreshCw, CheckCircle } from 'lucide-react'
 import PropTypes from 'prop-types'
-import { syncSales, clearSalesData } from '../../../services/posSyncService'
+import { syncSales, transformSales, clearSalesData } from '../../../services/posSyncService'
 
 /**
  * SalesDataImportPanel Component
@@ -83,7 +83,6 @@ const SalesDataImportPanel = ({ connectionId, restaurantId, onSyncComplete }) =>
       const result = await syncSales(connectionId, {
         startDate,
         endDate,
-        transform: false,
         dryRun: false
       })
       
@@ -116,10 +115,9 @@ const SalesDataImportPanel = ({ connectionId, restaurantId, onSyncComplete }) =>
       enqueueSnackbar('Starting sales data transformation...', { variant: 'info' })
       
       // Trigger transformation only
-      const result = await syncSales(connectionId, {
+      const result = await transformSales(connectionId, {
         startDate,
         endDate,
-        transform: true,
         dryRun: false
       })
       

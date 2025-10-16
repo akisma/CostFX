@@ -26,7 +26,7 @@ export default function DataReviewPanel({ connectionId }) {
 
     try {
       // Fetch Tier 1 data (raw Square data)
-      const tier1Response = await fetch(`/api/v1/pos/square/raw-data/${connectionId}`);
+      const tier1Response = await fetch(`/api/v1/pos/square/inventory/raw/${connectionId}`);
       if (!tier1Response.ok) {
         throw new Error('Failed to fetch Tier 1 data');
       }
@@ -34,7 +34,7 @@ export default function DataReviewPanel({ connectionId }) {
       setTier1Data(tier1.data || { categories: [], items: [] });
 
       // Fetch Tier 2 data (transformed inventory items)
-      const tier2Response = await fetch(`/api/v1/pos/square/transformed-data/${connectionId}`);
+      const tier2Response = await fetch(`/api/v1/pos/square/inventory/transformed/${connectionId}`);
       if (!tier2Response.ok) {
         throw new Error('Failed to fetch Tier 2 data');
       }

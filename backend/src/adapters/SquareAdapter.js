@@ -1037,16 +1037,31 @@ class SquareAdapter extends POSAdapter {
     this._ensureInitialized();
     await this._validateConnection(connection);
     
+    // Get enabled Square locations for this connection
+    const { SquareLocation } = await import('../models/index.js');
+    const locations = await SquareLocation.findAll({
+      where: {
+        posConnectionId: connection.id,
+        syncEnabled: true
+      }
+    });
+    
+    if (!locations || locations.length === 0) {
+      throw new Error('No enabled locations found for this connection. Please select locations to sync first.');
+    }
+    
+    const locationIds = locations.map(loc => loc.locationId);
+    
     const syncResult = {
       synced: { orders: 0, lineItems: 0 },
       errors: [],
-      details: { apiCalls: 0, pages: 0, cursor: null }
+      details: { apiCalls: 0, pages: 0, cursor: null, locationIds }
     };
     
     this._logOperation('syncSales', {
       connectionId: connection.id,
       restaurantId: connection.restaurantId,
-      locationId: connection.squareLocationId,
+      locationIds,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString()
     });
@@ -1063,7 +1078,7 @@ class SquareAdapter extends POSAdapter {
         // Search orders with retry policy
         const response = await this.retryPolicy.executeWithRetry(async () => {
           return await client.ordersApi.searchOrders({
-            locationIds: [connection.squareLocationId],
+            locationIds: locationIds,
             query: {
               filter: {
                 dateTimeFilter: {
