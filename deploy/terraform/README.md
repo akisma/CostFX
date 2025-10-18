@@ -100,8 +100,8 @@ environment     = "dev"        # "dev", "staging", or "prod"
 aws_region      = "us-west-2"  # AWS region
 
 # EC2 configuration (for deployment_type=ec2)
-ec2_instance_type = "t3.medium"
-ec2_key_name      = ""         # SSH key pair name (optional)
+ec2_instance_type = "t3.small"   # Default for single user; use t3.medium for more power
+ec2_key_name      = ""           # SSH key pair name (optional)
 
 # ECS configuration (for deployment_type=ecs)
 backend_cpu            = 512   # CPU units
@@ -329,10 +329,11 @@ This Terraform configuration is deployed via GitHub Actions:
 ## Cost Estimates
 
 ### EC2 Deployment (dev)
-- EC2 t3.medium: ~$30/mo
+- EC2 t3.small: ~$15/mo (default for single user)
 - RDS db.t3.micro: ~$13/mo
 - EBS storage: ~$3/mo
-- **Total: ~$46/mo**
+- **Total: ~$31/mo**
+- *Note: t3.medium (~$30/mo) available if more power needed*
 
 ### ECS Deployment (dev)
 - ALB: ~$16/mo

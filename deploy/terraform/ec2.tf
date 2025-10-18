@@ -24,6 +24,12 @@ data "aws_ami" "amazon_linux_2023" {
 }
 
 # Security Group for EC2 Instance
+# NOTE: This provides basic firewall protection via AWS Security Groups (stateful firewall).
+# For DDoS protection, consider:
+# - AWS Shield Standard (automatic, free) provides basic protection
+# - AWS Shield Advanced (paid) for enhanced DDoS protection
+# - CloudFront in front of EC2 for additional DDoS mitigation
+# - Restricting SSH access to your IP address only
 module "ec2_security_group" {
   count  = var.deployment_type == "ec2" ? 1 : 0
   source = "terraform-aws-modules/security-group/aws"
@@ -33,17 +39,22 @@ module "ec2_security_group" {
   vpc_id      = module.vpc.vpc_id
 
   # Allow HTTP and HTTPS from anywhere
+  # WARNING: This allows public internet access. For production:
+  # - Add CloudFront for DDoS protection
+  # - Use AWS WAF for application-layer filtering
+  # - Restrict to specific IPs if traffic source is known
   ingress_cidr_blocks = ["0.0.0.0/0"]
   ingress_rules       = ["http-80-tcp", "https-443-tcp"]
 
-  # Allow SSH from anywhere (consider restricting this in production)
+  # Allow SSH from anywhere (SECURITY: Restrict to your IP for production)
+  # To restrict SSH: Change cidr_blocks to "YOUR_IP/32"
   ingress_with_cidr_blocks = [
     {
       from_port   = 22
       to_port     = 22
       protocol    = "tcp"
       cidr_blocks = "0.0.0.0/0"
-      description = "SSH access"
+      description = "SSH access - RESTRICT TO YOUR IP IN PRODUCTION"
     }
   ]
 

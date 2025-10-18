@@ -9,18 +9,18 @@ This guide explains the two deployment options for CostFX: **EC2** (simplified) 
 The EC2 deployment is a simplified, cost-effective option suitable for development and low-traffic production environments.
 
 **Architecture:**
-- Single EC2 instance (t3.medium) in a public subnet
+- Single EC2 instance (t3.small by default, t3.medium optional) in a public subnet
 - Docker and Docker Compose running containers directly
 - Direct HTTP access via Elastic IP (no load balancer)
 - No NAT Gateway required
 - Database in private subnet (accessed via security group)
 
 **Costs (approximate monthly):**
-- EC2 Instance (t3.medium): ~$30
+- EC2 Instance (t3.small): ~$15 (t3.medium: ~$30 if more power needed)
 - RDS (db.t3.micro): ~$13
 - EBS Storage: ~$3
 - Data Transfer: ~$5
-- **Total: ~$51/month**
+- **Total: ~$36/month** (t3.small) or ~$51/month (t3.medium)
 
 **Pros:**
 - Much lower cost (~$78/month savings vs ECS)
@@ -344,8 +344,23 @@ aws logs tail /ecs/costfx-dev-backend --follow
 - ✅ EC2 instance uses IMDSv2 (metadata service)
 - ✅ Root volume encrypted
 - ✅ SSM Session Manager enabled
+- ✅ AWS Security Groups (stateful firewall) configured
+- ✅ AWS Shield Standard (automatic DDoS protection, free)
 - ⚠️ HTTP only by default (consider nginx with Let's Encrypt for HTTPS)
-- ⚠️ SSH port 22 open (consider restricting to your IP)
+- ⚠️ SSH port 22 open to all IPs (RECOMMEND: restrict to your IP)
+- ⚠️ HTTP/HTTPS open to all IPs (public access)
+- ⚠️ No WAF or advanced DDoS protection (consider CloudFront + WAF for production)
+
+**DDoS/DOS Protection Notes:**
+- AWS Shield Standard provides automatic protection against common DDoS attacks (included free)
+- Security groups act as stateful firewalls but don't prevent volumetric attacks
+- For enhanced protection: Use CloudFront + AWS WAF + Shield Advanced (additional cost)
+- Rate limiting can be implemented at application level or via WAF
+
+**To Restrict Access (Single User/Developer):**
+Edit `deploy/terraform/ec2.tf` security group:
+- Change SSH `cidr_blocks = "0.0.0.0/0"` to `"YOUR_IP/32"`
+- Optionally restrict HTTP/HTTPS to specific IPs if needed
 
 ### ECS Deployment
 - ✅ HTTPS with ACM certificate
@@ -353,6 +368,7 @@ aws logs tail /ecs/costfx-dev-backend --follow
 - ✅ WAF available (optional)
 - ✅ Secrets in SSM Parameter Store
 - ✅ VPC Flow Logs enabled
+- ✅ ALB provides better DDoS mitigation than direct EC2 access
 
 ## Next Steps
 

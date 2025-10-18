@@ -385,15 +385,17 @@ Total:                    ~$126.96/mo
 
 ### After Migration (EC2):
 ```
-EC2 t3.medium:            $30.37/mo
+EC2 t3.small:             $15.18/mo (default for single user)
 RDS db.t3.micro:          $12.96/mo
 EBS 30GB:                  $3.00/mo
 CloudWatch:                $2.00/mo
 Data Transfer:             $5.00/mo
 ─────────────────────────────────────
-Total:                    ~$53.33/mo
+Total:                    ~$38.14/mo
 
-Savings:                  ~$73.63/mo (58%)
+Savings:                  ~$88.82/mo (70%)
+
+Note: t3.medium (~$30/mo) available if more power needed
 ```
 
 ## FAQs

@@ -25,12 +25,12 @@ GitHub → Actions → "CostFX Infrastructure Deploy (Manual)"
 
 | Feature | EC2 (Default) | ECS |
 |---------|---------------|-----|
-| **Cost** | ~$51/month | ~$126/month |
+| **Cost** | ~$36/month (t3.small) | ~$126/month |
 | **Setup** | Simple | Complex |
 | **Scaling** | Manual | Automatic |
 | **Load Balancer** | ❌ No | ✅ Yes (HTTPS) |
 | **High Availability** | ❌ No | ✅ Multi-AZ |
-| **Best For** | Dev, MVP, Low Traffic | Production, High Traffic |
+| **Best For** | Dev, MVP, Low Traffic, Single User | Production, High Traffic |
 
 ## After Deployment
 
@@ -162,9 +162,9 @@ AWS Console → Cost Explorer → Daily Costs
 Budget is configured at $150/month with alerts at 80% and 100%
 
 ### Reduce Costs
-1. **Switch to EC2** from ECS (saves ~$78/month)
+1. **Switch to EC2** from ECS (saves ~$90/month)
 2. **Stop EC2 when not in use** (dev only)
-3. **Use smaller instance type** (t3.small instead of t3.medium)
+3. **Use t3.micro for very light usage** (saves additional ~$7/month vs t3.small)
 4. **Delete dev environment** when not needed
 
 ## Support & Documentation
