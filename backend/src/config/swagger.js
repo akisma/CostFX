@@ -48,6 +48,52 @@ const options = {
                             example: 'Detailed error description'
                         }
                     }
+                },
+                Restaurant: {
+                    type: 'object',
+                    properties: {
+                        id: {
+                            type: 'integer',
+                            example: 1
+                        },
+                        name: {
+                            type: 'string',
+                            example: 'Demo Restaurant'
+                        },
+                        address: {
+                            type: 'string',
+                            example: '123 Main St'
+                        },
+                        city: {
+                            type: 'string',
+                            example: 'San Francisco'
+                        },
+                        state: {
+                            type: 'string',
+                            example: 'CA'
+                        },
+                        zipCode: {
+                            type: 'string',
+                            example: '94102'
+                        },
+                        phone: {
+                            type: 'string',
+                            example: '555-1234'
+                        },
+                        email: {
+                            type: 'string',
+                            format: 'email',
+                            example: 'demo@restaurant.com'
+                        },
+                        createdAt: {
+                            type: 'string',
+                            format: 'date-time'
+                        },
+                        updatedAt: {
+                            type: 'string',
+                            format: 'date-time'
+                        }
+                    }
                 }
             }
         },
@@ -57,16 +103,44 @@ const options = {
                 description: 'Health check endpoints'
             },
             {
-                name: 'Square OAuth',
-                description: 'Square POS OAuth 2.0 authentication endpoints'
-            },
-            {
                 name: 'Restaurants',
                 description: 'Restaurant management endpoints'
             },
             {
+                name: 'Ingredients',
+                description: 'Ingredient catalog management endpoints'
+            },
+            {
+                name: 'Recipes',
+                description: 'Recipe management endpoints'
+            },
+            {
                 name: 'Inventory',
-                description: 'Inventory management endpoints'
+                description: 'Inventory tracking and optimization endpoints'
+            },
+            {
+                name: 'Sales',
+                description: 'Sales data management endpoints'
+            },
+            {
+                name: 'Periods',
+                description: 'Inventory period management endpoints'
+            },
+            {
+                name: 'Variance',
+                description: 'Variance analysis endpoints'
+            },
+            {
+                name: 'Agents',
+                description: 'AI agent endpoints for cost, forecast, and inventory analysis'
+            },
+            {
+                name: 'Square OAuth',
+                description: 'Square POS OAuth 2.0 authentication endpoints'
+            },
+            {
+                name: 'POS Sync',
+                description: 'POS data synchronization endpoints'
             }
         ]
     },
