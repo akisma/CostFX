@@ -1,8 +1,8 @@
 import express from 'express';
 import periodController from '../controllers/periodController.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
-import { authenticate } from '../middleware/auth.js';
-import { body, query } from 'express-validator';
+// import { authenticate } from '../middleware/auth.js'; // Uncomment when auth is implemented
+import { body } from 'express-validator';
 
 const router = express.Router();
 
