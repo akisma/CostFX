@@ -195,23 +195,42 @@ cd frontend && npm run test:coverage
 
 ## 🚀 Production Deployment
 
-Deploy to AWS ECS with a single command:
+### Deployment Types
 
-```bash
-cd deploy
-./deploy.sh
-```
+CostFX supports two deployment architectures:
 
-**Deployment Options:**
-- `./deploy.sh` - Full deployment (infrastructure + containers)
-- `./deploy.sh --setup-infra` - Deploy infrastructure only  
-- `./deploy.sh --frontend-only` - Rebuild frontend with correct API URLs
-- `./deploy.sh --help` - Show all options
+| Type | Cost | Best For | Features |
+|------|------|----------|----------|
+| **EC2** (Default) | ~$51/mo | Development, MVP | Simple, cost-effective |
+| **ECS** | ~$126/mo | Production | Auto-scaling, load balancing, HA |
 
-See [deploy/README.md](deploy/README.md) for detailed deployment documentation.
+**Current Default**: EC2 (simplified deployment)
 
-**Deployment time:** ~15-20 minutes  
-**Architecture:** AWS ECS Fargate + RDS PostgreSQL + ElastiCache Redis
+### Quick Deploy via GitHub Actions
+
+1. Go to **Actions** → "CostFX Infrastructure Deploy (Manual)"
+2. Click **"Run workflow"**
+3. Select:
+   - **Environment**: `dev` or `prod`
+   - **Deployment type**: `ec2` (default) or `ecs`
+4. Click **"Run workflow"**
+
+⏱️ **Time**: 15-20 minutes for EC2, 20-30 minutes for ECS
+
+### Access After Deployment
+
+**EC2**: `http://<elastic-ip>` (from GitHub Actions output)  
+**ECS**: `https://<load-balancer-dns>` (from GitHub Actions output)
+
+### Documentation
+
+- 📚 **Full Guide**: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- 🚀 **Quick Start**: [deploy/QUICK_START.md](deploy/QUICK_START.md)
+- 🔧 **Terraform**: [deploy/terraform/README.md](deploy/terraform/README.md)
+
+**Architecture**: 
+- **EC2**: Single instance with Docker Compose, RDS PostgreSQL
+- **ECS**: Fargate containers, ALB with HTTPS, RDS PostgreSQL, Auto-scaling
 
 ---
 
