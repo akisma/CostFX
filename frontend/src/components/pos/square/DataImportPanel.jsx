@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSnackbar } from 'notistack'
 import { Loader2, Download, CheckCircle, AlertCircle, RefreshCw, Trash2 } from 'lucide-react'
 import PropTypes from 'prop-types'
-import { syncInventory, transformInventory, getSyncStatus, clearPOSData } from '../../../services/posSyncService'
+import { syncInventory, transformInventory, clearPOSData } from '../../../services/posSyncService'
 
 /**
  * DataImportPanel Component
@@ -316,7 +316,7 @@ const DataImportPanel = ({ connectionId, restaurantId, onSyncComplete }) => {
       {!isImporting && !syncResult && !error && (
         <div className="py-8 text-center text-gray-500">
           <Download className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p className="text-sm">Click "Import Data" to sync from Square</p>
+          <p className="text-sm">Click &quot;Import Data&quot; to sync from Square</p>
         </div>
       )}
     </div>

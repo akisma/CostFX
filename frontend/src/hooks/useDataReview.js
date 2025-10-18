@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 /**
  * useDataReview Hook
@@ -37,8 +37,16 @@ export const useDataReview = ({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // Memoize fetchOptions to prevent infinite loop from object recreation
-  const stableFetchOptions = useMemo(() => fetchOptions, [JSON.stringify(fetchOptions)])
+  const fetchOptionsRef = useRef(fetchOptions)
+  const fetchOptionsKeyRef = useRef(JSON.stringify(fetchOptions))
+
+  useEffect(() => {
+    const nextKey = JSON.stringify(fetchOptions)
+    if (fetchOptionsKeyRef.current !== nextKey) {
+      fetchOptionsKeyRef.current = nextKey
+      fetchOptionsRef.current = fetchOptions
+    }
+  }, [fetchOptions])
 
   /**
    * Fetch both raw and transformed data
@@ -54,8 +62,8 @@ export const useDataReview = ({
     try {
       // Fetch both in parallel for better performance
       const [rawResult, transformedResult] = await Promise.all([
-        fetchRawFn(connectionId, stableFetchOptions),
-        fetchTransformedFn(connectionId, stableFetchOptions)
+        fetchRawFn(connectionId, fetchOptionsRef.current),
+        fetchTransformedFn(connectionId, fetchOptionsRef.current)
       ])
 
       setRawData(rawResult)
@@ -67,7 +75,7 @@ export const useDataReview = ({
     } finally {
       setLoading(false)
     }
-  }, [connectionId, fetchRawFn, fetchTransformedFn, stableFetchOptions])
+  }, [connectionId, fetchRawFn, fetchTransformedFn])
 
   /**
    * Auto-fetch on mount and when connectionId changes

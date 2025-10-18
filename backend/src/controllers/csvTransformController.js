@@ -61,3 +61,41 @@ export const transformInventoryUpload = async (req, res, next) => {
     next(error);
   }
 };
+
+export const transformSalesUpload = async (req, res, next) => {
+  try {
+    const uploadId = Number(req.params.uploadId);
+    if (Number.isNaN(uploadId)) {
+      throw new BadRequestError('uploadId must be a valid integer');
+    }
+
+    const restaurantId = resolveRestaurantId(req);
+    const dryRun = resolveDryRunFlag(req);
+
+    const result = await csvTransformService.transformSalesUpload({
+      uploadId,
+      restaurantId,
+      dryRun
+    });
+
+    logger.info('CSV sales transform completed', {
+      uploadId,
+      transformId: result.transformId,
+      status: result.status,
+      dryRun
+    });
+
+    res.status(200).json({
+      transformId: result.transformId,
+      uploadId: result.uploadId,
+      restaurantId: result.restaurantId,
+      status: result.status,
+      dryRun: result.dryRun,
+      errorRate: result.errorRate,
+      summary: result.summary,
+      errors: result.errors
+    });
+  } catch (error) {
+    next(error);
+  }
+};

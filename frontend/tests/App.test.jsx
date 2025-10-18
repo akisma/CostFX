@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import PropTypes from 'prop-types';
 
@@ -19,9 +19,9 @@ describe('App Tests', () => {
   it('renders without crashing', () => {
     render(
       <Provider store={store}>
-        <BrowserRouter>
+        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <TestApp />
-        </BrowserRouter>
+        </MemoryRouter>
       </Provider>
     );
     
@@ -31,11 +31,11 @@ describe('App Tests', () => {
   it('renders with router and store', () => {
     render(
       <Provider store={store}>
-        <BrowserRouter>
+        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <MockLayout>
             <TestApp />
           </MockLayout>
-        </BrowserRouter>
+        </MemoryRouter>
       </Provider>
     );
     

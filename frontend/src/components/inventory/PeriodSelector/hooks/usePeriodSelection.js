@@ -1,17 +1,15 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { isValid, parseISO, isBefore, isAfter, isEqual } from 'date-fns';
+import { useSelector } from 'react-redux';
+import { isValid, parseISO, isBefore, isAfter } from 'date-fns';
 
 /**
  * Custom hook for period selection logic
  * Manages period validation, overlap checking, and state management
  */
 export const usePeriodSelection = ({
-  restaurantId,
   validateOverlap = true,
   onError = () => {}
 }) => {
-  const dispatch = useDispatch();
   const [validationErrors, setValidationErrors] = useState([]);
   
   // Redux state

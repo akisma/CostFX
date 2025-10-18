@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSnackbar } from 'notistack'
 import { Loader2, BarChart3, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react'
 import PropTypes from 'prop-types'
@@ -18,7 +18,7 @@ import { getTransformationStats } from '../../../services/posSyncService'
  * 
  * Created: 2025-10-06
  */
-const TransformationPanel = ({ connectionId, restaurantId, refreshTrigger }) => {
+const TransformationPanel = ({ restaurantId, refreshTrigger }) => {
   const { enqueueSnackbar } = useSnackbar()
   
   const [isLoading, setIsLoading] = useState(false)
@@ -28,7 +28,7 @@ const TransformationPanel = ({ connectionId, restaurantId, refreshTrigger }) => 
   /**
    * Fetch transformation statistics
    */
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
@@ -45,7 +45,7 @@ const TransformationPanel = ({ connectionId, restaurantId, refreshTrigger }) => 
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [enqueueSnackbar, restaurantId])
 
   /**
    * Load stats on mount and when refresh trigger changes
@@ -54,7 +54,7 @@ const TransformationPanel = ({ connectionId, restaurantId, refreshTrigger }) => 
     if (restaurantId) {
       fetchStats()
     }
-  }, [restaurantId, refreshTrigger])
+  }, [restaurantId, refreshTrigger, fetchStats])
 
   /**
    * Render tier distribution
@@ -282,7 +282,6 @@ const TierBar = ({ label, count, total, color }) => {
 }
 
 TransformationPanel.propTypes = {
-  connectionId: PropTypes.number,
   restaurantId: PropTypes.number.isRequired,
   refreshTrigger: PropTypes.any
 }

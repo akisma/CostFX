@@ -94,6 +94,13 @@ CostFX is a multi-agent AI system that automates restaurant operations to reduce
   - Database seeded with Demo Restaurant and operational test data
   - Fixed Sequelize auto-sync conflicts by disabling schema alterations in favor of migrations
 
+#### CSV Upload & Transformation Workflow (October 18, 2025) ✅
+- ✅ **Workflow Overview**: The CSV import page orchestrates inventory and sales ingestion through three components per data type—`CsvUploadCard`, `CsvTransformPanel`, and `CsvDataReviewPanel`—all powered by the shared `useCsvUploadWorkflow` hook.
+- ✅ **Upload Stage (`CsvUploadCard`)**: Handles file selection, invokes `handleUpload`, and surfaces validation stats (`rowsTotal`, `rowsValid`, `rowsInvalid`). Buttons remain disabled until a file is chosen to prevent accidental submissions.
+- ✅ **Transform Stage (`CsvTransformPanel`)**: Enables transformations only when `uploadResult.readyForTransform` is true, toggles dry-run mode, and displays detailed processing metrics (processed, created, updated, skipped, matched).
+- ✅ **Review Stage (`CsvDataReviewPanel`)**: Presents flagged rows and item-matching summaries from `transformResult.summary`, including context-aware messages for unmapped categories and unmatched inventory items.
+- ✅ **Hook Integration (`useCsvUploadWorkflow`)**: Shared hook manages async upload/transform flows, busy states (`isUploading`, `isTransforming`), and error propagation for both Inventory and Sales tabs, keeping UI logic thin and testable.
+
 **Test Categories**:
 - ✅ **Core Infrastructure**: Error handling, logging, controllers (100% passing)
 - ✅ **ForecastAgent**: Complete implementation (24/24 tests passing)

@@ -15,6 +15,28 @@ describe('POSDataTransformer', () => {
     beforeEach(() => {
         transformer = new POSDataTransformer();
     });
+
+    describe('CategoryMapper configuration', () => {
+        it('disables CategoryMapper fallback by default', () => {
+            const result = transformer.categoryMapper.mapSquareCategory('Completely Unknown Category');
+            expect(result).toBeNull();
+        });
+
+        it('supports enabling CategoryMapper fallback via options', () => {
+            const fallbackTransformer = new POSDataTransformer({
+                categoryMapperOptions: {
+                    enableFallback: true,
+                    fallbackCategory: 'other'
+                }
+            });
+
+            const result = fallbackTransformer.categoryMapper.mapSquareCategory('Completely Unknown Category');
+            expect(result).toMatchObject({
+                category: 'other',
+                matchType: 'fallback'
+            });
+        });
+    });
     
     describe('Single Item Transformation (Dry Run)', () => {
         it('should transform produce item with all mappings', async () => {

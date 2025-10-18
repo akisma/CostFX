@@ -49,7 +49,11 @@ class SquareSalesSyncService {
       throw new Error('SquareAdapter is required');
     }
     this.squareAdapter = squareAdapter;
-    this.transformer = transformer || new POSDataTransformer();
+    this.transformer = transformer || new POSDataTransformer({
+      categoryMapperOptions: {
+        enableFallback: false
+      }
+    });
   }
 
   /**

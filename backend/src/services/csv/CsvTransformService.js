@@ -2,6 +2,7 @@ import CsvUpload from '../../models/CsvUpload.js';
 import CsvUploadBatch from '../../models/CsvUploadBatch.js';
 import CsvTransform from '../../models/CsvTransform.js';
 import CsvInventoryTransformer from './CsvInventoryTransformer.js';
+import CsvSalesTransformer from './CsvSalesTransformer.js';
 import logger from '../../utils/logger.js';
 import { BadRequestError, NotFoundError } from '../../middleware/errorHandler.js';
 
@@ -10,9 +11,14 @@ const FLAGGED_REVIEW_LIMIT = 25;
 class CsvTransformService {
   constructor(options = {}) {
     this.inventoryTransformer = options.inventoryTransformer || new CsvInventoryTransformer();
+    this.salesTransformer = options.salesTransformer || new CsvSalesTransformer();
+    this.transformers = {
+      inventory: this.inventoryTransformer,
+      sales: this.salesTransformer
+    };
   }
 
-  async transformInventoryUpload({ uploadId, restaurantId, dryRun = false }) {
+  async transformUpload({ uploadId, restaurantId, dryRun = false, expectedType = null }) {
     const upload = await CsvUpload.findByPk(uploadId);
 
     if (!upload) {
@@ -23,8 +29,8 @@ class CsvTransformService {
       throw new BadRequestError('Upload does not belong to the specified restaurant');
     }
 
-    if (upload.uploadType !== 'inventory') {
-      throw new BadRequestError('Upload type must be inventory to run this transform');
+    if (expectedType && upload.uploadType !== expectedType) {
+      throw new BadRequestError(`Upload type must be ${expectedType} to run this transform`);
     }
 
     if (upload.rowsValid === 0) {
@@ -44,36 +50,53 @@ class CsvTransformService {
       throw new BadRequestError('No persisted CSV batches were found for this upload');
     }
 
+    const transformer = this.transformers[upload.uploadType];
+    if (!transformer) {
+      throw new BadRequestError(`No transformer implemented for upload type: ${upload.uploadType}`);
+    }
+
     const transformRecord = await CsvTransform.create({
       uploadId,
       restaurantId: upload.restaurantId,
-      transformType: 'inventory',
+      transformType: upload.uploadType,
       status: 'processing',
       dryRun
     });
 
     try {
-      const result = await this.inventoryTransformer.transform({ upload, batches }, { dryRun });
+      const result = await transformer.transform({ upload, batches }, { dryRun });
 
       const completedAt = new Date();
       const status = result.exceededThreshold ? 'failed' : 'completed';
-
-      const summaryPayload = {
-        ...result.summary,
-        itemMatching: result.itemMatching,
-        flaggedForReview: result.flaggedForReview.slice(0, FLAGGED_REVIEW_LIMIT)
+      const summary = result.summary || {
+        processed: 0,
+        created: 0,
+        updated: 0,
+        skipped: 0,
+        errors: 0
       };
+
+      const summaryPayload = { ...summary };
+      if (result.itemMatching) {
+        summaryPayload.itemMatching = result.itemMatching;
+      }
+      if (Array.isArray(result.flaggedForReview)) {
+        summaryPayload.flaggedForReview = result.flaggedForReview.slice(0, FLAGGED_REVIEW_LIMIT);
+      }
+      if (result.metadata) {
+        summaryPayload.metadata = result.metadata;
+      }
 
       await transformRecord.update({
         status,
-        processedCount: result.summary.processed,
-        createdCount: result.summary.created,
-        updatedCount: result.summary.updated,
-        skippedCount: result.summary.skipped,
-        errorCount: result.summary.errors,
-        errorRate: result.errorRate,
+        processedCount: summary.processed,
+        createdCount: summary.created,
+        updatedCount: summary.updated,
+        skippedCount: summary.skipped,
+        errorCount: summary.errors,
+        errorRate: typeof result.errorRate === 'number' ? result.errorRate : 0,
         summary: summaryPayload,
-        errors: result.errors,
+        errors: result.errors || [],
         completedAt
       });
 
@@ -96,7 +119,8 @@ class CsvTransformService {
           uploadId,
           transformId: transformRecord.id,
           dryRun,
-          status
+          status,
+          uploadType: upload.uploadType
         });
       }
 
@@ -106,9 +130,9 @@ class CsvTransformService {
         restaurantId: upload.restaurantId,
         status,
         dryRun,
-        errorRate: result.errorRate,
+        errorRate: typeof result.errorRate === 'number' ? result.errorRate : 0,
         summary: summaryPayload,
-        errors: result.errors
+        errors: result.errors || []
       };
     } catch (error) {
       await transformRecord.update({
@@ -128,6 +152,14 @@ class CsvTransformService {
 
       throw error;
     }
+  }
+
+  async transformInventoryUpload(args) {
+    return this.transformUpload({ ...args, expectedType: 'inventory' });
+  }
+
+  async transformSalesUpload(args) {
+    return this.transformUpload({ ...args, expectedType: 'sales' });
   }
 }
 

@@ -1,0 +1,1 @@
+Oct 18 2025: Documented the CSV upload workflow in TECHNICAL_DOCUMENTATION.md, covering upload/validate (CsvUploadCard), transform (CsvTransformPanel), review (CsvDataReviewPanel), and the shared useCsvUploadWorkflow hook that coordinates inventory vs sales imports.

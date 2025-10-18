@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SnackbarProvider } from 'notistack'
 
@@ -7,12 +7,11 @@ import { SnackbarProvider } from 'notistack'
 vi.mock('../../../../src/services/posSyncService', () => ({
   syncSales: vi.fn(),
   transformSales: vi.fn(),
-  getSalesStatus: vi.fn(),
   clearSalesData: vi.fn()
 }))
 
 import SalesDataImportPanel from '../../../../src/components/pos/square/SalesDataImportPanel'
-import { syncSales, transformSales, getSalesStatus, clearSalesData } from '../../../../src/services/posSyncService'
+import { syncSales, transformSales, clearSalesData } from '../../../../src/services/posSyncService'
 
 /**
  * SalesDataImportPanel Component Tests (TDD)
@@ -113,8 +112,10 @@ describe('SalesDataImportPanel Component', () => {
       await user.type(startDateInput, '2025-10-07')
       await user.type(endDateInput, '2025-10-01')
       
-      // Trigger blur to validate
-      endDateInput.blur()
+      // Trigger blur to validate inside act to flush state updates
+      act(() => {
+        endDateInput.blur()
+      })
       
       // Should show validation error
       await waitFor(() => {

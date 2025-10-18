@@ -437,7 +437,7 @@ const SalesDataImportPanel = ({ connectionId, restaurantId, onSyncComplete }) =>
       {!isImporting && !syncResult && !error && (
         <div className="py-8 text-center text-gray-500">
           <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p className="text-sm">Select dates and click "Import"</p>
+          <p className="text-sm">Select dates and click &quot;Import&quot;</p>
         </div>
       )}
     </div>

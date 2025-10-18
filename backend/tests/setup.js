@@ -282,6 +282,10 @@ vi.mock('sequelize', () => {
   class MockModel {
     static associate() {}
     static init() { return this; }
+    static belongsTo() { return this; }
+    static hasMany() { return this; }
+    static hasOne() { return this; }
+    static belongsToMany() { return this; }
   }
   
   // Mock DataTypes functions

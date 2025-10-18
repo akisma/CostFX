@@ -27,6 +27,7 @@ import POSConnection from '../../src/models/POSConnection.js';
 import SquareCategory from '../../src/models/SquareCategory.js';
 import SquareMenuItem from '../../src/models/SquareMenuItem.js';
 import SquareInventoryCount from '../../src/models/SquareInventoryCount.js';
+import SquareLocation from '../../src/models/SquareLocation.js';
 import SquareOrder from '../../src/models/SquareOrder.js';
 import SquareOrderItem from '../../src/models/SquareOrderItem.js';
 import {
@@ -713,6 +714,18 @@ describe('SquareAdapter', () => {
       
       // Spy on the mock client's searchOrders method
       vi.spyOn(mockClient.ordersApi, 'searchOrders');
+
+      // Provide enabled locations for the adapter to process during sync
+      vi.spyOn(SquareLocation, 'findAll').mockResolvedValue([
+        {
+          id: 101,
+          posConnectionId: mockConnection.id,
+          restaurantId: mockConnection.restaurantId,
+          locationId: 'L72T9RBYVQG4J',
+          name: 'Main Square Location',
+          syncEnabled: true
+        }
+      ]);
     });
 
     it('should sync sales data from Square Orders API', async () => {

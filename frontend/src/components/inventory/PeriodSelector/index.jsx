@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import { useSelector, useDispatch } from 'react-redux';
 import DatePicker from 'react-datepicker';
 import { Calendar, ChevronDown, Plus, X } from 'lucide-react';
-import { format, parseISO, isValid } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { 
   fetchPeriods, 
-  setPeriodFilters, 
   setSelectedPeriod, 
   setSelectedDateRange 
 } from '../../../store/slices/inventorySlice';
@@ -42,7 +42,6 @@ const PeriodSelector = ({
   showDateRangePicker = true,
   
   // Validation
-  validateOverlap = true,
   minDate = null,
   maxDate = null,
   
@@ -66,8 +65,7 @@ const PeriodSelector = ({
   const {
     periods = [],
     loading = false,
-    error = null,
-    filters = {}
+    error = null
   } = useSelector(state => state.inventory.periodSelection || {});
   
   // Close dropdown when clicking outside
@@ -355,6 +353,38 @@ const PeriodSelector = ({
       )}
     </div>
   );
+};
+
+PeriodSelector.propTypes = {
+  mode: PropTypes.oneOf(['single', 'range']),
+  selectedPeriod: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    periodName: PropTypes.string,
+    periodStart: PropTypes.string,
+    periodEnd: PropTypes.string,
+    status: PropTypes.string,
+    description: PropTypes.string
+  }),
+  selectedDateRange: PropTypes.shape({
+    from: PropTypes.instanceOf(Date),
+    to: PropTypes.instanceOf(Date)
+  }),
+  onPeriodSelect: PropTypes.func,
+  onDateRangeSelect: PropTypes.func,
+  restaurantId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  periodTypes: PropTypes.arrayOf(PropTypes.string),
+  statusFilter: PropTypes.arrayOf(PropTypes.string),
+  maxPeriods: PropTypes.number,
+  placeholder: PropTypes.string,
+  className: PropTypes.string,
+  disabled: PropTypes.bool,
+  showCreateButton: PropTypes.bool,
+  showDateRangePicker: PropTypes.bool,
+  minDate: PropTypes.instanceOf(Date),
+  maxDate: PropTypes.instanceOf(Date),
+  onCreatePeriod: PropTypes.func,
+  onError: PropTypes.func,
+  onLoadingChange: PropTypes.func
 };
 
 export default PeriodSelector;

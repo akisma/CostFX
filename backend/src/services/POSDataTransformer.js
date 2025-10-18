@@ -40,12 +40,31 @@ const DEFAULT_PAR_LEVEL = 10.0;
 /**
  * POSDataTransformer class - Transforms POS data to inventory format
  */
+const DEFAULT_CATEGORY_MAPPER_OPTIONS = {
+    enableFallback: false
+};
+
 class POSDataTransformer {
-    constructor() {
-        this.categoryMapper = new CategoryMapper();
-        this.unitInferrer = new UnitInferrer();
-        this.varianceCalculator = new VarianceCalculator();
-        this.errorThreshold = ERROR_THRESHOLD_PCT;
+    constructor(options = {}) {
+        const {
+            categoryMapper,
+            categoryMapperOptions,
+            unitInferrer,
+            varianceCalculator,
+            errorThresholdPct
+        } = options;
+
+        const resolvedCategoryMapperOptions = {
+            ...DEFAULT_CATEGORY_MAPPER_OPTIONS,
+            ...(categoryMapperOptions || {})
+        };
+
+        this.categoryMapper = categoryMapper || new CategoryMapper(resolvedCategoryMapperOptions);
+        this.unitInferrer = unitInferrer || new UnitInferrer();
+        this.varianceCalculator = varianceCalculator || new VarianceCalculator();
+        this.errorThreshold = typeof errorThresholdPct === 'number'
+            ? errorThresholdPct
+            : ERROR_THRESHOLD_PCT;
     }
     
     /**

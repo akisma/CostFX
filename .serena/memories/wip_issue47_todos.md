@@ -7,9 +7,9 @@
 - [x] Implement CSVParserService with validation + tests
 
 ## Backend Phase 2 – Transformation Pipeline
-- [ ] Implement CSVInventoryTransformer with helper reuse and tests
-- [ ] Implement CSVSalesTransformer with fuzzy matching + tests
-- [ ] Build transform controllers/routes (dry-run, error thresholds) + integration tests
+- [x] Implement CSVInventoryTransformer with helper reuse and tests
+- [x] Implement CSVSalesTransformer with fuzzy matching + tests
+- [x] Build transform controllers/routes (dry-run, error thresholds) + integration tests
 
 ## Frontend CSV UI
 - [ ] New `/data-import/csv` route + module separate from Square components

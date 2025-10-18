@@ -9,7 +9,8 @@ import { SnackbarProvider } from 'notistack'
 vi.mock('../../../../src/services/api', () => ({
   default: {
     get: vi.fn(),
-    post: vi.fn()
+    post: vi.fn(),
+    delete: vi.fn()
   }
 }))
 
@@ -118,7 +119,7 @@ describe('ConnectionStatus Component - Disconnect Functionality', () => {
       // Before: Component called setIsDisconnecting(true) which didn't exist → ReferenceError
       // After: Component uses Redux loading.disconnect state → works correctly
 
-      api.post.mockResolvedValueOnce({
+      api.delete.mockResolvedValueOnce({
         data: {
           success: true,
           message: 'Square integration disconnected successfully',
@@ -142,7 +143,7 @@ describe('ConnectionStatus Component - Disconnect Functionality', () => {
 
       // Verify API was called (proves the function executed successfully)
       await waitFor(() => {
-        expect(api.post).toHaveBeenCalledWith('/pos/square/disconnect')
+        expect(api.delete).toHaveBeenCalledWith('/pos/square/connections')
       })
 
       // Verify Redux state was updated correctly
@@ -160,7 +161,7 @@ describe('ConnectionStatus Component - Disconnect Functionality', () => {
         resolveDisconnect = resolve
       })
       
-      api.post.mockReturnValueOnce(disconnectPromise)
+      api.delete.mockReturnValueOnce(disconnectPromise)
 
       renderConnectedStatus()
 
@@ -201,7 +202,7 @@ describe('ConnectionStatus Component - Disconnect Functionality', () => {
   describe('Disconnect Error Handling', () => {
     it('should handle disconnect errors gracefully', async () => {
       const errorMessage = 'Failed to revoke tokens'
-      api.post.mockRejectedValueOnce({
+      api.delete.mockRejectedValueOnce({
         response: {
           data: {
             error: errorMessage
@@ -235,7 +236,7 @@ describe('ConnectionStatus Component - Disconnect Functionality', () => {
     it('should call onDisconnect callback after successful disconnect', async () => {
       const onDisconnectMock = vi.fn()
       
-      api.post.mockResolvedValueOnce({
+      api.delete.mockResolvedValueOnce({
         data: {
           success: true,
           message: 'Square integration disconnected successfully',
@@ -281,7 +282,7 @@ describe('ConnectionStatus Component - Disconnect Functionality', () => {
       )
 
       // Verify API was NOT called (user cancelled)
-      expect(api.post).not.toHaveBeenCalled()
+      expect(api.delete).not.toHaveBeenCalled()
 
       // State should remain connected
       const state = store.getState().squareConnection

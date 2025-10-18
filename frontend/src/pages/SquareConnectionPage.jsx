@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useSnackbar } from 'notistack'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import {
@@ -18,7 +18,6 @@ import {
   fetchSquareStatus,
   selectIsConnected,
   selectShowLocationSelector,
-  selectCallbackProcessed,
   selectConnection,
   toggleLocationSelector
 } from '../store/slices/squareConnectionSlice'
@@ -44,10 +43,10 @@ const SquareConnectionPage = () => {
   const dispatch = useDispatch()
   const { enqueueSnackbar } = useSnackbar()
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   const isConnected = useSelector(selectIsConnected)
   const showLocationSelector = useSelector(selectShowLocationSelector)
-  const callbackProcessed = useSelector(selectCallbackProcessed)
   const connection = useSelector(selectConnection)
 
   const [view, setView] = useState('status') // 'status' | 'connect' | 'locations'
@@ -66,6 +65,7 @@ const SquareConnectionPage = () => {
     
     // Handle successful OAuth callback
     if (success === 'true' && !callbackProcessedLocal) {
+      setIsHandlingCallback(true)
       setCallbackProcessed(true)
       
       // Fetch the connection status to get the new connection
@@ -87,6 +87,7 @@ const SquareConnectionPage = () => {
           // Clean up URL parameters
           searchParams.delete('success')
           setSearchParams(searchParams, { replace: true })
+          setIsHandlingCallback(false)
         })
     }
     
@@ -100,6 +101,7 @@ const SquareConnectionPage = () => {
       searchParams.delete('error')
       setSearchParams(searchParams, { replace: true })
       setView('connect')
+      setIsHandlingCallback(false)
     }
   }, [searchParams, callbackProcessedLocal, dispatch, enqueueSnackbar, setSearchParams])
 

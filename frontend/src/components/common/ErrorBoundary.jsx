@@ -57,6 +57,7 @@ class ErrorBoundary extends Component {
   }
 
   render() {
+    const isDevelopment = import.meta.env.MODE === 'development'
     if (this.state.hasError) {
       // Custom fallback UI
       if (this.props.fallback) {
@@ -80,7 +81,7 @@ class ErrorBoundary extends Component {
                 We encountered an unexpected error. Please try refreshing the page.
               </p>
 
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {isDevelopment && this.state.error && (
                 <div className="mb-6 p-4 bg-red-50 rounded-lg">
                   <p className="text-sm font-semibold text-red-900 mb-2">Error Details:</p>
                   <p className="text-xs text-red-800 font-mono break-all">

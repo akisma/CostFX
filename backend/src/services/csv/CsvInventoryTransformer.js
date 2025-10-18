@@ -14,12 +14,19 @@ const LEGACY_CATEGORY_MAP = {
   dairy: 'dairy',
   dry_goods: 'dry_goods',
   beverages: 'beverages',
-  frozen: 'frozen',
+  frozen: 'other', // Map frozen to 'other' since it's not in the enum
   paper_disposables: 'dry_goods',
   cleaning_chemicals: 'other',
-  condiments: 'condiments',
-  spices: 'spices',
+  condiments: 'other', // Map condiments to 'other' since it's not in the enum
+  spices: 'other', // Map spices to 'other' since it's not in the enum
   other: 'other'
+};
+
+const DEFAULT_CATEGORY_MAPPER_OPTIONS = {
+  enableFallback: true,
+  fallbackCategory: 'other',
+  fallbackConfidence: 0.35,
+  fallbackMatchType: 'fallback'
 };
 
 function toNumber(value, fallback = 0) {
@@ -47,10 +54,33 @@ function slugify(value, fallback) {
 
 class CsvInventoryTransformer {
   constructor(options = {}) {
-    this.categoryMapper = options.categoryMapper || new CategoryMapper();
+    const categoryMapperOptions = {
+      ...DEFAULT_CATEGORY_MAPPER_OPTIONS,
+      ...(options.categoryMapperOptions || {})
+    };
+
+    this.categoryMapper = options.categoryMapper || new CategoryMapper(categoryMapperOptions);
     this.varianceCalculator = options.varianceCalculator || new VarianceCalculator();
-    this.posTransformer = options.posTransformer || new POSDataTransformer();
-    this.errorThreshold = options.errorThresholdPct || ERROR_THRESHOLD_PCT;
+
+    if (options.posTransformer) {
+      this.posTransformer = options.posTransformer;
+    } else {
+      const posTransformerOptions = {
+        ...(options.posTransformerOptions || {})
+      };
+      posTransformerOptions.categoryMapperOptions = {
+        enableFallback: false,
+        ...(options.posTransformerOptions?.categoryMapperOptions || {})
+      };
+
+      this.posTransformer = new POSDataTransformer(posTransformerOptions);
+    }
+
+    const thresholdPct = typeof options.errorThresholdPct === 'number'
+      ? options.errorThresholdPct
+      : ERROR_THRESHOLD_PCT;
+    this.errorThresholdPct = thresholdPct;
+    this.errorThreshold = thresholdPct / 100;
   }
 
   mapToLegacyCategory(categoryResult) {
@@ -168,7 +198,7 @@ class CsvInventoryTransformer {
 
     const errorRate = results.processedCount === 0
       ? 0
-      : (results.errorCount / results.processedCount) * 100;
+      : results.errorCount / results.processedCount;
     const exceededThreshold = errorRate > this.errorThreshold;
 
     logger.info('CsvInventoryTransformer: Transformation summary', {
@@ -179,13 +209,14 @@ class CsvInventoryTransformer {
       updated: results.updatedCount,
       skipped: results.skippedCount,
       errors: results.errorCount,
-      errorRate: Number(errorRate.toFixed(2)),
-      exceededThreshold
+      errorRatePct: Number((errorRate * 100).toFixed(2)),
+      exceededThreshold,
+      thresholdPct: this.errorThresholdPct
     });
 
     return {
       ...results,
-      errorRate: Number(errorRate.toFixed(3)),
+      errorRate: Number(errorRate.toFixed(4)),
       exceededThreshold,
       summary: {
         processed: results.processedCount,
