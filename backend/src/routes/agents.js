@@ -3,7 +3,67 @@ import agentService from '../agents/AgentService.js';
 
 const router = express.Router();
 
-// AI agent query endpoint
+/**
+ * @swagger
+ * /api/v1/agents/query:
+ *   post:
+ *     tags:
+ *       - Agents
+ *     summary: Query AI agents
+ *     description: Send a natural language query to the AI agent system for cost, inventory, or forecast analysis
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - query
+ *               - restaurantId
+ *             properties:
+ *               query:
+ *                 type: string
+ *                 example: What are my top 5 most expensive menu items?
+ *               agent:
+ *                 type: string
+ *                 enum: [CostAgent, InventoryAgent, ForecastAgent]
+ *                 description: Specific agent to route query to (optional, auto-detected if omitted)
+ *               restaurantId:
+ *                 type: integer
+ *                 example: 1
+ *               context:
+ *                 type: object
+ *                 description: Additional context for the query
+ *     responses:
+ *       200:
+ *         description: Successfully processed query
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 agent:
+ *                   type: string
+ *                 answer:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                 confidence:
+ *                   type: number
+ *                   format: float
+ *       400:
+ *         description: Missing required fields
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Query processing failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post('/query', async (req, res) => {
   try {
     const { agent, query, context, restaurantId } = req.body;
@@ -36,7 +96,62 @@ router.post('/query', async (req, res) => {
   }
 });
 
-// Get AI insights for restaurant
+/**
+ * @swagger
+ * /api/v1/agents/insights/{restaurantId}:
+ *   get:
+ *     tags:
+ *       - Agents
+ *     summary: Get AI insights for restaurant
+ *     description: Get comprehensive AI-generated insights from all agents (Cost, Inventory, Forecast)
+ *     parameters:
+ *       - in: path
+ *         name: restaurantId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Restaurant ID
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved insights
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 restaurantId:
+ *                   type: integer
+ *                 insights:
+ *                   type: object
+ *                   properties:
+ *                     cost:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     inventory:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     forecast:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                 generatedAt:
+ *                   type: string
+ *                   format: date-time
+ *       400:
+ *         description: Invalid restaurant ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Failed to get insights
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.get('/insights/:restaurantId', async (req, res) => {
   try {
     const { restaurantId } = req.params;
@@ -60,7 +175,86 @@ router.get('/insights/:restaurantId', async (req, res) => {
   }
 });
 
-// Calculate recipe cost
+/**
+ * @swagger
+ * /api/v1/agents/cost/recipe:
+ *   post:
+ *     tags:
+ *       - Agents
+ *     summary: Calculate recipe cost
+ *     description: Calculate total cost and per-portion cost for a recipe using AI-powered analysis
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - restaurantId
+ *               - ingredients
+ *             properties:
+ *               restaurantId:
+ *                 type: integer
+ *                 example: 1
+ *               recipeId:
+ *                 type: integer
+ *                 example: 5
+ *                 description: Recipe ID (optional, for existing recipes)
+ *               ingredients:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     ingredientId:
+ *                       type: integer
+ *                     quantity:
+ *                       type: number
+ *                       format: float
+ *                     unit:
+ *                       type: string
+ *               portions:
+ *                 type: integer
+ *                 default: 1
+ *                 example: 4
+ *     responses:
+ *       200:
+ *         description: Successfully calculated recipe cost
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalCost:
+ *                   type: number
+ *                   format: float
+ *                   example: 25.50
+ *                 costPerPortion:
+ *                   type: number
+ *                   format: float
+ *                   example: 6.38
+ *                 breakdown:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       ingredient:
+ *                         type: string
+ *                       cost:
+ *                         type: number
+ *                         format: float
+ *       400:
+ *         description: Invalid request body
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Calculation failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post('/cost/recipe', async (req, res) => {
   try {
     const { restaurantId, recipeId, ingredients, portions } = req.body;
@@ -91,7 +285,80 @@ router.post('/cost/recipe', async (req, res) => {
   }
 });
 
-// Analyze menu margins
+/**
+ * @swagger
+ * /api/v1/agents/cost/margins:
+ *   post:
+ *     tags:
+ *       - Agents
+ *     summary: Analyze menu margins
+ *     description: Analyze profit margins for menu items and identify optimization opportunities
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - restaurantId
+ *               - menuItems
+ *             properties:
+ *               restaurantId:
+ *                 type: integer
+ *                 example: 1
+ *               menuItems:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     itemId:
+ *                       type: integer
+ *                     salePrice:
+ *                       type: number
+ *                       format: float
+ *     responses:
+ *       200:
+ *         description: Successfully analyzed margins
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 averageMargin:
+ *                   type: number
+ *                   format: float
+ *                   example: 68.5
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       itemName:
+ *                         type: string
+ *                       cost:
+ *                         type: number
+ *                         format: float
+ *                       price:
+ *                         type: number
+ *                         format: float
+ *                       margin:
+ *                         type: number
+ *                         format: float
+ *                       recommendation:
+ *                         type: string
+ *       400:
+ *         description: Invalid request body
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Analysis failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post('/cost/margins', async (req, res) => {
   try {
     const { restaurantId, menuItems } = req.body;
@@ -150,7 +417,79 @@ router.post('/cost/optimize', async (req, res) => {
   }
 });
 
-// Forecast demand for menu items
+/**
+ * @swagger
+ * /api/v1/agents/forecast/demand:
+ *   post:
+ *     tags:
+ *       - Agents
+ *     summary: Forecast demand
+ *     description: Forecast demand for menu items using time series analysis and AI predictions
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - restaurantId
+ *             properties:
+ *               restaurantId:
+ *                 type: integer
+ *                 example: 1
+ *               forecastDays:
+ *                 type: integer
+ *                 default: 30
+ *                 example: 30
+ *               menuItems:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 description: Specific menu items to forecast (optional, forecasts all if omitted)
+ *               includeConfidenceIntervals:
+ *                 type: boolean
+ *                 default: true
+ *     responses:
+ *       200:
+ *         description: Successfully generated forecast
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 forecast:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       date:
+ *                         type: string
+ *                         format: date
+ *                       predictedDemand:
+ *                         type: number
+ *                         format: float
+ *                       confidence:
+ *                         type: object
+ *                         properties:
+ *                           lower:
+ *                             type: number
+ *                             format: float
+ *                           upper:
+ *                             type: number
+ *                             format: float
+ *       400:
+ *         description: Invalid request body
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Forecast failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post('/forecast/demand', async (req, res) => {
   try {
     const { restaurantId, forecastDays, menuItems, includeConfidenceIntervals } = req.body;
@@ -284,7 +623,47 @@ router.post('/forecast/ingredients', async (req, res) => {
   }
 });
 
-// Get agent system health
+/**
+ * @swagger
+ * /api/v1/agents/health:
+ *   get:
+ *     tags:
+ *       - Agents
+ *     summary: Get agent system health
+ *     description: Check the health status of the AI agent system
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved health status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 healthy:
+ *                   type: boolean
+ *                   example: true
+ *                 agents:
+ *                   type: object
+ *                   properties:
+ *                     CostAgent:
+ *                       type: string
+ *                       example: healthy
+ *                     InventoryAgent:
+ *                       type: string
+ *                       example: healthy
+ *                     ForecastAgent:
+ *                       type: string
+ *                       example: healthy
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *       500:
+ *         description: Health check failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.get('/health', async (req, res) => {
   try {
     const health = await agentService.getSystemHealth();
@@ -299,7 +678,55 @@ router.get('/health', async (req, res) => {
   }
 });
 
-// Get agent statuses
+/**
+ * @swagger
+ * /api/v1/agents/status:
+ *   get:
+ *     tags:
+ *       - Agents
+ *     summary: Get agent statuses
+ *     description: Get detailed status information for all AI agents
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved agent statuses
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 agents:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                         example: CostAgent
+ *                       status:
+ *                         type: string
+ *                         enum: [active, inactive, error]
+ *                       capabilities:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                       metrics:
+ *                         type: object
+ *                         properties:
+ *                           requests:
+ *                             type: integer
+ *                           successRate:
+ *                             type: number
+ *                             format: float
+ *                           avgResponseTime:
+ *                             type: number
+ *                             format: float
+ *       500:
+ *         description: Status check failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.get('/status', async (req, res) => {
   try {
     const statuses = await agentService.getAgentStatuses();
