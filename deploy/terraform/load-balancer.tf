@@ -8,22 +8,21 @@
 module "alb_security_group" {
   count  = var.deployment_type == "ecs" ? 1 : 0
   source = "terraform-aws-modules/security-group/aws"
-  
+
   name        = "${var.app_name}-${var.environment}-alb"
   description = "Security group for Application Load Balancer"
   vpc_id      = module.vpc.vpc_id
-  
+
   # Predefined rules for HTTP/HTTPS
   ingress_rules       = ["http-80-tcp", "https-443-tcp"]
   ingress_cidr_blocks = var.allowed_cidr_blocks
-  
+
   # Allow all outbound traffic
   egress_rules = ["all-all"]
-  
+
   tags = {
     Name = "${var.app_name}-${var.environment}-alb-sg"
   }
-}
 }
 
 # S3 Bucket for ALB Access Logs
@@ -36,7 +35,7 @@ resource "aws_s3_bucket" "alb_logs" {
   count         = var.deployment_type == "ecs" ? 1 : 0
   bucket        = "${var.app_name}-${var.environment}-alb-logs-${random_id.bucket_suffix[0].hex}"
   force_destroy = true
-  
+
   tags = {
     Name = "${var.app_name}-${var.environment}-alb-logs"
   }
@@ -45,14 +44,14 @@ resource "aws_s3_bucket" "alb_logs" {
 resource "aws_s3_bucket_policy" "alb_logs" {
   count  = var.deployment_type == "ecs" ? 1 : 0
   bucket = aws_s3_bucket.alb_logs[0].id
-  
+
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
         Effect = "Allow"
         Principal = {
-          AWS = "arn:aws:iam::797873946194:root"  # ELB service account for us-west-2
+          AWS = "arn:aws:iam::797873946194:root" # ELB service account for us-west-2
         }
         Action   = "s3:PutObject"
         Resource = "${aws_s3_bucket.alb_logs[0].arn}/*"

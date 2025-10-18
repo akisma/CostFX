@@ -4,9 +4,9 @@
 
 # WAF Web ACL for Application Load Balancer
 resource "aws_wafv2_web_acl" "main" {
-  name  = "${var.app_name}-${var.environment}-waf"
+  name        = "${var.app_name}-${var.environment}-waf"
   description = "WAF for ${var.app_name} Application Load Balancer"
-  scope = "REGIONAL"
+  scope       = "REGIONAL"
 
   default_action {
     allow {}
@@ -84,7 +84,7 @@ resource "aws_wafv2_web_acl" "main" {
 
     statement {
       rate_based_statement {
-        limit              = 2000  # requests per 5-minute window
+        limit              = 2000 # requests per 5-minute window
         aggregate_key_type = "IP"
 
         # Optional: scope to specific paths that need more protection
@@ -143,7 +143,7 @@ resource "aws_wafv2_web_acl" "main" {
         geo_match_statement {
           # Block countries known for high levels of malicious traffic
           # Adjust this list based on your application's needs
-          country_codes = ["CN", "RU", "KP"]  # China, Russia, North Korea
+          country_codes = ["CN", "RU", "KP"] # China, Russia, North Korea
         }
       }
 

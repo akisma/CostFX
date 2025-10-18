@@ -178,7 +178,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections_high" {
   namespace           = "AWS/RDS"
   period              = "300"
   statistic           = "Average"
-  threshold           = "15"  # t3.micro has max ~20 connections
+  threshold           = "15" # t3.micro has max ~20 connections
   alarm_description   = "This metric monitors RDS database connections - triggers when >15 connections"
   alarm_actions       = [aws_sns_topic.alerts.arn]
   ok_actions          = [aws_sns_topic.alerts.arn]
@@ -202,7 +202,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_free_storage_low" {
   namespace           = "AWS/RDS"
   period              = "300"
   statistic           = "Average"
-  threshold           = "2147483648"  # 2GB in bytes
+  threshold           = "2147483648" # 2GB in bytes
   alarm_description   = "This metric monitors RDS free storage space - triggers when <2GB remaining"
   alarm_actions       = [aws_sns_topic.alerts.arn]
   ok_actions          = [aws_sns_topic.alerts.arn]

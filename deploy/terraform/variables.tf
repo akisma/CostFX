@@ -114,7 +114,7 @@ variable "domain_name" {
 variable "allowed_cidr_blocks" {
   description = "CIDR blocks allowed to access the load balancer"
   type        = list(string)
-  default     = ["0.0.0.0/0"]  # Restrict this in production
+  default     = ["0.0.0.0/0"] # Restrict this in production
 }
 
 # Docker Images

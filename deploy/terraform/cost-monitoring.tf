@@ -14,17 +14,17 @@ resource "aws_budgets_budget" "monthly_cost" {
   # Alert at 80% of budget
   notification {
     comparison_operator        = "GREATER_THAN"
-    threshold                 = 80
-    threshold_type            = "PERCENTAGE"
-    notification_type         = "ACTUAL"
+    threshold                  = 80
+    threshold_type             = "PERCENTAGE"
+    notification_type          = "ACTUAL"
     subscriber_email_addresses = [var.alert_email]
   }
 
   # Alert at 90% of budget
   notification {
     comparison_operator        = "GREATER_THAN"
-    threshold                 = 90
-    threshold_type            = "PERCENTAGE"
+    threshold                  = 90
+    threshold_type             = "PERCENTAGE"
     notification_type          = "ACTUAL"
     subscriber_email_addresses = [var.alert_email]
   }
@@ -32,8 +32,8 @@ resource "aws_budgets_budget" "monthly_cost" {
   # Forecasted alert at 100%
   notification {
     comparison_operator        = "GREATER_THAN"
-    threshold                 = 100
-    threshold_type            = "PERCENTAGE"
+    threshold                  = 100
+    threshold_type             = "PERCENTAGE"
     notification_type          = "FORECASTED"
     subscriber_email_addresses = [var.alert_email]
   }
@@ -44,7 +44,7 @@ resource "aws_budgets_budget" "monthly_cost" {
 # Daily Cost Budget for Development Environment
 resource "aws_budgets_budget" "daily_cost" {
   count = var.environment == "dev" ? 1 : 0
-  
+
   name              = "${var.app_name}-${var.environment}-daily-budget"
   budget_type       = "COST"
   limit_amount      = "5"
@@ -54,8 +54,8 @@ resource "aws_budgets_budget" "daily_cost" {
 
   notification {
     comparison_operator        = "GREATER_THAN"
-    threshold                 = 100
-    threshold_type            = "PERCENTAGE"
+    threshold                  = 100
+    threshold_type             = "PERCENTAGE"
     notification_type          = "ACTUAL"
     subscriber_email_addresses = [var.alert_email]
   }
@@ -74,8 +74,8 @@ resource "aws_budgets_budget" "ecs_usage" {
 
   notification {
     comparison_operator        = "GREATER_THAN"
-    threshold                 = 80
-    threshold_type            = "PERCENTAGE"
+    threshold                  = 80
+    threshold_type             = "PERCENTAGE"
     notification_type          = "ACTUAL"
     subscriber_email_addresses = [var.alert_email]
   }
@@ -202,11 +202,11 @@ resource "aws_lambda_function" "cost_optimizer" {
 
   filename         = "cost_optimizer.zip"
   function_name    = "${var.app_name}-${var.environment}-cost-optimizer"
-  role            = aws_iam_role.lambda_cost_optimizer[0].arn
-  handler         = "index.handler"
+  role             = aws_iam_role.lambda_cost_optimizer[0].arn
+  handler          = "index.handler"
   source_code_hash = data.archive_file.cost_optimizer_zip[0].output_base64sha256
-  runtime         = "python3.11"
-  timeout         = 300
+  runtime          = "python3.11"
+  timeout          = 300
 
   environment {
     variables = {
@@ -224,12 +224,12 @@ resource "aws_lambda_function" "cost_optimizer" {
 # Lambda function code
 data "archive_file" "cost_optimizer_zip" {
   count = var.environment == "dev" ? 1 : 0
-  
+
   type        = "zip"
   output_path = "cost_optimizer.zip"
-  
+
   source {
-    content = <<EOF
+    content  = <<EOF
 import boto3
 import json
 import os
@@ -307,7 +307,7 @@ EOF
 # IAM role for Lambda cost optimizer
 resource "aws_iam_role" "lambda_cost_optimizer" {
   count = var.environment == "dev" ? 1 : 0
-  
+
   name = "${var.app_name}-${var.environment}-lambda-cost-optimizer"
 
   assume_role_policy = jsonencode({
@@ -332,7 +332,7 @@ resource "aws_iam_role" "lambda_cost_optimizer" {
 # IAM policy for Lambda cost optimizer
 resource "aws_iam_role_policy" "lambda_cost_optimizer" {
   count = var.environment == "dev" ? 1 : 0
-  
+
   name = "${var.app_name}-${var.environment}-lambda-cost-optimizer-policy"
   role = aws_iam_role.lambda_cost_optimizer[0].id
 
@@ -367,7 +367,7 @@ resource "aws_iam_role_policy" "lambda_cost_optimizer" {
 # CloudWatch Event Rule for daily cost optimization
 resource "aws_cloudwatch_event_rule" "cost_optimizer_schedule" {
   count = var.environment == "dev" ? 1 : 0
-  
+
   name                = "${var.app_name}-${var.environment}-cost-optimizer-schedule"
   description         = "Trigger cost optimizer lambda daily"
   schedule_expression = "rate(1 day)"
@@ -381,7 +381,7 @@ resource "aws_cloudwatch_event_rule" "cost_optimizer_schedule" {
 # CloudWatch Event Target
 resource "aws_cloudwatch_event_target" "cost_optimizer_target" {
   count = var.environment == "dev" ? 1 : 0
-  
+
   rule      = aws_cloudwatch_event_rule.cost_optimizer_schedule[0].name
   target_id = "CostOptimizerTarget"
   arn       = aws_lambda_function.cost_optimizer[0].arn
@@ -390,7 +390,7 @@ resource "aws_cloudwatch_event_target" "cost_optimizer_target" {
 # Lambda permission for CloudWatch Events
 resource "aws_lambda_permission" "allow_cloudwatch" {
   count = var.environment == "dev" ? 1 : 0
-  
+
   statement_id  = "AllowExecutionFromCloudWatch"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.cost_optimizer[0].function_name

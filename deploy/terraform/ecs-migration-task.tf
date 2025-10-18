@@ -16,17 +16,17 @@ resource "aws_ecs_task_definition" "migration" {
 
   container_definitions = jsonencode([
     {
-      name  = "migration"
+      name = "migration"
       # Use SHA-tagged image if provided, fallback to latest for initial deployment
       # GitHub Actions workflow dynamically updates this with the latest backend image
       image = var.backend_image != "" ? var.backend_image : "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-${var.environment}-backend:latest"
-      
+
       # Override the default command to run migrations with enhanced logging
       command = [
-        "/bin/sh", "-c", 
+        "/bin/sh", "-c",
         "echo '🚀 Migration container starting...' && echo \"Node version: $(node --version)\" && echo \"NPM version: $(npm --version)\" && echo \"Working directory: $(pwd)\" && ls -la && echo '📦 Running migration with verbose output...' && npm run migrate:reset-dev 2>&1 | tee /tmp/migration.log && echo '✅ Migration completed successfully' || (echo '❌ Migration failed with exit code:' $? && cat /tmp/migration.log && exit 1)"
       ]
-      
+
       environment = [
         {
           name  = "NODE_ENV"
@@ -71,9 +71,9 @@ resource "aws_cloudwatch_log_group" "migration" {
   count             = var.deployment_type == "ecs" ? 1 : 0
   name              = "/ecs/${var.app_name}-${var.environment}-migration"
   retention_in_days = 30
-  
+
   tags = {
-    Name = "${var.app_name}-${var.environment}-migration-logs"
+    Name    = "${var.app_name}-${var.environment}-migration-logs"
     Purpose = "Database migration logs for debugging and auditing"
   }
 }

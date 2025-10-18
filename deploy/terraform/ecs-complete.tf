@@ -80,11 +80,11 @@ resource "aws_ecs_task_definition" "backend" {
 
   container_definitions = jsonencode([
     {
-      name  = "backend"
+      name = "backend"
       # Use SHA-tagged image if provided, fallback to latest for initial deployment
       # GitHub Actions workflow dynamically updates this during deployment
       image = var.backend_image != "" ? var.backend_image : "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-${var.environment}-backend:latest"
-      
+
       portMappings = [
         {
           containerPort = 3001
@@ -186,11 +186,11 @@ resource "aws_ecs_task_definition" "frontend" {
 
   container_definitions = jsonencode([
     {
-      name  = "frontend"
+      name = "frontend"
       # Use SHA-tagged image if provided, fallback to latest for initial deployment
       # GitHub Actions workflow dynamically updates this during deployment
       image = var.frontend_image != "" ? var.frontend_image : "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-${var.environment}-frontend:latest"
-      
+
       portMappings = [
         {
           containerPort = 80
@@ -234,9 +234,9 @@ resource "aws_cloudwatch_log_group" "backend" {
   count             = var.deployment_type == "ecs" ? 1 : 0
   name              = "/ecs/${var.app_name}-${var.environment}-backend"
   retention_in_days = 30
-  
+
   tags = {
-    Name = "${var.app_name}-${var.environment}-backend-logs"
+    Name    = "${var.app_name}-${var.environment}-backend-logs"
     Purpose = "Application logs for debugging and monitoring"
   }
 }
@@ -245,9 +245,9 @@ resource "aws_cloudwatch_log_group" "frontend" {
   count             = var.deployment_type == "ecs" ? 1 : 0
   name              = "/ecs/${var.app_name}-${var.environment}-frontend"
   retention_in_days = 30
-  
+
   tags = {
-    Name = "${var.app_name}-${var.environment}-frontend-logs"
+    Name    = "${var.app_name}-${var.environment}-frontend-logs"
     Purpose = "Application logs for debugging and monitoring"
   }
 }

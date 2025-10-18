@@ -165,13 +165,13 @@ resource "aws_cloudwatch_log_group" "ec2_app" {
 # User data script for EC2 instance
 locals {
   ec2_user_data = var.deployment_type == "ec2" ? templatefile("${path.module}/user_data_ec2.sh", {
-    app_name         = var.app_name
-    environment      = var.environment
-    aws_region       = var.aws_region
-    backend_image    = var.backend_image != "" ? var.backend_image : "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-${var.environment}-backend:latest"
-    frontend_image   = var.frontend_image != "" ? var.frontend_image : "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-${var.environment}-frontend:latest"
-    db_endpoint      = module.rds.db_instance_endpoint
-    log_group        = aws_cloudwatch_log_group.ec2_app[0].name
+    app_name       = var.app_name
+    environment    = var.environment
+    aws_region     = var.aws_region
+    backend_image  = var.backend_image != "" ? var.backend_image : "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-${var.environment}-backend:latest"
+    frontend_image = var.frontend_image != "" ? var.frontend_image : "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-${var.environment}-frontend:latest"
+    db_endpoint    = module.rds.db_instance_endpoint
+    log_group      = aws_cloudwatch_log_group.ec2_app[0].name
   }) : ""
 }
 
@@ -220,7 +220,7 @@ resource "aws_instance" "app" {
 
   lifecycle {
     ignore_changes = [
-      ami,  # Prevent recreation when AMI updates
+      ami, # Prevent recreation when AMI updates
     ]
   }
 }

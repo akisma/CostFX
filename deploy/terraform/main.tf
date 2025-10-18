@@ -15,7 +15,7 @@ terraform {
       version = ">= 2.0"
     }
   }
-  
+
   # Configure for remote state
   backend "s3" {
     bucket = "costfx-tf-state-568530517605"
@@ -27,7 +27,7 @@ terraform {
 # Configure the AWS Provider
 provider "aws" {
   region = var.aws_region
-  
+
   default_tags {
     tags = {
       Project     = "CostFX"

@@ -65,7 +65,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
 
     # Delete logs older than 7 years (compliance requirement)
     expiration {
-      days = 2555  # 7 years
+      days = 2555 # 7 years
     }
 
     # Clean up incomplete multipart uploads after 7 days
@@ -117,7 +117,7 @@ resource "aws_s3_bucket_request_payment_configuration" "alb_logs" {
 # Enhanced S3 Bucket Policy for ALB logs with additional security
 resource "aws_s3_bucket_policy" "alb_logs_enhanced" {
   bucket = aws_s3_bucket.alb_logs.id
-  
+
   # This will replace the existing bucket policy
   policy = jsonencode({
     Version = "2012-10-17"
@@ -126,7 +126,7 @@ resource "aws_s3_bucket_policy" "alb_logs_enhanced" {
         Sid    = "AllowELBServiceAccount"
         Effect = "Allow"
         Principal = {
-          AWS = "arn:aws:iam::797873946194:root"  # ELB service account for us-west-2
+          AWS = "arn:aws:iam::797873946194:root" # ELB service account for us-west-2
         }
         Action   = "s3:PutObject"
         Resource = "${aws_s3_bucket.alb_logs.arn}/*"
@@ -140,16 +140,16 @@ resource "aws_s3_bucket_policy" "alb_logs_enhanced" {
         Sid    = "AllowELBServiceAccountDeliveryCheck"
         Effect = "Allow"
         Principal = {
-          AWS = "arn:aws:iam::797873946194:root"  # ELB service account for us-west-2
+          AWS = "arn:aws:iam::797873946194:root" # ELB service account for us-west-2
         }
         Action   = "s3:GetBucketAcl"
         Resource = aws_s3_bucket.alb_logs.arn
       },
       {
-        Sid    = "DenyInsecureConnections"
-        Effect = "Deny"
+        Sid       = "DenyInsecureConnections"
+        Effect    = "Deny"
         Principal = "*"
-        Action = "s3:*"
+        Action    = "s3:*"
         Resource = [
           aws_s3_bucket.alb_logs.arn,
           "${aws_s3_bucket.alb_logs.arn}/*"
