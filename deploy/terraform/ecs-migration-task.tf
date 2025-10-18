@@ -1,15 +1,18 @@
 # ============================================================================
 # ECS MIGRATION TASK DEFINITION
 # ============================================================================
+# Only deployed when deployment_type = "ecs"
+# ============================================================================
 
 # Migration-specific task definition
 resource "aws_ecs_task_definition" "migration" {
+  count                    = var.deployment_type == "ecs" ? 1 : 0
   family                   = "${var.app_name}-${var.environment}-migration"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role[0].arn
 
   container_definitions = jsonencode([
     {
@@ -65,6 +68,7 @@ resource "aws_ecs_task_definition" "migration" {
 
 # CloudWatch log group for migration logs
 resource "aws_cloudwatch_log_group" "migration" {
+  count             = var.deployment_type == "ecs" ? 1 : 0
   name              = "/ecs/${var.app_name}-${var.environment}-migration"
   retention_in_days = 30
   
