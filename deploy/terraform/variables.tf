@@ -5,6 +5,17 @@ variable "environment" {
   default     = "dev"
 }
 
+# Deployment configuration
+variable "deployment_type" {
+  description = "Deployment type (ecs or ec2)"
+  type        = string
+  default     = "ec2"
+  validation {
+    condition     = contains(["ecs", "ec2"], var.deployment_type)
+    error_message = "Deployment type must be either 'ecs' or 'ec2'."
+  }
+}
+
 variable "aws_region" {
   description = "AWS region"
   type        = string
@@ -128,6 +139,19 @@ variable "alert_email" {
     condition     = can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.alert_email)) || var.alert_email == ""
     error_message = "The alert_email value must be a valid email address or empty string."
   }
+}
+
+# EC2 Configuration (for ec2 deployment type)
+variable "ec2_instance_type" {
+  description = "EC2 instance type for simplified deployment"
+  type        = string
+  default     = "t3.medium"
+}
+
+variable "ec2_key_name" {
+  description = "EC2 key pair name for SSH access (optional)"
+  type        = string
+  default     = ""
 }
 
 # Application Secrets - stored in SSM Parameter Store

@@ -1,9 +1,12 @@
 # ============================================================================
 # APPLICATION LOAD BALANCER (Raw AWS Resources - Best Practice for ALB)
 # ============================================================================
+# Only deployed when deployment_type = "ecs"
+# ============================================================================
 
 # ALB Security Group Module (terraform-aws-modules DOES exist for security groups)
 module "alb_security_group" {
+  count  = var.deployment_type == "ecs" ? 1 : 0
   source = "terraform-aws-modules/security-group/aws"
   
   name        = "${var.app_name}-${var.environment}-alb"
@@ -21,14 +24,17 @@ module "alb_security_group" {
     Name = "${var.app_name}-${var.environment}-alb-sg"
   }
 }
+}
 
 # S3 Bucket for ALB Access Logs
 resource "random_id" "bucket_suffix" {
+  count       = var.deployment_type == "ecs" ? 1 : 0
   byte_length = 4
 }
 
 resource "aws_s3_bucket" "alb_logs" {
-  bucket        = "${var.app_name}-${var.environment}-alb-logs-${random_id.bucket_suffix.hex}"
+  count         = var.deployment_type == "ecs" ? 1 : 0
+  bucket        = "${var.app_name}-${var.environment}-alb-logs-${random_id.bucket_suffix[0].hex}"
   force_destroy = true
   
   tags = {
@@ -37,7 +43,8 @@ resource "aws_s3_bucket" "alb_logs" {
 }
 
 resource "aws_s3_bucket_policy" "alb_logs" {
-  bucket = aws_s3_bucket.alb_logs.id
+  count  = var.deployment_type == "ecs" ? 1 : 0
+  bucket = aws_s3_bucket.alb_logs[0].id
   
   policy = jsonencode({
     Version = "2012-10-17"
@@ -48,7 +55,7 @@ resource "aws_s3_bucket_policy" "alb_logs" {
           AWS = "arn:aws:iam::797873946194:root"  # ELB service account for us-west-2
         }
         Action   = "s3:PutObject"
-        Resource = "${aws_s3_bucket.alb_logs.arn}/*"
+        Resource = "${aws_s3_bucket.alb_logs[0].arn}/*"
       }
     ]
   })
@@ -56,17 +63,18 @@ resource "aws_s3_bucket_policy" "alb_logs" {
 
 # Application Load Balancer (Raw AWS Resource - Standard Approach)
 resource "aws_lb" "main" {
+  count              = var.deployment_type == "ecs" ? 1 : 0
   name               = "${var.app_name}-${var.environment}-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [module.alb_security_group.security_group_id]
+  security_groups    = [module.alb_security_group[0].security_group_id]
   subnets            = module.vpc.public_subnets
 
   enable_deletion_protection = var.environment == "prod" ? true : false
 
   # Access logging (best practice for production)
   access_logs {
-    bucket  = aws_s3_bucket.alb_logs.id
+    bucket  = aws_s3_bucket.alb_logs[0].id
     prefix  = "${var.app_name}-${var.environment}"
     enabled = true
   }
@@ -78,6 +86,7 @@ resource "aws_lb" "main" {
 
 # Target Group for Backend
 resource "aws_lb_target_group" "backend" {
+  count       = var.deployment_type == "ecs" ? 1 : 0
   name        = "${var.app_name}-${var.environment}-backend-tg"
   port        = 3001
   protocol    = "HTTP"
@@ -113,6 +122,7 @@ resource "aws_lb_target_group" "backend" {
 
 # Target Group for Frontend
 resource "aws_lb_target_group" "frontend" {
+  count       = var.deployment_type == "ecs" ? 1 : 0
   name        = "${var.app_name}-${var.environment}-frontend-tg"
   port        = 80
   protocol    = "HTTP"
@@ -141,7 +151,8 @@ resource "aws_lb_target_group" "frontend" {
 
 # HTTP Listener (redirect to HTTPS)
 resource "aws_lb_listener" "main" {
-  load_balancer_arn = aws_lb.main.arn
+  count             = var.deployment_type == "ecs" ? 1 : 0
+  load_balancer_arn = aws_lb.main[0].arn
   port              = "80"
   protocol          = "HTTP"
 
@@ -163,7 +174,8 @@ resource "aws_lb_listener" "main" {
 
 # HTTPS Listener
 resource "aws_lb_listener" "https" {
-  load_balancer_arn = aws_lb.main.arn
+  count             = var.deployment_type == "ecs" ? 1 : 0
+  load_balancer_arn = aws_lb.main[0].arn
   port              = "443"
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
@@ -187,12 +199,13 @@ resource "aws_lb_listener" "https" {
 
 # Listener Rule for API traffic (HTTPS)
 resource "aws_lb_listener_rule" "https_api" {
-  listener_arn = aws_lb_listener.https.arn
+  count        = var.deployment_type == "ecs" ? 1 : 0
+  listener_arn = aws_lb_listener.https[0].arn
   priority     = 100
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.backend.arn
+    target_group_arn = aws_lb_target_group.backend[0].arn
   }
 
   condition {
@@ -208,12 +221,13 @@ resource "aws_lb_listener_rule" "https_api" {
 
 # Listener Rule for Frontend traffic (HTTPS)
 resource "aws_lb_listener_rule" "https_frontend" {
-  listener_arn = aws_lb_listener.https.arn
+  count        = var.deployment_type == "ecs" ? 1 : 0
+  listener_arn = aws_lb_listener.https[0].arn
   priority     = 200
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.frontend.arn
+    target_group_arn = aws_lb_target_group.frontend[0].arn
   }
 
   condition {

@@ -16,8 +16,8 @@ module "vpc" {
   enable_dns_hostnames = true
   enable_dns_support   = true
   
-  # NAT Gateway configuration
-  enable_nat_gateway = true
+  # NAT Gateway configuration - only needed for ECS deployment with private subnets
+  enable_nat_gateway = var.deployment_type == "ecs" ? true : false
   enable_vpn_gateway = false
   single_nat_gateway = var.environment == "dev" ? true : false  # Single NAT for dev, multi for prod
   
