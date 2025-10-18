@@ -1,0 +1,1 @@
+Oct 18 2025: Cleared all ESLint errors in the Vite React frontend by fixing prop-types (PeriodSelector, POS Square panels), escaping unescaped quotes, replacing unused imports, and stabilizing hooks (useDataReview via refs, useCallback in POS panels). Updated CSV and inventory test suites to import Vitest globals explicitly so npm run lint:frontend now passes cleanly.

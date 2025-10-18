@@ -20,9 +20,24 @@ const MetricCard = ({ title, value, icon, trend = null, color = 'blue' }) => {
         </div>
         <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
           <div className="h-6 w-6 text-center">
-            {icon && (typeof icon === 'function' || typeof icon === 'object') 
-              ? React.createElement(icon, { className: "h-6 w-6" }) 
-              : icon}
+            {(() => {
+              if (!icon) return null
+
+              if (React.isValidElement(icon)) {
+                return React.cloneElement(icon, { className: 'h-6 w-6' })
+              }
+
+              if (typeof icon === 'function' || (typeof icon === 'object' && icon !== null)) {
+                const IconComponent = icon
+                return <IconComponent className="h-6 w-6" />
+              }
+
+              if (typeof icon === 'string') {
+                return icon
+              }
+
+              return null
+            })()}
           </div>
         </div>
       </div>
@@ -49,7 +64,7 @@ const MetricCard = ({ title, value, icon, trend = null, color = 'blue' }) => {
 MetricCard.propTypes = {
   title: PropTypes.string.isRequired,
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-  icon: PropTypes.oneOfType([PropTypes.func, PropTypes.string, PropTypes.element]),
+  icon: PropTypes.oneOfType([PropTypes.elementType, PropTypes.node]),
   trend: PropTypes.shape({
     value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     isPositive: PropTypes.bool.isRequired

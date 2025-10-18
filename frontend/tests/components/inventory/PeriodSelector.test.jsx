@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
@@ -8,7 +8,14 @@ import inventoryReducer from '../../../src/store/slices/inventorySlice';
 
 // Mock react-datepicker
 vi.mock('react-datepicker', () => ({
-  default: ({ selected, onChange, selectsRange, inline, startDate, endDate, ...props }) => {
+  default: (props) => {
+    const {
+      onChange,
+      selectsRange,
+      startDate,
+      endDate,
+      className
+    } = props;
     const handleDateClick = (date) => {
       if (selectsRange) {
         // For range selection, simulate two clicks
@@ -28,7 +35,7 @@ vi.mock('react-datepicker', () => ({
     };
     
     return (
-      <div data-testid="mock-datepicker" {...props}>
+      <div data-testid="mock-datepicker" className={className}>
         <button
           onClick={() => handleDateClick(new Date('2024-01-15'))}
           data-testid="date-button-start"
@@ -48,7 +55,7 @@ vi.mock('react-datepicker', () => ({
 
 // Mock date-fns functions
 vi.mock('date-fns', () => ({
-  format: vi.fn((date, formatStr) => {
+  format: vi.fn((date) => {
     if (date instanceof Date) {
       return date.toLocaleDateString();
     }
@@ -138,6 +145,9 @@ const createMockStore = (initialState = {}) => {
     reducer: {
       inventory: inventoryReducer
     },
+    middleware: (getDefaultMiddleware) => getDefaultMiddleware({
+      serializableCheck: false
+    }),
     preloadedState: {
       inventory: {
         ...defaultState,

@@ -10,6 +10,7 @@ import WasteAnalysis from './components/analysis/WasteAnalysis'
 import ForecastView from './components/analysis/ForecastView'
 import ForecastTest from './components/ForecastTest'
 import SquareConnectionPage from './pages/SquareConnectionPage'
+import CsvDataImportPage from './pages/CsvDataImportPage'
 
 // Extract routes into a separate component that doesn't include the router
 export function AppRoutes() {
@@ -25,6 +26,7 @@ export function AppRoutes() {
           <Route path="/analysis/waste" element={<WasteAnalysis />} />
           <Route path="/analysis/forecast" element={<ForecastView />} />
           <Route path="/test/forecast" element={<ForecastTest />} />
+          <Route path="/data-import/csv" element={<CsvDataImportPage />} />
           <Route path="/settings/integrations/square" element={<SquareConnectionPage />} />
           <Route path="/settings/integrations/square/callback" element={<SquareConnectionPage />} />
         </Routes>

@@ -4,3 +4,6 @@ export { default as LocationSelector } from './LocationSelector'
 export { default as DataImportPanel } from './DataImportPanel'
 export { default as TransformationPanel } from './TransformationPanel'
 export { default as DataReviewPanel } from './DataReviewPanel'
+export { default as SalesDataImportPanel } from './SalesDataImportPanel'
+export { default as SalesDataReviewPanel } from './SalesDataReviewPanel'
+

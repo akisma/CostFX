@@ -5,7 +5,8 @@ import { configureStore } from '@reduxjs/toolkit'
 vi.mock('../../src/services/api', () => ({
   default: {
     get: vi.fn(),
-    post: vi.fn()
+    post: vi.fn(),
+    delete: vi.fn()
   }
 }))
 
@@ -432,7 +433,7 @@ describe('squareConnectionSlice', () => {
         }
       }
 
-      api.post.mockResolvedValueOnce(mockResponse)
+      api.delete.mockResolvedValueOnce(mockResponse)
 
       await store.dispatch(disconnectSquare(1))
 
@@ -447,8 +448,8 @@ describe('squareConnectionSlice', () => {
     })
 
     it('should handle disconnect failure', async () => {
-      const errorMessage = 'Failed to disconnect'
-      api.post.mockRejectedValueOnce({
+      const errorMessage = 'Failed to disconnect Square'
+      api.delete.mockRejectedValueOnce({
         response: { data: { error: errorMessage } }
       })
 

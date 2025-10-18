@@ -88,7 +88,7 @@ export default (sequelize) => {
       allowNull: false,
       field: 'source_pos_provider',
       validate: {
-        isIn: [['square', 'toast', 'clover']]
+        isIn: [['square', 'toast', 'clover', 'csv']]
       },
       comment: 'POS provider identifier'
     },

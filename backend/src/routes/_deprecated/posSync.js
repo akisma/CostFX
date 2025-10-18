@@ -7,12 +7,15 @@
  * Base Path: /api/v1/pos
  * 
  * Routes:
- * - POST   /sync/:connectionId        - Trigger sync and transform
- * - POST   /sync-sales/:connectionId  - Trigger sales data sync (Square only)
- * - GET    /status/:connectionId      - Get sync status
- * - GET    /stats/:restaurantId       - Get transformation stats
- * - POST   /clear/:restaurantId       - Clear POS data
- * - GET    /validate/:restaurantId    - Validate transformation
+ * - POST   /sync/:connectionId            - Trigger inventory sync (raw data only)
+ * - POST   /transform/:connectionId       - Transform inventory data to normalized format
+ * - POST   /sync-sales/:connectionId      - Trigger sales data sync (Square only, raw data only)
+ * - POST   /transform-sales/:connectionId - Transform sales data to sales transactions
+ * - GET    /status/:connectionId          - Get sync status
+ * - GET    /stats/:restaurantId           - Get transformation stats
+ * - POST   /clear/:restaurantId           - Clear POS inventory data
+ * - POST   /clear-sales/:restaurantId     - Clear POS sales data
+ * - GET    /validate/:restaurantId        - Validate transformation
  * 
  * Related:
  * - Issue #20: Square Inventory Synchronization
@@ -29,9 +32,11 @@ import {
   syncInventory,
   syncSales,
   transformInventory,
+  transformSales,
   getSyncStatus,
   getTransformationStats,
   clearPOSData,
+  clearSalesData,
   validateTransformation
 } from '../controllers/POSSyncController.js';
 
@@ -198,6 +203,56 @@ router.post('/sync/:connectionId', syncInventory);
  *         description: Sales sync failed
  */
 router.post('/sync-sales/:connectionId', syncSales);
+
+/**
+ * @swagger
+ * /api/v1/pos/transform-sales/{connectionId}:
+ *   post:
+ *     summary: Transform synced sales data to sales transactions
+ *     description: Transforms square_order_items (Tier 1) to sales_transactions (Tier 2)
+ *     tags: [POS Sync]
+ *     parameters:
+ *       - in: path
+ *         name: connectionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: POS connection ID (Square only)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - startDate
+ *               - endDate
+ *             properties:
+ *               startDate:
+ *                 type: string
+ *                 format: date
+ *                 description: Start date (ISO 8601)
+ *                 example: "2023-10-01"
+ *               endDate:
+ *                 type: string
+ *                 format: date
+ *                 description: End date (ISO 8601)
+ *                 example: "2023-10-31"
+ *               dryRun:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Simulate without saving to database
+ *     responses:
+ *       200:
+ *         description: Sales transformation completed successfully
+ *       400:
+ *         description: Invalid parameters or non-Square connection
+ *       404:
+ *         description: POS connection not found
+ *       503:
+ *         description: Sales transformation failed
+ */
+router.post('/transform-sales/:connectionId', transformSales);
 
 /**
  * @swagger
@@ -370,6 +425,44 @@ router.get('/stats/:restaurantId', getTransformationStats);
  *         description: No POS connection found for restaurant
  */
 router.post('/clear/:restaurantId', clearPOSData);
+
+/**
+ * @swagger
+ * /api/v1/pos/clear-sales/{restaurantId}:
+ *   post:
+ *     summary: Clear all sales data
+ *     description: Deletes Tier 1 (square_orders, square_order_items) and Tier 2 (sales_transactions) sales data
+ *     tags: [POS Sync]
+ *     parameters:
+ *       - in: path
+ *         name: restaurantId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Restaurant ID
+ *     responses:
+ *       200:
+ *         description: Deletion successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 restaurantId:
+ *                   type: integer
+ *                 deleted:
+ *                   type: object
+ *                   properties:
+ *                     squareOrders:
+ *                       type: integer
+ *                     squareOrderItems:
+ *                       type: integer
+ *                     salesTransactions:
+ *                       type: integer
+ *       404:
+ *         description: No POS connection found for restaurant
+ */
+router.post('/clear-sales/:restaurantId', clearSalesData);
 
 /**
  * @swagger

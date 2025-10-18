@@ -9,7 +9,8 @@ import {
   AlertTriangle,
   Zap, // Changed from Calendar to Zap for forecast to show it's AI-powered
   Settings,
-  Plug
+  Plug,
+  Upload
 } from 'lucide-react'
 
 const Layout = ({ children }) => {
@@ -24,6 +25,13 @@ const Layout = ({ children }) => {
         { name: 'Cost Analysis', href: '/analysis/costs', icon: TrendingUp },
         { name: 'Waste Analysis', href: '/analysis/waste', icon: AlertTriangle },
         { name: 'Forecast Intelligence', href: '/analysis/forecast', icon: Zap }
+      ]
+    },
+    {
+      name: 'Data',
+      icon: Upload,
+      children: [
+        { name: 'CSV Import', href: '/data-import/csv', icon: Upload }
       ]
     },
     {

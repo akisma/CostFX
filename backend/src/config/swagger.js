@@ -67,10 +67,14 @@ const options = {
             {
                 name: 'Inventory',
                 description: 'Inventory management endpoints'
+            },
+            {
+                name: 'CSV Imports',
+                description: 'CSV upload validation and transformation workflows'
             }
         ]
     },
-    apis: ['./src/routes/*.js', './src/models/*.js', './src/app.js'] // Paths to files with OpenAPI annotations
+    apis: ['./src/routes/**/*.js', './src/models/**/*.js', './src/app.js'] // Paths to files with OpenAPI annotations
 };
 
 export default swaggerJSDoc(options);

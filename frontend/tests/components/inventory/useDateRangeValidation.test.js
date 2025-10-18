@@ -116,7 +116,10 @@ describe('useDateRangeValidation Hook', () => {
       const startDate = new Date('2024-01-15');
       const endDate = new Date('2024-01-22');
       
-      const validation = result.current.validateRange(startDate, endDate);
+      let validation;
+      act(() => {
+        validation = result.current.validateRange(startDate, endDate);
+      });
       
       expect(validation.isValid).toBe(true);
       expect(validation.errors).toEqual([]);
@@ -129,7 +132,10 @@ describe('useDateRangeValidation Hook', () => {
       const startDate = new Date('2024-01-22');
       const endDate = new Date('2024-01-15');
       
-      const validation = result.current.validateRange(startDate, endDate);
+      let validation;
+      act(() => {
+        validation = result.current.validateRange(startDate, endDate);
+      });
       
       expect(validation.isValid).toBe(false);
       expect(validation.errors.length).toBeGreaterThan(0);
@@ -141,7 +147,10 @@ describe('useDateRangeValidation Hook', () => {
       
       const sameDate = new Date('2024-01-15');
       
-      const validation = result.current.validateRange(sameDate, sameDate);
+      let validation;
+      act(() => {
+        validation = result.current.validateRange(sameDate, sameDate);
+      });
       
       expect(validation.isValid).toBe(false);
       expect(validation.errors.length).toBeGreaterThan(0);
@@ -155,7 +164,10 @@ describe('useDateRangeValidation Hook', () => {
       const startDate = new Date('2024-01-15');
       const endDate = new Date('2024-01-18'); // Only 4 days
       
-      const validation = result.current.validateRange(startDate, endDate);
+      let validation;
+      act(() => {
+        validation = result.current.validateRange(startDate, endDate);
+      });
       
       expect(validation.isValid).toBe(false);
       expect(validation.errors.some(e => e.includes('at least 7 day'))).toBe(true);
@@ -169,7 +181,10 @@ describe('useDateRangeValidation Hook', () => {
       const startDate = new Date('2024-01-01');
       const endDate = new Date('2024-02-15'); // More than 30 days
       
-      const validation = result.current.validateRange(startDate, endDate);
+      let validation;
+      act(() => {
+        validation = result.current.validateRange(startDate, endDate);
+      });
       
       expect(validation.isValid).toBe(false);
       expect(validation.errors.some(e => e.includes('cannot exceed 30 days'))).toBe(true);
@@ -187,7 +202,10 @@ describe('useDateRangeValidation Hook', () => {
       startDate.getDay = vi.fn(() => 6); // Saturday
       endDate.getDay = vi.fn(() => 6);   // Saturday
       
-      const validation = result.current.validateRange(startDate, endDate);
+      let validation;
+      act(() => {
+        validation = result.current.validateRange(startDate, endDate);
+      });
       
       expect(validation.warnings.length).toBeGreaterThan(0);
       expect(validation.warnings.some(w => w.includes('weekend'))).toBe(true);
@@ -199,7 +217,10 @@ describe('useDateRangeValidation Hook', () => {
       const startDate = new Date('2024-01-01');
       const endDate = new Date('2024-05-01'); // > 90 days
       
-      const validation = result.current.validateRange(startDate, endDate);
+      let validation;
+      act(() => {
+        validation = result.current.validateRange(startDate, endDate);
+      });
       
       expect(validation.warnings.some(w => w.includes('performance'))).toBe(true);
     });
@@ -210,7 +231,10 @@ describe('useDateRangeValidation Hook', () => {
       const startDate = new Date('2024-01-15');
       const endDate = new Date('2024-01-18'); // < 7 days
       
-      const validation = result.current.validateRange(startDate, endDate);
+      let validation;
+      act(() => {
+        validation = result.current.validateRange(startDate, endDate);
+      });
       
       expect(validation.warnings.some(w => w.includes('sufficient data'))).toBe(true);
     });
@@ -218,7 +242,10 @@ describe('useDateRangeValidation Hook', () => {
     it('handles null dates gracefully', () => {
       const { result } = renderHook(() => useDateRangeValidation(defaultProps));
       
-      const validation = result.current.validateRange(null, null);
+      let validation;
+      act(() => {
+        validation = result.current.validateRange(null, null);
+      });
       
       expect(validation.isValid).toBe(true);
       expect(validation.errors).toEqual([]);

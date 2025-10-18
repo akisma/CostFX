@@ -55,7 +55,11 @@ class SquareInventorySyncService {
       throw new Error('SquareAdapter is required');
     }
     this.squareAdapter = squareAdapter;
-    this.transformer = new POSDataTransformer();
+    this.transformer = new POSDataTransformer({
+      categoryMapperOptions: {
+        enableFallback: false
+      }
+    });
   }
 
   /**

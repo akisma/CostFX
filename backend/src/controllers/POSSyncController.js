@@ -172,7 +172,7 @@ export async function syncInventory(req, res, next) {
 export async function syncSales(req, res, next) {
   try {
     const { connectionId } = req.params;
-    const { startDate, endDate, dryRun = false, transform = true } = req.body;
+    const { startDate, endDate, dryRun = false } = req.body;
 
     // Validate required parameters
     if (!startDate || !endDate) {
@@ -210,27 +210,27 @@ export async function syncSales(req, res, next) {
       restaurantId: connection.restaurantId,
       startDate: start.toISOString(),
       endDate: end.toISOString(),
-      dryRun,
-      transform
+      dryRun
     });
 
     // Get Square sales sync service
     const adapter = POSAdapterFactory.getAdapter('square');
     const salesSyncService = new SquareSalesSyncService(adapter);
 
-    // Execute sync and transform
+    // Execute sync ONLY (no transformation) - sync raw data to square_orders/square_order_items
+    // Transformation to sales_transactions happens in separate step via transformSales()
     const result = await salesSyncService.syncAndTransform(connectionId, {
       startDate: start,
       endDate: end,
       dryRun: dryRun === 'true' || dryRun === true,
-      transform: transform === 'true' || transform === true || transform === undefined
+      transform: false // STAGED: Sync raw data only, transform separately
     });
 
     logger.info('POSSyncController: Sales sync complete', {
       syncId: result.syncId,
       status: result.status,
-      ordersSynced: result.sync?.orders,
-      transactionsCreated: result.transform?.created,
+      ordersSynced: result.sync?.synced?.orders,
+      lineItemsSynced: result.sync?.synced?.lineItems,
       duration: result.duration
     });
 
@@ -315,6 +315,103 @@ export async function transformInventory(req, res, next) {
     res.json(result);
   } catch (error) {
     logger.error('POSSyncController: Transformation failed', {
+      connectionId: req.params.connectionId,
+      error: error.message,
+      stack: error.stack
+    });
+    next(error);
+  }
+}
+
+/**
+ * POST /api/v1/pos/transform-sales/:connectionId
+ * 
+ * Transform synced Square sales data (square_orders) to sales transactions
+ * 
+ * Request Body:
+ * - startDate: ISO date string (required) - Start of date range
+ * - endDate: ISO date string (required) - End of date range
+ * - dryRun: boolean (default: false) - Simulate without saving
+ * 
+ * Response: 200 OK
+ * {
+ *   syncId: "transform_abc123",
+ *   connectionId: 1,
+ *   restaurantId: 1,
+ *   status: "completed",
+ *   transform: {
+ *     processed: 450,
+ *     created: 448,
+ *     skipped: 2,
+ *     errors: []
+ *   },
+ *   duration: 1234
+ * }
+ */
+export async function transformSales(req, res, next) {
+  try {
+    const { connectionId } = req.params;
+    const { startDate, endDate, dryRun = false } = req.body;
+
+    // Validate required parameters
+    if (!startDate || !endDate) {
+      throw new ValidationError('startDate and endDate are required');
+    }
+
+    // Validate date format
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      throw new ValidationError('Invalid date format. Use ISO 8601 format (e.g., 2023-10-01)');
+    }
+
+    if (start > end) {
+      throw new ValidationError('startDate must be before endDate');
+    }
+
+    logger.info('POSSyncController: Starting sales transformation', {
+      connectionId,
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+      dryRun
+    });
+
+    // Get POS connection
+    const connection = await POSConnection.findByPk(connectionId);
+    if (!connection) {
+      throw new NotFoundError(`POS connection ${connectionId} not found`);
+    }
+
+    if (!connection.isActive()) {
+      throw new ValidationError(`POS connection ${connectionId} is not active`);
+    }
+
+    if (connection.provider !== 'square') {
+      throw new ValidationError(`Sales transformation only supported for Square connections (provider: ${connection.provider})`);
+    }
+
+    // Get Square sales sync service
+    const adapter = POSAdapterFactory.getAdapter('square');
+    const salesSyncService = new SquareSalesSyncService(adapter);
+
+    // Execute transformation ONLY (assume sync already happened)
+    const result = await salesSyncService.syncAndTransform(connectionId, {
+      startDate: start,
+      endDate: end,
+      dryRun: dryRun === 'true' || dryRun === true,
+      transform: true // Transform only, skip sync
+    });
+
+    logger.info('POSSyncController: Sales transformation complete', {
+      syncId: result.syncId,
+      created: result.transform?.created,
+      errors: result.transform?.errors?.length || 0
+    });
+
+    res.json(result);
+  } catch (error) {
+    logger.error('POSSyncController: Sales transformation failed', {
       connectionId: req.params.connectionId,
       error: error.message,
       stack: error.stack
@@ -476,6 +573,67 @@ export async function clearPOSData(req, res, next) {
     });
   } catch (error) {
     logger.error('POSSyncController: Failed to clear data', {
+      restaurantId: req.params.restaurantId,
+      error: error.message
+    });
+    next(error);
+  }
+}
+
+/**
+ * POST /api/v1/pos/clear-sales/:restaurantId
+ * 
+ * Clear all sales data for a restaurant
+ * 
+ * Deletes both Tier 1 (square_orders, square_order_items) and
+ * Tier 2 (sales_transactions) sales data.
+ * 
+ * Response: 200 OK
+ * {
+ *   restaurantId: 1,
+ *   deleted: {
+ *     squareOrders: 50,
+ *     squareOrderItems: 200,
+ *     salesTransactions: 180
+ *   }
+ * }
+ */
+export async function clearSalesData(req, res, next) {
+  try {
+    const { restaurantId } = req.params;
+
+    // Find a POS connection for this restaurant
+    const connection = await POSConnection.findOne({
+      where: { restaurantId }
+    });
+
+    if (!connection) {
+      throw new NotFoundError(`No POS connection found for restaurant ${restaurantId}`);
+    }
+
+    logger.info('POSSyncController: Clearing sales data', {
+      restaurantId,
+      provider: connection.provider
+    });
+
+    // Get Square sales sync service
+    const adapter = POSAdapterFactory.getAdapter('square');
+    const salesSyncService = new SquareSalesSyncService(adapter);
+
+    // Clear sales data
+    const result = await salesSyncService.clearSalesData(restaurantId);
+
+    logger.info('POSSyncController: Sales data cleared', {
+      restaurantId,
+      deleted: result
+    });
+
+    res.json({
+      restaurantId: parseInt(restaurantId),
+      deleted: result
+    });
+  } catch (error) {
+    logger.error('POSSyncController: Failed to clear sales data', {
       restaurantId: req.params.restaurantId,
       error: error.message
     });

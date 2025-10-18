@@ -1,0 +1,501 @@
+name,description,category,unit,unit_cost,supplier_name,minimum_stock,maximum_stock,current_stock,batch_number,location,gl_account,sku,vendor_item_number,notes
+Sample Item 1,Sample description for inventory item 1,produce,lb,3.25,Fresh Farms Co.,5.00,15.00,5.00,BATCH-001,Walk-in Cooler,5100,SKU-00001,VIN-000003,Notes for item 1
+Sample Item 2,Sample description for inventory item 2,meat,kg,4.00,Prime Protein Supply,6.00,17.00,7.00,BATCH-002,Dry Storage,5101,SKU-00002,VIN-000006,Notes for item 2
+Sample Item 3,Sample description for inventory item 3,dairy,oz,4.75,DairyBest Distributors,7.00,19.00,9.00,BATCH-003,Freezer,5102,SKU-00003,VIN-000009,Notes for item 3
+Sample Item 4,Sample description for inventory item 4,dry_goods,gal,5.50,Metro Restaurant Supply,8.00,21.00,11.00,BATCH-004,Bar Storage,5103,SKU-00004,VIN-000012,Notes for item 4
+Sample Item 5,Sample description for inventory item 5,beverages,liter,6.25,Gourmet Goods LLC,9.00,23.00,13.00,BATCH-005,Prep Station,5104,SKU-00005,VIN-000015,Notes for item 5
+Sample Item 6,Sample description for inventory item 6,other,case,7.00,Sunrise Produce,10.00,20.00,15.00,BATCH-006,Pantry,5105,SKU-00006,VIN-000018,Notes for item 6
+Sample Item 7,Sample description for inventory item 7,produce,each,7.75,Fresh Farms Co.,11.00,22.00,17.00,BATCH-007,Walk-in Cooler,5106,SKU-00007,VIN-000021,Notes for item 7
+Sample Item 8,Sample description for inventory item 8,meat,pack,8.50,Prime Protein Supply,5.00,17.00,12.00,BATCH-008,Dry Storage,5107,SKU-00008,VIN-000024,Notes for item 8
+Sample Item 9,Sample description for inventory item 9,dairy,lb,9.25,DairyBest Distributors,6.00,19.00,14.00,BATCH-009,Freezer,5108,SKU-00009,VIN-000027,Notes for item 9
+Sample Item 10,Sample description for inventory item 10,dry_goods,kg,10.00,Metro Restaurant Supply,7.00,21.00,16.00,BATCH-010,Bar Storage,5109,SKU-00010,VIN-000030,Notes for item 10
+Sample Item 11,Sample description for inventory item 11,beverages,oz,10.75,Gourmet Goods LLC,8.00,18.00,18.00,BATCH-011,Prep Station,5110,SKU-00011,VIN-000033,Notes for item 11
+Sample Item 12,Sample description for inventory item 12,other,gal,11.50,Sunrise Produce,9.00,20.00,20.00,BATCH-012,Pantry,5111,SKU-00012,VIN-000036,Notes for item 12
+Sample Item 13,Sample description for inventory item 13,produce,liter,12.25,Fresh Farms Co.,10.00,22.00,22.00,BATCH-013,Walk-in Cooler,5112,SKU-00013,VIN-000039,Notes for item 13
+Sample Item 14,Sample description for inventory item 14,meat,case,13.00,Prime Protein Supply,11.00,24.00,24.00,BATCH-014,Dry Storage,5113,SKU-00014,VIN-000042,Notes for item 14
+Sample Item 15,Sample description for inventory item 15,dairy,each,13.75,DairyBest Distributors,5.00,19.00,19.00,BATCH-015,Freezer,5114,SKU-00015,VIN-000045,Notes for item 15
+Sample Item 16,Sample description for inventory item 16,dry_goods,pack,3.25,Metro Restaurant Supply,6.00,16.00,10.00,BATCH-016,Bar Storage,5115,SKU-00016,VIN-000048,Notes for item 16
+Sample Item 17,Sample description for inventory item 17,beverages,lb,4.00,Gourmet Goods LLC,7.00,18.00,11.00,BATCH-017,Prep Station,5116,SKU-00017,VIN-000051,Notes for item 17
+Sample Item 18,Sample description for inventory item 18,other,kg,4.75,Sunrise Produce,8.00,20.00,12.00,BATCH-018,Pantry,5117,SKU-00018,VIN-000054,Notes for item 18
+Sample Item 19,Sample description for inventory item 19,produce,oz,5.50,Fresh Farms Co.,9.00,22.00,13.00,BATCH-019,Walk-in Cooler,5118,SKU-00019,VIN-000057,Notes for item 19
+Sample Item 20,Sample description for inventory item 20,meat,gal,6.25,Prime Protein Supply,10.00,24.00,14.00,BATCH-020,Dry Storage,5119,SKU-00020,VIN-000060,Notes for item 20
+Sample Item 21,Sample description for inventory item 21,dairy,liter,7.00,DairyBest Distributors,11.00,21.00,20.00,BATCH-021,Freezer,5120,SKU-00021,VIN-000063,Notes for item 21
+Sample Item 22,Sample description for inventory item 22,dry_goods,case,7.75,Metro Restaurant Supply,5.00,16.00,14.00,BATCH-022,Bar Storage,5121,SKU-00022,VIN-000066,Notes for item 22
+Sample Item 23,Sample description for inventory item 23,beverages,each,8.50,Gourmet Goods LLC,6.00,18.00,15.00,BATCH-023,Prep Station,5122,SKU-00023,VIN-000069,Notes for item 23
+Sample Item 24,Sample description for inventory item 24,other,pack,9.25,Sunrise Produce,7.00,20.00,16.00,BATCH-024,Pantry,5123,SKU-00024,VIN-000072,Notes for item 24
+Sample Item 25,Sample description for inventory item 25,produce,lb,10.00,Fresh Farms Co.,8.00,22.00,17.00,BATCH-025,Walk-in Cooler,5124,SKU-00025,VIN-000075,Notes for item 25
+Sample Item 26,Sample description for inventory item 26,meat,kg,10.75,Prime Protein Supply,9.00,19.00,12.00,BATCH-026,Dry Storage,5125,SKU-00026,VIN-000078,Notes for item 26
+Sample Item 27,Sample description for inventory item 27,dairy,oz,11.50,DairyBest Distributors,10.00,21.00,12.00,BATCH-027,Freezer,5126,SKU-00027,VIN-000081,Notes for item 27
+Sample Item 28,Sample description for inventory item 28,dry_goods,gal,12.25,Metro Restaurant Supply,11.00,23.00,12.00,BATCH-028,Bar Storage,5127,SKU-00028,VIN-000084,Notes for item 28
+Sample Item 29,Sample description for inventory item 29,beverages,liter,13.00,Gourmet Goods LLC,5.00,18.00,5.00,BATCH-029,Prep Station,5128,SKU-00029,VIN-000087,Notes for item 29
+Sample Item 30,Sample description for inventory item 30,other,case,13.75,Sunrise Produce,6.00,20.00,20.00,BATCH-030,Pantry,5129,SKU-00030,VIN-000090,Notes for item 30
+Sample Item 31,Sample description for inventory item 31,produce,each,3.25,Fresh Farms Co.,7.00,17.00,15.00,BATCH-031,Walk-in Cooler,5130,SKU-00031,VIN-000093,Notes for item 31
+Sample Item 32,Sample description for inventory item 32,meat,pack,4.00,Prime Protein Supply,8.00,19.00,15.00,BATCH-032,Dry Storage,5131,SKU-00032,VIN-000096,Notes for item 32
+Sample Item 33,Sample description for inventory item 33,dairy,lb,4.75,DairyBest Distributors,9.00,21.00,15.00,BATCH-033,Freezer,5132,SKU-00033,VIN-000099,Notes for item 33
+Sample Item 34,Sample description for inventory item 34,dry_goods,kg,5.50,Metro Restaurant Supply,10.00,23.00,15.00,BATCH-034,Bar Storage,5133,SKU-00034,VIN-000102,Notes for item 34
+Sample Item 35,Sample description for inventory item 35,beverages,oz,6.25,Gourmet Goods LLC,11.00,25.00,15.00,BATCH-035,Prep Station,5134,SKU-00035,VIN-000105,Notes for item 35
+Sample Item 36,Sample description for inventory item 36,other,gal,7.00,Sunrise Produce,5.00,15.00,7.00,BATCH-036,Pantry,5135,SKU-00036,VIN-000108,Notes for item 36
+Sample Item 37,Sample description for inventory item 37,produce,liter,7.75,Fresh Farms Co.,6.00,17.00,6.00,BATCH-037,Walk-in Cooler,5136,SKU-00037,VIN-000111,Notes for item 37
+Sample Item 38,Sample description for inventory item 38,meat,case,8.50,Prime Protein Supply,7.00,19.00,18.00,BATCH-038,Dry Storage,5137,SKU-00038,VIN-000114,Notes for item 38
+Sample Item 39,Sample description for inventory item 39,dairy,each,9.25,DairyBest Distributors,8.00,21.00,18.00,BATCH-039,Freezer,5138,SKU-00039,VIN-000117,Notes for item 39
+Sample Item 40,Sample description for inventory item 40,dry_goods,pack,10.00,Metro Restaurant Supply,9.00,23.00,18.00,BATCH-040,Bar Storage,5139,SKU-00040,VIN-000120,Notes for item 40
+Sample Item 41,Sample description for inventory item 41,beverages,lb,10.75,Gourmet Goods LLC,10.00,20.00,17.00,BATCH-041,Prep Station,5140,SKU-00041,VIN-000123,Notes for item 41
+Sample Item 42,Sample description for inventory item 42,other,kg,11.50,Sunrise Produce,11.00,22.00,16.00,BATCH-042,Pantry,5141,SKU-00042,VIN-000126,Notes for item 42
+Sample Item 43,Sample description for inventory item 43,produce,oz,12.25,Fresh Farms Co.,5.00,17.00,8.00,BATCH-043,Walk-in Cooler,5142,SKU-00043,VIN-000129,Notes for item 43
+Sample Item 44,Sample description for inventory item 44,meat,gal,13.00,Prime Protein Supply,6.00,19.00,7.00,BATCH-044,Dry Storage,5143,SKU-00044,VIN-000132,Notes for item 44
+Sample Item 45,Sample description for inventory item 45,dairy,liter,13.75,DairyBest Distributors,7.00,21.00,21.00,BATCH-045,Freezer,5144,SKU-00045,VIN-000135,Notes for item 45
+Sample Item 46,Sample description for inventory item 46,dry_goods,case,3.25,Metro Restaurant Supply,8.00,18.00,9.00,BATCH-046,Bar Storage,5145,SKU-00046,VIN-000138,Notes for item 46
+Sample Item 47,Sample description for inventory item 47,beverages,each,4.00,Gourmet Goods LLC,9.00,20.00,19.00,BATCH-047,Prep Station,5146,SKU-00047,VIN-000141,Notes for item 47
+Sample Item 48,Sample description for inventory item 48,other,pack,4.75,Sunrise Produce,10.00,22.00,18.00,BATCH-048,Pantry,5147,SKU-00048,VIN-000144,Notes for item 48
+Sample Item 49,Sample description for inventory item 49,produce,lb,5.50,Fresh Farms Co.,11.00,24.00,17.00,BATCH-049,Walk-in Cooler,5148,SKU-00049,VIN-000147,Notes for item 49
+Sample Item 50,Sample description for inventory item 50,meat,kg,6.25,Prime Protein Supply,5.00,19.00,9.00,BATCH-050,Dry Storage,5149,SKU-00050,VIN-000150,Notes for item 50
+Sample Item 51,Sample description for inventory item 51,dairy,oz,7.00,DairyBest Distributors,6.00,16.00,12.00,BATCH-051,Freezer,5100,SKU-00051,VIN-000153,Notes for item 51
+Sample Item 52,Sample description for inventory item 52,dry_goods,gal,7.75,Metro Restaurant Supply,7.00,18.00,10.00,BATCH-052,Bar Storage,5101,SKU-00052,VIN-000156,Notes for item 52
+Sample Item 53,Sample description for inventory item 53,beverages,liter,8.50,Gourmet Goods LLC,8.00,20.00,8.00,BATCH-053,Prep Station,5102,SKU-00053,VIN-000159,Notes for item 53
+Sample Item 54,Sample description for inventory item 54,other,case,9.25,Sunrise Produce,9.00,22.00,20.00,BATCH-054,Pantry,5103,SKU-00054,VIN-000162,Notes for item 54
+Sample Item 55,Sample description for inventory item 55,produce,each,10.00,Fresh Farms Co.,10.00,24.00,19.00,BATCH-055,Walk-in Cooler,5104,SKU-00055,VIN-000165,Notes for item 55
+Sample Item 56,Sample description for inventory item 56,meat,pack,10.75,Prime Protein Supply,11.00,21.00,11.00,BATCH-056,Dry Storage,5105,SKU-00056,VIN-000168,Notes for item 56
+Sample Item 57,Sample description for inventory item 57,dairy,lb,11.50,DairyBest Distributors,5.00,16.00,13.00,BATCH-057,Freezer,5106,SKU-00057,VIN-000171,Notes for item 57
+Sample Item 58,Sample description for inventory item 58,dry_goods,kg,12.25,Metro Restaurant Supply,6.00,18.00,11.00,BATCH-058,Bar Storage,5107,SKU-00058,VIN-000174,Notes for item 58
+Sample Item 59,Sample description for inventory item 59,beverages,oz,13.00,Gourmet Goods LLC,7.00,20.00,9.00,BATCH-059,Prep Station,5108,SKU-00059,VIN-000177,Notes for item 59
+Sample Item 60,Sample description for inventory item 60,other,gal,13.75,Sunrise Produce,8.00,22.00,22.00,BATCH-060,Pantry,5109,SKU-00060,VIN-000180,Notes for item 60
+Sample Item 61,Sample description for inventory item 61,produce,liter,3.25,Fresh Farms Co.,9.00,19.00,14.00,BATCH-061,Walk-in Cooler,5110,SKU-00061,VIN-000183,Notes for item 61
+Sample Item 62,Sample description for inventory item 62,meat,case,4.00,Prime Protein Supply,10.00,21.00,11.00,BATCH-062,Dry Storage,5111,SKU-00062,VIN-000186,Notes for item 62
+Sample Item 63,Sample description for inventory item 63,dairy,each,4.75,DairyBest Distributors,11.00,23.00,21.00,BATCH-063,Freezer,5112,SKU-00063,VIN-000189,Notes for item 63
+Sample Item 64,Sample description for inventory item 64,dry_goods,pack,5.50,Metro Restaurant Supply,5.00,18.00,12.00,BATCH-064,Bar Storage,5113,SKU-00064,VIN-000192,Notes for item 64
+Sample Item 65,Sample description for inventory item 65,beverages,lb,6.25,Gourmet Goods LLC,6.00,20.00,10.00,BATCH-065,Prep Station,5114,SKU-00065,VIN-000195,Notes for item 65
+Sample Item 66,Sample description for inventory item 66,other,kg,7.00,Sunrise Produce,7.00,17.00,17.00,BATCH-066,Pantry,5115,SKU-00066,VIN-000198,Notes for item 66
+Sample Item 67,Sample description for inventory item 67,produce,oz,7.75,Fresh Farms Co.,8.00,19.00,14.00,BATCH-067,Walk-in Cooler,5116,SKU-00067,VIN-000201,Notes for item 67
+Sample Item 68,Sample description for inventory item 68,meat,gal,8.50,Prime Protein Supply,9.00,21.00,11.00,BATCH-068,Dry Storage,5117,SKU-00068,VIN-000204,Notes for item 68
+Sample Item 69,Sample description for inventory item 69,dairy,liter,9.25,DairyBest Distributors,10.00,23.00,22.00,BATCH-069,Freezer,5118,SKU-00069,VIN-000207,Notes for item 69
+Sample Item 70,Sample description for inventory item 70,dry_goods,case,10.00,Metro Restaurant Supply,11.00,25.00,20.00,BATCH-070,Bar Storage,5119,SKU-00070,VIN-000210,Notes for item 70
+Sample Item 71,Sample description for inventory item 71,beverages,each,10.75,Gourmet Goods LLC,5.00,15.00,9.00,BATCH-071,Prep Station,5120,SKU-00071,VIN-000213,Notes for item 71
+Sample Item 72,Sample description for inventory item 72,other,pack,11.50,Sunrise Produce,6.00,17.00,17.00,BATCH-072,Pantry,5121,SKU-00072,VIN-000216,Notes for item 72
+Sample Item 73,Sample description for inventory item 73,produce,lb,12.25,Fresh Farms Co.,7.00,19.00,14.00,BATCH-073,Walk-in Cooler,5122,SKU-00073,VIN-000219,Notes for item 73
+Sample Item 74,Sample description for inventory item 74,meat,kg,13.00,Prime Protein Supply,8.00,21.00,11.00,BATCH-074,Dry Storage,5123,SKU-00074,VIN-000222,Notes for item 74
+Sample Item 75,Sample description for inventory item 75,dairy,oz,13.75,DairyBest Distributors,9.00,23.00,23.00,BATCH-075,Freezer,5124,SKU-00075,VIN-000225,Notes for item 75
+Sample Item 76,Sample description for inventory item 76,dry_goods,gal,3.25,Metro Restaurant Supply,10.00,20.00,19.00,BATCH-076,Bar Storage,5125,SKU-00076,VIN-000228,Notes for item 76
+Sample Item 77,Sample description for inventory item 77,beverages,liter,4.00,Gourmet Goods LLC,11.00,22.00,15.00,BATCH-077,Prep Station,5126,SKU-00077,VIN-000231,Notes for item 77
+Sample Item 78,Sample description for inventory item 78,other,case,4.75,Sunrise Produce,5.00,17.00,17.00,BATCH-078,Pantry,5127,SKU-00078,VIN-000234,Notes for item 78
+Sample Item 79,Sample description for inventory item 79,produce,each,5.50,Fresh Farms Co.,6.00,19.00,14.00,BATCH-079,Walk-in Cooler,5128,SKU-00079,VIN-000237,Notes for item 79
+Sample Item 80,Sample description for inventory item 80,meat,pack,6.25,Prime Protein Supply,7.00,21.00,11.00,BATCH-080,Dry Storage,5129,SKU-00080,VIN-000240,Notes for item 80
+Sample Item 81,Sample description for inventory item 81,dairy,lb,7.00,DairyBest Distributors,8.00,18.00,11.00,BATCH-081,Freezer,5130,SKU-00081,VIN-000243,Notes for item 81
+Sample Item 82,Sample description for inventory item 82,dry_goods,kg,7.75,Metro Restaurant Supply,9.00,20.00,18.00,BATCH-082,Bar Storage,5131,SKU-00082,VIN-000246,Notes for item 82
+Sample Item 83,Sample description for inventory item 83,beverages,oz,8.50,Gourmet Goods LLC,10.00,22.00,14.00,BATCH-083,Prep Station,5132,SKU-00083,VIN-000249,Notes for item 83
+Sample Item 84,Sample description for inventory item 84,other,gal,9.25,Sunrise Produce,11.00,24.00,24.00,BATCH-084,Pantry,5133,SKU-00084,VIN-000252,Notes for item 84
+Sample Item 85,Sample description for inventory item 85,produce,liter,10.00,Fresh Farms Co.,5.00,19.00,14.00,BATCH-085,Walk-in Cooler,5134,SKU-00085,VIN-000255,Notes for item 85
+Sample Item 86,Sample description for inventory item 86,meat,case,10.75,Prime Protein Supply,6.00,16.00,14.00,BATCH-086,Dry Storage,5135,SKU-00086,VIN-000258,Notes for item 86
+Sample Item 87,Sample description for inventory item 87,dairy,each,11.50,DairyBest Distributors,7.00,18.00,9.00,BATCH-087,Freezer,5136,SKU-00087,VIN-000261,Notes for item 87
+Sample Item 88,Sample description for inventory item 88,dry_goods,pack,12.25,Metro Restaurant Supply,8.00,20.00,17.00,BATCH-088,Bar Storage,5137,SKU-00088,VIN-000264,Notes for item 88
+Sample Item 89,Sample description for inventory item 89,beverages,lb,13.00,Gourmet Goods LLC,9.00,22.00,13.00,BATCH-089,Prep Station,5138,SKU-00089,VIN-000267,Notes for item 89
+Sample Item 90,Sample description for inventory item 90,other,kg,13.75,Sunrise Produce,10.00,24.00,24.00,BATCH-090,Pantry,5139,SKU-00090,VIN-000270,Notes for item 90
+Sample Item 91,Sample description for inventory item 91,produce,oz,3.25,Fresh Farms Co.,11.00,21.00,13.00,BATCH-001,Walk-in Cooler,5140,SKU-00091,VIN-000273,Notes for item 91
+Sample Item 92,Sample description for inventory item 92,meat,gal,4.00,Prime Protein Supply,5.00,16.00,12.00,BATCH-002,Dry Storage,5141,SKU-00092,VIN-000276,Notes for item 92
+Sample Item 93,Sample description for inventory item 93,dairy,liter,4.75,DairyBest Distributors,6.00,18.00,7.00,BATCH-003,Freezer,5142,SKU-00093,VIN-000279,Notes for item 93
+Sample Item 94,Sample description for inventory item 94,dry_goods,case,5.50,Metro Restaurant Supply,7.00,20.00,16.00,BATCH-004,Bar Storage,5143,SKU-00094,VIN-000282,Notes for item 94
+Sample Item 95,Sample description for inventory item 95,beverages,each,6.25,Gourmet Goods LLC,8.00,22.00,12.00,BATCH-005,Prep Station,5144,SKU-00095,VIN-000285,Notes for item 95
+Sample Item 96,Sample description for inventory item 96,other,pack,7.00,Sunrise Produce,9.00,19.00,16.00,BATCH-006,Pantry,5145,SKU-00096,VIN-000288,Notes for item 96
+Sample Item 97,Sample description for inventory item 97,produce,lb,7.75,Fresh Farms Co.,10.00,21.00,10.00,BATCH-007,Walk-in Cooler,5146,SKU-00097,VIN-000291,Notes for item 97
+Sample Item 98,Sample description for inventory item 98,meat,kg,8.50,Prime Protein Supply,11.00,23.00,17.00,BATCH-008,Dry Storage,5147,SKU-00098,VIN-000294,Notes for item 98
+Sample Item 99,Sample description for inventory item 99,dairy,oz,9.25,DairyBest Distributors,5.00,18.00,5.00,BATCH-009,Freezer,5148,SKU-00099,VIN-000297,Notes for item 99
+Sample Item 100,Sample description for inventory item 100,dry_goods,gal,10.00,Metro Restaurant Supply,6.00,20.00,15.00,BATCH-010,Bar Storage,5149,SKU-00100,VIN-000300,Notes for item 100
+Sample Item 101,Sample description for inventory item 101,beverages,liter,10.75,Gourmet Goods LLC,7.00,17.00,8.00,BATCH-011,Prep Station,5100,SKU-00101,VIN-000303,Notes for item 101
+Sample Item 102,Sample description for inventory item 102,other,case,11.50,Sunrise Produce,8.00,19.00,13.00,BATCH-012,Pantry,5101,SKU-00102,VIN-000306,Notes for item 102
+Sample Item 103,Sample description for inventory item 103,produce,each,12.25,Fresh Farms Co.,9.00,21.00,20.00,BATCH-013,Walk-in Cooler,5102,SKU-00103,VIN-000309,Notes for item 103
+Sample Item 104,Sample description for inventory item 104,meat,pack,13.00,Prime Protein Supply,10.00,23.00,15.00,BATCH-014,Dry Storage,5103,SKU-00104,VIN-000312,Notes for item 104
+Sample Item 105,Sample description for inventory item 105,dairy,lb,13.75,DairyBest Distributors,11.00,25.00,25.00,BATCH-015,Freezer,5104,SKU-00105,VIN-000315,Notes for item 105
+Sample Item 106,Sample description for inventory item 106,dry_goods,kg,3.25,Metro Restaurant Supply,5.00,15.00,11.00,BATCH-016,Bar Storage,5105,SKU-00106,VIN-000318,Notes for item 106
+Sample Item 107,Sample description for inventory item 107,beverages,oz,4.00,Gourmet Goods LLC,6.00,17.00,16.00,BATCH-017,Prep Station,5106,SKU-00107,VIN-000321,Notes for item 107
+Sample Item 108,Sample description for inventory item 108,other,gal,4.75,Sunrise Produce,7.00,19.00,10.00,BATCH-018,Pantry,5107,SKU-00108,VIN-000324,Notes for item 108
+Sample Item 109,Sample description for inventory item 109,produce,liter,5.50,Fresh Farms Co.,8.00,21.00,18.00,BATCH-019,Walk-in Cooler,5108,SKU-00109,VIN-000327,Notes for item 109
+Sample Item 110,Sample description for inventory item 110,meat,case,6.25,Prime Protein Supply,9.00,23.00,13.00,BATCH-020,Dry Storage,5109,SKU-00110,VIN-000330,Notes for item 110
+Sample Item 111,Sample description for inventory item 111,dairy,each,7.00,DairyBest Distributors,10.00,20.00,10.00,BATCH-021,Freezer,5110,SKU-00111,VIN-000333,Notes for item 111
+Sample Item 112,Sample description for inventory item 112,dry_goods,pack,7.75,Metro Restaurant Supply,11.00,22.00,14.00,BATCH-022,Bar Storage,5111,SKU-00112,VIN-000336,Notes for item 112
+Sample Item 113,Sample description for inventory item 113,beverages,lb,8.50,Gourmet Goods LLC,5.00,17.00,13.00,BATCH-023,Prep Station,5112,SKU-00113,VIN-000339,Notes for item 113
+Sample Item 114,Sample description for inventory item 114,other,kg,9.25,Sunrise Produce,6.00,19.00,7.00,BATCH-024,Pantry,5113,SKU-00114,VIN-000342,Notes for item 114
+Sample Item 115,Sample description for inventory item 115,produce,oz,10.00,Fresh Farms Co.,7.00,21.00,16.00,BATCH-025,Walk-in Cooler,5114,SKU-00115,VIN-000345,Notes for item 115
+Sample Item 116,Sample description for inventory item 116,meat,gal,10.75,Prime Protein Supply,8.00,18.00,13.00,BATCH-026,Dry Storage,5115,SKU-00116,VIN-000348,Notes for item 116
+Sample Item 117,Sample description for inventory item 117,dairy,liter,11.50,DairyBest Distributors,9.00,20.00,17.00,BATCH-027,Freezer,5116,SKU-00117,VIN-000351,Notes for item 117
+Sample Item 118,Sample description for inventory item 118,dry_goods,case,12.25,Metro Restaurant Supply,10.00,22.00,10.00,BATCH-028,Bar Storage,5117,SKU-00118,VIN-000354,Notes for item 118
+Sample Item 119,Sample description for inventory item 119,beverages,each,13.00,Gourmet Goods LLC,11.00,24.00,17.00,BATCH-029,Prep Station,5118,SKU-00119,VIN-000357,Notes for item 119
+Sample Item 120,Sample description for inventory item 120,other,pack,13.75,Sunrise Produce,5.00,19.00,19.00,BATCH-030,Pantry,5119,SKU-00120,VIN-000360,Notes for item 120
+Sample Item 121,Sample description for inventory item 121,produce,lb,3.25,Fresh Farms Co.,6.00,16.00,16.00,BATCH-031,Walk-in Cooler,5120,SKU-00121,VIN-000363,Notes for item 121
+Sample Item 122,Sample description for inventory item 122,meat,kg,4.00,Prime Protein Supply,7.00,18.00,8.00,BATCH-032,Dry Storage,5121,SKU-00122,VIN-000366,Notes for item 122
+Sample Item 123,Sample description for inventory item 123,dairy,oz,4.75,DairyBest Distributors,8.00,20.00,13.00,BATCH-033,Freezer,5122,SKU-00123,VIN-000369,Notes for item 123
+Sample Item 124,Sample description for inventory item 124,dry_goods,gal,5.50,Metro Restaurant Supply,9.00,22.00,20.00,BATCH-034,Bar Storage,5123,SKU-00124,VIN-000372,Notes for item 124
+Sample Item 125,Sample description for inventory item 125,beverages,liter,6.25,Gourmet Goods LLC,10.00,24.00,14.00,BATCH-035,Prep Station,5124,SKU-00125,VIN-000375,Notes for item 125
+Sample Item 126,Sample description for inventory item 126,other,case,7.00,Sunrise Produce,11.00,21.00,15.00,BATCH-036,Pantry,5125,SKU-00126,VIN-000378,Notes for item 126
+Sample Item 127,Sample description for inventory item 127,produce,each,7.75,Fresh Farms Co.,5.00,16.00,11.00,BATCH-037,Walk-in Cooler,5126,SKU-00127,VIN-000381,Notes for item 127
+Sample Item 128,Sample description for inventory item 128,meat,pack,8.50,Prime Protein Supply,6.00,18.00,16.00,BATCH-038,Dry Storage,5127,SKU-00128,VIN-000384,Notes for item 128
+Sample Item 129,Sample description for inventory item 129,dairy,lb,9.25,DairyBest Distributors,7.00,20.00,9.00,BATCH-039,Freezer,5128,SKU-00129,VIN-000387,Notes for item 129
+Sample Item 130,Sample description for inventory item 130,dry_goods,kg,10.00,Metro Restaurant Supply,8.00,22.00,17.00,BATCH-040,Bar Storage,5129,SKU-00130,VIN-000390,Notes for item 130
+Sample Item 131,Sample description for inventory item 131,beverages,oz,10.75,Gourmet Goods LLC,9.00,19.00,18.00,BATCH-041,Prep Station,5130,SKU-00131,VIN-000393,Notes for item 131
+Sample Item 132,Sample description for inventory item 132,other,gal,11.50,Sunrise Produce,10.00,21.00,21.00,BATCH-042,Pantry,5131,SKU-00132,VIN-000396,Notes for item 132
+Sample Item 133,Sample description for inventory item 133,produce,liter,12.25,Fresh Farms Co.,11.00,23.00,13.00,BATCH-043,Walk-in Cooler,5132,SKU-00133,VIN-000399,Notes for item 133
+Sample Item 134,Sample description for inventory item 134,meat,case,13.00,Prime Protein Supply,5.00,18.00,12.00,BATCH-044,Dry Storage,5133,SKU-00134,VIN-000402,Notes for item 134
+Sample Item 135,Sample description for inventory item 135,dairy,each,13.75,DairyBest Distributors,6.00,20.00,20.00,BATCH-045,Freezer,5134,SKU-00135,VIN-000405,Notes for item 135
+Sample Item 136,Sample description for inventory item 136,dry_goods,pack,3.25,Metro Restaurant Supply,7.00,17.00,10.00,BATCH-046,Bar Storage,5135,SKU-00136,VIN-000408,Notes for item 136
+Sample Item 137,Sample description for inventory item 137,beverages,lb,4.00,Gourmet Goods LLC,8.00,19.00,12.00,BATCH-047,Prep Station,5136,SKU-00137,VIN-000411,Notes for item 137
+Sample Item 138,Sample description for inventory item 138,other,kg,4.75,Sunrise Produce,9.00,21.00,16.00,BATCH-048,Pantry,5137,SKU-00138,VIN-000414,Notes for item 138
+Sample Item 139,Sample description for inventory item 139,produce,oz,5.50,Fresh Farms Co.,10.00,23.00,22.00,BATCH-049,Walk-in Cooler,5138,SKU-00139,VIN-000417,Notes for item 139
+Sample Item 140,Sample description for inventory item 140,meat,gal,6.25,Prime Protein Supply,11.00,25.00,15.00,BATCH-050,Dry Storage,5139,SKU-00140,VIN-000420,Notes for item 140
+Sample Item 141,Sample description for inventory item 141,dairy,liter,7.00,DairyBest Distributors,5.00,15.00,13.00,BATCH-051,Freezer,5140,SKU-00141,VIN-000423,Notes for item 141
+Sample Item 142,Sample description for inventory item 142,dry_goods,case,7.75,Metro Restaurant Supply,6.00,17.00,15.00,BATCH-052,Bar Storage,5141,SKU-00142,VIN-000426,Notes for item 142
+Sample Item 143,Sample description for inventory item 143,beverages,each,8.50,Gourmet Goods LLC,7.00,19.00,19.00,BATCH-053,Prep Station,5142,SKU-00143,VIN-000429,Notes for item 143
+Sample Item 144,Sample description for inventory item 144,other,pack,9.25,Sunrise Produce,8.00,21.00,11.00,BATCH-054,Pantry,5143,SKU-00144,VIN-000432,Notes for item 144
+Sample Item 145,Sample description for inventory item 145,produce,lb,10.00,Fresh Farms Co.,9.00,23.00,18.00,BATCH-055,Walk-in Cooler,5144,SKU-00145,VIN-000435,Notes for item 145
+Sample Item 146,Sample description for inventory item 146,meat,kg,10.75,Prime Protein Supply,10.00,20.00,12.00,BATCH-056,Dry Storage,5145,SKU-00146,VIN-000438,Notes for item 146
+Sample Item 147,Sample description for inventory item 147,dairy,oz,11.50,DairyBest Distributors,11.00,22.00,13.00,BATCH-057,Freezer,5146,SKU-00147,VIN-000441,Notes for item 147
+Sample Item 148,Sample description for inventory item 148,dry_goods,gal,12.25,Metro Restaurant Supply,5.00,17.00,9.00,BATCH-058,Bar Storage,5147,SKU-00148,VIN-000444,Notes for item 148
+Sample Item 149,Sample description for inventory item 149,beverages,liter,13.00,Gourmet Goods LLC,6.00,19.00,14.00,BATCH-059,Prep Station,5148,SKU-00149,VIN-000447,Notes for item 149
+Sample Item 150,Sample description for inventory item 150,other,case,13.75,Sunrise Produce,7.00,21.00,21.00,BATCH-060,Pantry,5149,SKU-00150,VIN-000450,Notes for item 150
+Sample Item 151,Sample description for inventory item 151,produce,each,3.25,Fresh Farms Co.,8.00,18.00,15.00,BATCH-061,Walk-in Cooler,5100,SKU-00151,VIN-000453,Notes for item 151
+Sample Item 152,Sample description for inventory item 152,meat,pack,4.00,Prime Protein Supply,9.00,20.00,16.00,BATCH-062,Dry Storage,5101,SKU-00152,VIN-000456,Notes for item 152
+Sample Item 153,Sample description for inventory item 153,dairy,lb,4.75,DairyBest Distributors,10.00,22.00,19.00,BATCH-063,Freezer,5102,SKU-00153,VIN-000459,Notes for item 153
+Sample Item 154,Sample description for inventory item 154,dry_goods,kg,5.50,Metro Restaurant Supply,11.00,24.00,24.00,BATCH-064,Bar Storage,5103,SKU-00154,VIN-000462,Notes for item 154
+Sample Item 155,Sample description for inventory item 155,beverages,oz,6.25,Gourmet Goods LLC,5.00,19.00,9.00,BATCH-065,Prep Station,5104,SKU-00155,VIN-000465,Notes for item 155
+Sample Item 156,Sample description for inventory item 156,other,gal,7.00,Sunrise Produce,6.00,16.00,7.00,BATCH-066,Pantry,5105,SKU-00156,VIN-000468,Notes for item 156
+Sample Item 157,Sample description for inventory item 157,produce,liter,7.75,Fresh Farms Co.,7.00,18.00,7.00,BATCH-067,Walk-in Cooler,5106,SKU-00157,VIN-000471,Notes for item 157
+Sample Item 158,Sample description for inventory item 158,meat,case,8.50,Prime Protein Supply,8.00,20.00,9.00,BATCH-068,Dry Storage,5107,SKU-00158,VIN-000474,Notes for item 158
+Sample Item 159,Sample description for inventory item 159,dairy,each,9.25,DairyBest Distributors,9.00,22.00,13.00,BATCH-069,Freezer,5108,SKU-00159,VIN-000477,Notes for item 159
+Sample Item 160,Sample description for inventory item 160,dry_goods,pack,10.00,Metro Restaurant Supply,10.00,24.00,19.00,BATCH-070,Bar Storage,5109,SKU-00160,VIN-000480,Notes for item 160
+Sample Item 161,Sample description for inventory item 161,beverages,lb,10.75,Gourmet Goods LLC,11.00,21.00,17.00,BATCH-071,Prep Station,5110,SKU-00161,VIN-000483,Notes for item 161
+Sample Item 162,Sample description for inventory item 162,other,kg,11.50,Sunrise Produce,5.00,16.00,10.00,BATCH-072,Pantry,5111,SKU-00162,VIN-000486,Notes for item 162
+Sample Item 163,Sample description for inventory item 163,produce,oz,12.25,Fresh Farms Co.,6.00,18.00,12.00,BATCH-073,Walk-in Cooler,5112,SKU-00163,VIN-000489,Notes for item 163
+Sample Item 164,Sample description for inventory item 164,meat,gal,13.00,Prime Protein Supply,7.00,20.00,16.00,BATCH-074,Dry Storage,5113,SKU-00164,VIN-000492,Notes for item 164
+Sample Item 165,Sample description for inventory item 165,dairy,liter,13.75,DairyBest Distributors,8.00,22.00,22.00,BATCH-075,Freezer,5114,SKU-00165,VIN-000495,Notes for item 165
+Sample Item 166,Sample description for inventory item 166,dry_goods,case,3.25,Metro Restaurant Supply,9.00,19.00,9.00,BATCH-076,Bar Storage,5115,SKU-00166,VIN-000498,Notes for item 166
+Sample Item 167,Sample description for inventory item 167,beverages,each,4.00,Gourmet Goods LLC,10.00,21.00,20.00,BATCH-077,Prep Station,5116,SKU-00167,VIN-000501,Notes for item 167
+Sample Item 168,Sample description for inventory item 168,other,pack,4.75,Sunrise Produce,11.00,23.00,22.00,BATCH-078,Pantry,5117,SKU-00168,VIN-000504,Notes for item 168
+Sample Item 169,Sample description for inventory item 169,produce,lb,5.50,Fresh Farms Co.,5.00,18.00,5.00,BATCH-079,Walk-in Cooler,5118,SKU-00169,VIN-000507,Notes for item 169
+Sample Item 170,Sample description for inventory item 170,meat,kg,6.25,Prime Protein Supply,6.00,20.00,10.00,BATCH-080,Dry Storage,5119,SKU-00170,VIN-000510,Notes for item 170
+Sample Item 171,Sample description for inventory item 171,dairy,oz,7.00,DairyBest Distributors,7.00,17.00,12.00,BATCH-081,Freezer,5120,SKU-00171,VIN-000513,Notes for item 171
+Sample Item 172,Sample description for inventory item 172,dry_goods,gal,7.75,Metro Restaurant Supply,8.00,19.00,11.00,BATCH-082,Bar Storage,5121,SKU-00172,VIN-000516,Notes for item 172
+Sample Item 173,Sample description for inventory item 173,beverages,liter,8.50,Gourmet Goods LLC,9.00,21.00,12.00,BATCH-083,Prep Station,5122,SKU-00173,VIN-000519,Notes for item 173
+Sample Item 174,Sample description for inventory item 174,other,case,9.25,Sunrise Produce,10.00,23.00,15.00,BATCH-084,Pantry,5123,SKU-00174,VIN-000522,Notes for item 174
+Sample Item 175,Sample description for inventory item 175,produce,each,10.00,Fresh Farms Co.,11.00,25.00,20.00,BATCH-085,Walk-in Cooler,5124,SKU-00175,VIN-000525,Notes for item 175
+Sample Item 176,Sample description for inventory item 176,meat,pack,10.75,Prime Protein Supply,5.00,15.00,15.00,BATCH-086,Dry Storage,5125,SKU-00176,VIN-000528,Notes for item 176
+Sample Item 177,Sample description for inventory item 177,dairy,lb,11.50,DairyBest Distributors,6.00,17.00,14.00,BATCH-087,Freezer,5126,SKU-00177,VIN-000531,Notes for item 177
+Sample Item 178,Sample description for inventory item 178,dry_goods,kg,12.25,Metro Restaurant Supply,7.00,19.00,15.00,BATCH-088,Bar Storage,5127,SKU-00178,VIN-000534,Notes for item 178
+Sample Item 179,Sample description for inventory item 179,beverages,oz,13.00,Gourmet Goods LLC,8.00,21.00,18.00,BATCH-089,Prep Station,5128,SKU-00179,VIN-000537,Notes for item 179
+Sample Item 180,Sample description for inventory item 180,other,gal,13.75,Sunrise Produce,9.00,23.00,23.00,BATCH-090,Pantry,5129,SKU-00180,VIN-000540,Notes for item 180
+Sample Item 181,Sample description for inventory item 181,produce,liter,3.25,Fresh Farms Co.,10.00,20.00,14.00,BATCH-001,Walk-in Cooler,5130,SKU-00181,VIN-000543,Notes for item 181
+Sample Item 182,Sample description for inventory item 182,meat,case,4.00,Prime Protein Supply,11.00,22.00,12.00,BATCH-002,Dry Storage,5131,SKU-00182,VIN-000546,Notes for item 182
+Sample Item 183,Sample description for inventory item 183,dairy,each,4.75,DairyBest Distributors,5.00,17.00,5.00,BATCH-003,Freezer,5132,SKU-00183,VIN-000549,Notes for item 183
+Sample Item 184,Sample description for inventory item 184,dry_goods,pack,5.50,Metro Restaurant Supply,6.00,19.00,7.00,BATCH-004,Bar Storage,5133,SKU-00184,VIN-000552,Notes for item 184
+Sample Item 185,Sample description for inventory item 185,beverages,lb,6.25,Gourmet Goods LLC,7.00,21.00,11.00,BATCH-005,Prep Station,5134,SKU-00185,VIN-000555,Notes for item 185
+Sample Item 186,Sample description for inventory item 186,other,kg,7.00,Sunrise Produce,8.00,18.00,17.00,BATCH-006,Pantry,5135,SKU-00186,VIN-000558,Notes for item 186
+Sample Item 187,Sample description for inventory item 187,produce,oz,7.75,Fresh Farms Co.,9.00,20.00,15.00,BATCH-007,Walk-in Cooler,5136,SKU-00187,VIN-000561,Notes for item 187
+Sample Item 188,Sample description for inventory item 188,meat,gal,8.50,Prime Protein Supply,10.00,22.00,15.00,BATCH-008,Dry Storage,5137,SKU-00188,VIN-000564,Notes for item 188
+Sample Item 189,Sample description for inventory item 189,dairy,liter,9.25,DairyBest Distributors,11.00,24.00,17.00,BATCH-009,Freezer,5138,SKU-00189,VIN-000567,Notes for item 189
+Sample Item 190,Sample description for inventory item 190,dry_goods,case,10.00,Metro Restaurant Supply,5.00,19.00,14.00,BATCH-010,Bar Storage,5139,SKU-00190,VIN-000570,Notes for item 190
+Sample Item 191,Sample description for inventory item 191,beverages,each,10.75,Gourmet Goods LLC,6.00,16.00,9.00,BATCH-011,Prep Station,5140,SKU-00191,VIN-000573,Notes for item 191
+Sample Item 192,Sample description for inventory item 192,other,pack,11.50,Sunrise Produce,7.00,18.00,18.00,BATCH-012,Pantry,5141,SKU-00192,VIN-000576,Notes for item 192
+Sample Item 193,Sample description for inventory item 193,produce,lb,12.25,Fresh Farms Co.,8.00,20.00,18.00,BATCH-013,Walk-in Cooler,5142,SKU-00193,VIN-000579,Notes for item 193
+Sample Item 194,Sample description for inventory item 194,meat,kg,13.00,Prime Protein Supply,9.00,22.00,20.00,BATCH-014,Dry Storage,5143,SKU-00194,VIN-000582,Notes for item 194
+Sample Item 195,Sample description for inventory item 195,dairy,oz,13.75,DairyBest Distributors,10.00,24.00,24.00,BATCH-015,Freezer,5144,SKU-00195,VIN-000585,Notes for item 195
+Sample Item 196,Sample description for inventory item 196,dry_goods,gal,3.25,Metro Restaurant Supply,11.00,21.00,19.00,BATCH-016,Bar Storage,5145,SKU-00196,VIN-000588,Notes for item 196
+Sample Item 197,Sample description for inventory item 197,beverages,liter,4.00,Gourmet Goods LLC,5.00,16.00,9.00,BATCH-017,Prep Station,5146,SKU-00197,VIN-000591,Notes for item 197
+Sample Item 198,Sample description for inventory item 198,other,case,4.75,Sunrise Produce,6.00,18.00,8.00,BATCH-018,Pantry,5147,SKU-00198,VIN-000594,Notes for item 198
+Sample Item 199,Sample description for inventory item 199,produce,each,5.50,Fresh Farms Co.,7.00,20.00,9.00,BATCH-019,Walk-in Cooler,5148,SKU-00199,VIN-000597,Notes for item 199
+Sample Item 200,Sample description for inventory item 200,meat,pack,6.25,Prime Protein Supply,8.00,22.00,12.00,BATCH-020,Dry Storage,5149,SKU-00200,VIN-000600,Notes for item 200
+Sample Item 201,Sample description for inventory item 201,dairy,lb,7.00,DairyBest Distributors,9.00,19.00,11.00,BATCH-021,Freezer,5100,SKU-00201,VIN-000603,Notes for item 201
+Sample Item 202,Sample description for inventory item 202,dry_goods,kg,7.75,Metro Restaurant Supply,10.00,21.00,19.00,BATCH-022,Bar Storage,5101,SKU-00202,VIN-000606,Notes for item 202
+Sample Item 203,Sample description for inventory item 203,beverages,oz,8.50,Gourmet Goods LLC,11.00,23.00,18.00,BATCH-023,Prep Station,5102,SKU-00203,VIN-000609,Notes for item 203
+Sample Item 204,Sample description for inventory item 204,other,gal,9.25,Sunrise Produce,5.00,18.00,12.00,BATCH-024,Pantry,5103,SKU-00204,VIN-000612,Notes for item 204
+Sample Item 205,Sample description for inventory item 205,produce,liter,10.00,Fresh Farms Co.,6.00,20.00,15.00,BATCH-025,Walk-in Cooler,5104,SKU-00205,VIN-000615,Notes for item 205
+Sample Item 206,Sample description for inventory item 206,meat,case,10.75,Prime Protein Supply,7.00,17.00,14.00,BATCH-026,Dry Storage,5105,SKU-00206,VIN-000618,Notes for item 206
+Sample Item 207,Sample description for inventory item 207,dairy,each,11.50,DairyBest Distributors,8.00,19.00,10.00,BATCH-027,Freezer,5106,SKU-00207,VIN-000621,Notes for item 207
+Sample Item 208,Sample description for inventory item 208,dry_goods,pack,12.25,Metro Restaurant Supply,9.00,21.00,21.00,BATCH-028,Bar Storage,5107,SKU-00208,VIN-000624,Notes for item 208
+Sample Item 209,Sample description for inventory item 209,beverages,lb,13.00,Gourmet Goods LLC,10.00,23.00,22.00,BATCH-029,Prep Station,5108,SKU-00209,VIN-000627,Notes for item 209
+Sample Item 210,Sample description for inventory item 210,other,kg,13.75,Sunrise Produce,11.00,25.00,25.00,BATCH-030,Pantry,5109,SKU-00210,VIN-000630,Notes for item 210
+Sample Item 211,Sample description for inventory item 211,produce,oz,3.25,Fresh Farms Co.,5.00,15.00,6.00,BATCH-031,Walk-in Cooler,5110,SKU-00211,VIN-000633,Notes for item 211
+Sample Item 212,Sample description for inventory item 212,meat,gal,4.00,Prime Protein Supply,6.00,17.00,13.00,BATCH-032,Dry Storage,5111,SKU-00212,VIN-000636,Notes for item 212
+Sample Item 213,Sample description for inventory item 213,dairy,liter,4.75,DairyBest Distributors,7.00,19.00,11.00,BATCH-033,Freezer,5112,SKU-00213,VIN-000639,Notes for item 213
+Sample Item 214,Sample description for inventory item 214,dry_goods,case,5.50,Metro Restaurant Supply,8.00,21.00,11.00,BATCH-034,Bar Storage,5113,SKU-00214,VIN-000642,Notes for item 214
+Sample Item 215,Sample description for inventory item 215,beverages,each,6.25,Gourmet Goods LLC,9.00,23.00,13.00,BATCH-035,Prep Station,5114,SKU-00215,VIN-000645,Notes for item 215
+Sample Item 216,Sample description for inventory item 216,other,pack,7.00,Sunrise Produce,10.00,20.00,16.00,BATCH-036,Pantry,5115,SKU-00216,VIN-000648,Notes for item 216
+Sample Item 217,Sample description for inventory item 217,produce,lb,7.75,Fresh Farms Co.,11.00,22.00,11.00,BATCH-037,Walk-in Cooler,5116,SKU-00217,VIN-000651,Notes for item 217
+Sample Item 218,Sample description for inventory item 218,meat,kg,8.50,Prime Protein Supply,5.00,17.00,14.00,BATCH-038,Dry Storage,5117,SKU-00218,VIN-000654,Notes for item 218
+Sample Item 219,Sample description for inventory item 219,dairy,oz,9.25,DairyBest Distributors,6.00,19.00,14.00,BATCH-039,Freezer,5118,SKU-00219,VIN-000657,Notes for item 219
+Sample Item 220,Sample description for inventory item 220,dry_goods,gal,10.00,Metro Restaurant Supply,7.00,21.00,16.00,BATCH-040,Bar Storage,5119,SKU-00220,VIN-000660,Notes for item 220
+Sample Item 221,Sample description for inventory item 221,beverages,liter,10.75,Gourmet Goods LLC,8.00,18.00,8.00,BATCH-041,Prep Station,5120,SKU-00221,VIN-000663,Notes for item 221
+Sample Item 222,Sample description for inventory item 222,other,case,11.50,Sunrise Produce,9.00,20.00,14.00,BATCH-042,Pantry,5121,SKU-00222,VIN-000666,Notes for item 222
+Sample Item 223,Sample description for inventory item 223,produce,each,12.25,Fresh Farms Co.,10.00,22.00,11.00,BATCH-043,Walk-in Cooler,5122,SKU-00223,VIN-000669,Notes for item 223
+Sample Item 224,Sample description for inventory item 224,meat,pack,13.00,Prime Protein Supply,11.00,24.00,24.00,BATCH-044,Dry Storage,5123,SKU-00224,VIN-000672,Notes for item 224
+Sample Item 225,Sample description for inventory item 225,dairy,lb,13.75,DairyBest Distributors,5.00,19.00,19.00,BATCH-045,Freezer,5124,SKU-00225,VIN-000675,Notes for item 225
+Sample Item 226,Sample description for inventory item 226,dry_goods,kg,3.25,Metro Restaurant Supply,6.00,16.00,11.00,BATCH-046,Bar Storage,5125,SKU-00226,VIN-000678,Notes for item 226
+Sample Item 227,Sample description for inventory item 227,beverages,oz,4.00,Gourmet Goods LLC,7.00,18.00,17.00,BATCH-047,Prep Station,5126,SKU-00227,VIN-000681,Notes for item 227
+Sample Item 228,Sample description for inventory item 228,other,gal,4.75,Sunrise Produce,8.00,20.00,14.00,BATCH-048,Pantry,5127,SKU-00228,VIN-000684,Notes for item 228
+Sample Item 229,Sample description for inventory item 229,produce,liter,5.50,Fresh Farms Co.,9.00,22.00,13.00,BATCH-049,Walk-in Cooler,5128,SKU-00229,VIN-000687,Notes for item 229
+Sample Item 230,Sample description for inventory item 230,meat,case,6.25,Prime Protein Supply,10.00,24.00,14.00,BATCH-050,Dry Storage,5129,SKU-00230,VIN-000690,Notes for item 230
+Sample Item 231,Sample description for inventory item 231,dairy,each,7.00,DairyBest Distributors,11.00,21.00,21.00,BATCH-051,Freezer,5130,SKU-00231,VIN-000693,Notes for item 231
+Sample Item 232,Sample description for inventory item 232,dry_goods,pack,7.75,Metro Restaurant Supply,5.00,16.00,8.00,BATCH-052,Bar Storage,5131,SKU-00232,VIN-000696,Notes for item 232
+Sample Item 233,Sample description for inventory item 233,beverages,lb,8.50,Gourmet Goods LLC,6.00,18.00,17.00,BATCH-053,Prep Station,5132,SKU-00233,VIN-000699,Notes for item 233
+Sample Item 234,Sample description for inventory item 234,other,kg,9.25,Sunrise Produce,7.00,20.00,16.00,BATCH-054,Pantry,5133,SKU-00234,VIN-000702,Notes for item 234
+Sample Item 235,Sample description for inventory item 235,produce,oz,10.00,Fresh Farms Co.,8.00,22.00,17.00,BATCH-055,Walk-in Cooler,5134,SKU-00235,VIN-000705,Notes for item 235
+Sample Item 236,Sample description for inventory item 236,meat,gal,10.75,Prime Protein Supply,9.00,19.00,13.00,BATCH-056,Dry Storage,5135,SKU-00236,VIN-000708,Notes for item 236
+Sample Item 237,Sample description for inventory item 237,dairy,liter,11.50,DairyBest Distributors,10.00,21.00,18.00,BATCH-057,Freezer,5136,SKU-00237,VIN-000711,Notes for item 237
+Sample Item 238,Sample description for inventory item 238,dry_goods,case,12.25,Metro Restaurant Supply,11.00,23.00,14.00,BATCH-058,Bar Storage,5137,SKU-00238,VIN-000714,Notes for item 238
+Sample Item 239,Sample description for inventory item 239,beverages,each,13.00,Gourmet Goods LLC,5.00,18.00,5.00,BATCH-059,Prep Station,5138,SKU-00239,VIN-000717,Notes for item 239
+Sample Item 240,Sample description for inventory item 240,other,pack,13.75,Sunrise Produce,6.00,20.00,20.00,BATCH-060,Pantry,5139,SKU-00240,VIN-000720,Notes for item 240
+Sample Item 241,Sample description for inventory item 241,produce,lb,3.25,Fresh Farms Co.,7.00,17.00,16.00,BATCH-061,Walk-in Cooler,5140,SKU-00241,VIN-000723,Notes for item 241
+Sample Item 242,Sample description for inventory item 242,meat,kg,4.00,Prime Protein Supply,8.00,19.00,9.00,BATCH-062,Dry Storage,5141,SKU-00242,VIN-000726,Notes for item 242
+Sample Item 243,Sample description for inventory item 243,dairy,oz,4.75,DairyBest Distributors,9.00,21.00,17.00,BATCH-063,Freezer,5142,SKU-00243,VIN-000729,Notes for item 243
+Sample Item 244,Sample description for inventory item 244,dry_goods,gal,5.50,Metro Restaurant Supply,10.00,23.00,15.00,BATCH-064,Bar Storage,5143,SKU-00244,VIN-000732,Notes for item 244
+Sample Item 245,Sample description for inventory item 245,beverages,liter,6.25,Gourmet Goods LLC,11.00,25.00,15.00,BATCH-065,Prep Station,5144,SKU-00245,VIN-000735,Notes for item 245
+Sample Item 246,Sample description for inventory item 246,other,case,7.00,Sunrise Produce,5.00,15.00,8.00,BATCH-066,Pantry,5145,SKU-00246,VIN-000738,Notes for item 246
+Sample Item 247,Sample description for inventory item 247,produce,each,7.75,Fresh Farms Co.,6.00,17.00,12.00,BATCH-067,Walk-in Cooler,5146,SKU-00247,VIN-000741,Notes for item 247
+Sample Item 248,Sample description for inventory item 248,meat,pack,8.50,Prime Protein Supply,7.00,19.00,7.00,BATCH-068,Dry Storage,5147,SKU-00248,VIN-000744,Notes for item 248
+Sample Item 249,Sample description for inventory item 249,dairy,lb,9.25,DairyBest Distributors,8.00,21.00,18.00,BATCH-069,Freezer,5148,SKU-00249,VIN-000747,Notes for item 249
+Sample Item 250,Sample description for inventory item 250,dry_goods,kg,10.00,Metro Restaurant Supply,9.00,23.00,18.00,BATCH-070,Bar Storage,5149,SKU-00250,VIN-000750,Notes for item 250
+Sample Item 251,Sample description for inventory item 251,beverages,oz,10.75,Gourmet Goods LLC,10.00,20.00,18.00,BATCH-071,Prep Station,5100,SKU-00251,VIN-000753,Notes for item 251
+Sample Item 252,Sample description for inventory item 252,other,gal,11.50,Sunrise Produce,11.00,22.00,22.00,BATCH-072,Pantry,5101,SKU-00252,VIN-000756,Notes for item 252
+Sample Item 253,Sample description for inventory item 253,produce,liter,12.25,Fresh Farms Co.,5.00,17.00,10.00,BATCH-073,Walk-in Cooler,5102,SKU-00253,VIN-000759,Notes for item 253
+Sample Item 254,Sample description for inventory item 254,meat,case,13.00,Prime Protein Supply,6.00,19.00,7.00,BATCH-074,Dry Storage,5103,SKU-00254,VIN-000762,Notes for item 254
+Sample Item 255,Sample description for inventory item 255,dairy,each,13.75,DairyBest Distributors,7.00,21.00,21.00,BATCH-075,Freezer,5104,SKU-00255,VIN-000765,Notes for item 255
+Sample Item 256,Sample description for inventory item 256,dry_goods,pack,3.25,Metro Restaurant Supply,8.00,18.00,10.00,BATCH-076,Bar Storage,5105,SKU-00256,VIN-000768,Notes for item 256
+Sample Item 257,Sample description for inventory item 257,beverages,lb,4.00,Gourmet Goods LLC,9.00,20.00,13.00,BATCH-077,Prep Station,5106,SKU-00257,VIN-000771,Notes for item 257
+Sample Item 258,Sample description for inventory item 258,other,kg,4.75,Sunrise Produce,10.00,22.00,20.00,BATCH-078,Pantry,5107,SKU-00258,VIN-000774,Notes for item 258
+Sample Item 259,Sample description for inventory item 259,produce,oz,5.50,Fresh Farms Co.,11.00,24.00,17.00,BATCH-079,Walk-in Cooler,5108,SKU-00259,VIN-000777,Notes for item 259
+Sample Item 260,Sample description for inventory item 260,meat,gal,6.25,Prime Protein Supply,5.00,19.00,9.00,BATCH-080,Dry Storage,5109,SKU-00260,VIN-000780,Notes for item 260
+Sample Item 261,Sample description for inventory item 261,dairy,liter,7.00,DairyBest Distributors,6.00,16.00,13.00,BATCH-081,Freezer,5110,SKU-00261,VIN-000783,Notes for item 261
+Sample Item 262,Sample description for inventory item 262,dry_goods,case,7.75,Metro Restaurant Supply,7.00,18.00,16.00,BATCH-082,Bar Storage,5111,SKU-00262,VIN-000786,Notes for item 262
+Sample Item 263,Sample description for inventory item 263,beverages,each,8.50,Gourmet Goods LLC,8.00,20.00,10.00,BATCH-083,Prep Station,5112,SKU-00263,VIN-000789,Notes for item 263
+Sample Item 264,Sample description for inventory item 264,other,pack,9.25,Sunrise Produce,9.00,22.00,20.00,BATCH-084,Pantry,5113,SKU-00264,VIN-000792,Notes for item 264
+Sample Item 265,Sample description for inventory item 265,produce,lb,10.00,Fresh Farms Co.,10.00,24.00,19.00,BATCH-085,Walk-in Cooler,5114,SKU-00265,VIN-000795,Notes for item 265
+Sample Item 266,Sample description for inventory item 266,meat,kg,10.75,Prime Protein Supply,11.00,21.00,12.00,BATCH-086,Dry Storage,5115,SKU-00266,VIN-000798,Notes for item 266
+Sample Item 267,Sample description for inventory item 267,dairy,oz,11.50,DairyBest Distributors,5.00,16.00,7.00,BATCH-087,Freezer,5116,SKU-00267,VIN-000801,Notes for item 267
+Sample Item 268,Sample description for inventory item 268,dry_goods,gal,12.25,Metro Restaurant Supply,6.00,18.00,13.00,BATCH-088,Bar Storage,5117,SKU-00268,VIN-000804,Notes for item 268
+Sample Item 269,Sample description for inventory item 269,beverages,liter,13.00,Gourmet Goods LLC,7.00,20.00,9.00,BATCH-089,Prep Station,5118,SKU-00269,VIN-000807,Notes for item 269
+Sample Item 270,Sample description for inventory item 270,other,case,13.75,Sunrise Produce,8.00,22.00,22.00,BATCH-090,Pantry,5119,SKU-00270,VIN-000810,Notes for item 270
+Sample Item 271,Sample description for inventory item 271,produce,each,3.25,Fresh Farms Co.,9.00,19.00,15.00,BATCH-001,Walk-in Cooler,5120,SKU-00271,VIN-000813,Notes for item 271
+Sample Item 272,Sample description for inventory item 272,meat,pack,4.00,Prime Protein Supply,10.00,21.00,17.00,BATCH-002,Dry Storage,5121,SKU-00272,VIN-000816,Notes for item 272
+Sample Item 273,Sample description for inventory item 273,dairy,lb,4.75,DairyBest Distributors,11.00,23.00,23.00,BATCH-003,Freezer,5122,SKU-00273,VIN-000819,Notes for item 273
+Sample Item 274,Sample description for inventory item 274,dry_goods,kg,5.50,Metro Restaurant Supply,5.00,18.00,12.00,BATCH-004,Bar Storage,5123,SKU-00274,VIN-000822,Notes for item 274
+Sample Item 275,Sample description for inventory item 275,beverages,oz,6.25,Gourmet Goods LLC,6.00,20.00,10.00,BATCH-005,Prep Station,5124,SKU-00275,VIN-000825,Notes for item 275
+Sample Item 276,Sample description for inventory item 276,other,gal,7.00,Sunrise Produce,7.00,17.00,7.00,BATCH-006,Pantry,5125,SKU-00276,VIN-000828,Notes for item 276
+Sample Item 277,Sample description for inventory item 277,produce,liter,7.75,Fresh Farms Co.,8.00,19.00,8.00,BATCH-007,Walk-in Cooler,5126,SKU-00277,VIN-000831,Notes for item 277
+Sample Item 278,Sample description for inventory item 278,meat,case,8.50,Prime Protein Supply,9.00,21.00,13.00,BATCH-008,Dry Storage,5127,SKU-00278,VIN-000834,Notes for item 278
+Sample Item 279,Sample description for inventory item 279,dairy,each,9.25,DairyBest Distributors,10.00,23.00,22.00,BATCH-009,Freezer,5128,SKU-00279,VIN-000837,Notes for item 279
+Sample Item 280,Sample description for inventory item 280,dry_goods,pack,10.00,Metro Restaurant Supply,11.00,25.00,20.00,BATCH-010,Bar Storage,5129,SKU-00280,VIN-000840,Notes for item 280
+Sample Item 281,Sample description for inventory item 281,beverages,lb,10.75,Gourmet Goods LLC,5.00,15.00,10.00,BATCH-011,Prep Station,5130,SKU-00281,VIN-000843,Notes for item 281
+Sample Item 282,Sample description for inventory item 282,other,kg,11.50,Sunrise Produce,6.00,17.00,11.00,BATCH-012,Pantry,5131,SKU-00282,VIN-000846,Notes for item 282
+Sample Item 283,Sample description for inventory item 283,produce,oz,12.25,Fresh Farms Co.,7.00,19.00,16.00,BATCH-013,Walk-in Cooler,5132,SKU-00283,VIN-000849,Notes for item 283
+Sample Item 284,Sample description for inventory item 284,meat,gal,13.00,Prime Protein Supply,8.00,21.00,11.00,BATCH-014,Dry Storage,5133,SKU-00284,VIN-000852,Notes for item 284
+Sample Item 285,Sample description for inventory item 285,dairy,liter,13.75,DairyBest Distributors,9.00,23.00,23.00,BATCH-015,Freezer,5134,SKU-00285,VIN-000855,Notes for item 285
+Sample Item 286,Sample description for inventory item 286,dry_goods,case,3.25,Metro Restaurant Supply,10.00,20.00,20.00,BATCH-016,Bar Storage,5135,SKU-00286,VIN-000858,Notes for item 286
+Sample Item 287,Sample description for inventory item 287,beverages,each,4.00,Gourmet Goods LLC,11.00,22.00,21.00,BATCH-017,Prep Station,5136,SKU-00287,VIN-000861,Notes for item 287
+Sample Item 288,Sample description for inventory item 288,other,pack,4.75,Sunrise Produce,5.00,17.00,6.00,BATCH-018,Pantry,5137,SKU-00288,VIN-000864,Notes for item 288
+Sample Item 289,Sample description for inventory item 289,produce,lb,5.50,Fresh Farms Co.,6.00,19.00,14.00,BATCH-019,Walk-in Cooler,5138,SKU-00289,VIN-000867,Notes for item 289
+Sample Item 290,Sample description for inventory item 290,meat,kg,6.25,Prime Protein Supply,7.00,21.00,11.00,BATCH-020,Dry Storage,5139,SKU-00290,VIN-000870,Notes for item 290
+Sample Item 291,Sample description for inventory item 291,dairy,oz,7.00,DairyBest Distributors,8.00,18.00,12.00,BATCH-021,Freezer,5140,SKU-00291,VIN-000873,Notes for item 291
+Sample Item 292,Sample description for inventory item 292,dry_goods,gal,7.75,Metro Restaurant Supply,9.00,20.00,12.00,BATCH-022,Bar Storage,5141,SKU-00292,VIN-000876,Notes for item 292
+Sample Item 293,Sample description for inventory item 293,beverages,liter,8.50,Gourmet Goods LLC,10.00,22.00,16.00,BATCH-023,Prep Station,5142,SKU-00293,VIN-000879,Notes for item 293
+Sample Item 294,Sample description for inventory item 294,other,case,9.25,Sunrise Produce,11.00,24.00,24.00,BATCH-024,Pantry,5143,SKU-00294,VIN-000882,Notes for item 294
+Sample Item 295,Sample description for inventory item 295,produce,each,10.00,Fresh Farms Co.,5.00,19.00,14.00,BATCH-025,Walk-in Cooler,5144,SKU-00295,VIN-000885,Notes for item 295
+Sample Item 296,Sample description for inventory item 296,meat,pack,10.75,Prime Protein Supply,6.00,16.00,15.00,BATCH-026,Dry Storage,5145,SKU-00296,VIN-000888,Notes for item 296
+Sample Item 297,Sample description for inventory item 297,dairy,lb,11.50,DairyBest Distributors,7.00,18.00,15.00,BATCH-027,Freezer,5146,SKU-00297,VIN-000891,Notes for item 297
+Sample Item 298,Sample description for inventory item 298,dry_goods,kg,12.25,Metro Restaurant Supply,8.00,20.00,19.00,BATCH-028,Bar Storage,5147,SKU-00298,VIN-000894,Notes for item 298
+Sample Item 299,Sample description for inventory item 299,beverages,oz,13.00,Gourmet Goods LLC,9.00,22.00,13.00,BATCH-029,Prep Station,5148,SKU-00299,VIN-000897,Notes for item 299
+Sample Item 300,Sample description for inventory item 300,other,gal,13.75,Sunrise Produce,10.00,24.00,24.00,BATCH-030,Pantry,5149,SKU-00300,VIN-000900,Notes for item 300
+Sample Item 301,Sample description for inventory item 301,produce,liter,3.25,Fresh Farms Co.,11.00,21.00,14.00,BATCH-031,Walk-in Cooler,5100,SKU-00301,VIN-000903,Notes for item 301
+Sample Item 302,Sample description for inventory item 302,meat,case,4.00,Prime Protein Supply,5.00,16.00,6.00,BATCH-032,Dry Storage,5101,SKU-00302,VIN-000906,Notes for item 302
+Sample Item 303,Sample description for inventory item 303,dairy,each,4.75,DairyBest Distributors,6.00,18.00,9.00,BATCH-033,Freezer,5102,SKU-00303,VIN-000909,Notes for item 303
+Sample Item 304,Sample description for inventory item 304,dry_goods,pack,5.50,Metro Restaurant Supply,7.00,20.00,16.00,BATCH-034,Bar Storage,5103,SKU-00304,VIN-000912,Notes for item 304
+Sample Item 305,Sample description for inventory item 305,beverages,lb,6.25,Gourmet Goods LLC,8.00,22.00,12.00,BATCH-035,Prep Station,5104,SKU-00305,VIN-000915,Notes for item 305
+Sample Item 306,Sample description for inventory item 306,other,kg,7.00,Sunrise Produce,9.00,19.00,17.00,BATCH-036,Pantry,5105,SKU-00306,VIN-000918,Notes for item 306
+Sample Item 307,Sample description for inventory item 307,produce,oz,7.75,Fresh Farms Co.,10.00,21.00,16.00,BATCH-037,Walk-in Cooler,5106,SKU-00307,VIN-000921,Notes for item 307
+Sample Item 308,Sample description for inventory item 308,meat,gal,8.50,Prime Protein Supply,11.00,23.00,19.00,BATCH-038,Dry Storage,5107,SKU-00308,VIN-000924,Notes for item 308
+Sample Item 309,Sample description for inventory item 309,dairy,liter,9.25,DairyBest Distributors,5.00,18.00,5.00,BATCH-039,Freezer,5108,SKU-00309,VIN-000927,Notes for item 309
+Sample Item 310,Sample description for inventory item 310,dry_goods,case,10.00,Metro Restaurant Supply,6.00,20.00,15.00,BATCH-040,Bar Storage,5109,SKU-00310,VIN-000930,Notes for item 310
+Sample Item 311,Sample description for inventory item 311,beverages,each,10.75,Gourmet Goods LLC,7.00,17.00,9.00,BATCH-041,Prep Station,5110,SKU-00311,VIN-000933,Notes for item 311
+Sample Item 312,Sample description for inventory item 312,other,pack,11.50,Sunrise Produce,8.00,19.00,19.00,BATCH-042,Pantry,5111,SKU-00312,VIN-000936,Notes for item 312
+Sample Item 313,Sample description for inventory item 313,produce,lb,12.25,Fresh Farms Co.,9.00,21.00,9.00,BATCH-043,Walk-in Cooler,5112,SKU-00313,VIN-000939,Notes for item 313
+Sample Item 314,Sample description for inventory item 314,meat,kg,13.00,Prime Protein Supply,10.00,23.00,15.00,BATCH-044,Dry Storage,5113,SKU-00314,VIN-000942,Notes for item 314
+Sample Item 315,Sample description for inventory item 315,dairy,oz,13.75,DairyBest Distributors,11.00,25.00,25.00,BATCH-045,Freezer,5114,SKU-00315,VIN-000945,Notes for item 315
+Sample Item 316,Sample description for inventory item 316,dry_goods,gal,3.25,Metro Restaurant Supply,5.00,15.00,12.00,BATCH-046,Bar Storage,5115,SKU-00316,VIN-000948,Notes for item 316
+Sample Item 317,Sample description for inventory item 317,beverages,liter,4.00,Gourmet Goods LLC,6.00,17.00,10.00,BATCH-047,Prep Station,5116,SKU-00317,VIN-000951,Notes for item 317
+Sample Item 318,Sample description for inventory item 318,other,case,4.75,Sunrise Produce,7.00,19.00,12.00,BATCH-048,Pantry,5117,SKU-00318,VIN-000954,Notes for item 318
+Sample Item 319,Sample description for inventory item 319,produce,each,5.50,Fresh Farms Co.,8.00,21.00,18.00,BATCH-049,Walk-in Cooler,5118,SKU-00319,VIN-000957,Notes for item 319
+Sample Item 320,Sample description for inventory item 320,meat,pack,6.25,Prime Protein Supply,9.00,23.00,13.00,BATCH-050,Dry Storage,5119,SKU-00320,VIN-000960,Notes for item 320
+Sample Item 321,Sample description for inventory item 321,dairy,lb,7.00,DairyBest Distributors,10.00,20.00,11.00,BATCH-051,Freezer,5120,SKU-00321,VIN-000963,Notes for item 321
+Sample Item 322,Sample description for inventory item 322,dry_goods,kg,7.75,Metro Restaurant Supply,11.00,22.00,20.00,BATCH-052,Bar Storage,5121,SKU-00322,VIN-000966,Notes for item 322
+Sample Item 323,Sample description for inventory item 323,beverages,oz,8.50,Gourmet Goods LLC,5.00,17.00,15.00,BATCH-053,Prep Station,5122,SKU-00323,VIN-000969,Notes for item 323
+Sample Item 324,Sample description for inventory item 324,other,gal,9.25,Sunrise Produce,6.00,19.00,7.00,BATCH-054,Pantry,5123,SKU-00324,VIN-000972,Notes for item 324
+Sample Item 325,Sample description for inventory item 325,produce,liter,10.00,Fresh Farms Co.,7.00,21.00,16.00,BATCH-055,Walk-in Cooler,5124,SKU-00325,VIN-000975,Notes for item 325
+Sample Item 326,Sample description for inventory item 326,meat,case,10.75,Prime Protein Supply,8.00,18.00,14.00,BATCH-056,Dry Storage,5125,SKU-00326,VIN-000978,Notes for item 326
+Sample Item 327,Sample description for inventory item 327,dairy,each,11.50,DairyBest Distributors,9.00,20.00,11.00,BATCH-057,Freezer,5126,SKU-00327,VIN-000981,Notes for item 327
+Sample Item 328,Sample description for inventory item 328,dry_goods,pack,12.25,Metro Restaurant Supply,10.00,22.00,12.00,BATCH-058,Bar Storage,5127,SKU-00328,VIN-000984,Notes for item 328
+Sample Item 329,Sample description for inventory item 329,beverages,lb,13.00,Gourmet Goods LLC,11.00,24.00,17.00,BATCH-059,Prep Station,5128,SKU-00329,VIN-000987,Notes for item 329
+Sample Item 330,Sample description for inventory item 330,other,kg,13.75,Sunrise Produce,5.00,19.00,19.00,BATCH-060,Pantry,5129,SKU-00330,VIN-000990,Notes for item 330
+Sample Item 331,Sample description for inventory item 331,produce,oz,3.25,Fresh Farms Co.,6.00,16.00,6.00,BATCH-061,Walk-in Cooler,5130,SKU-00331,VIN-000993,Notes for item 331
+Sample Item 332,Sample description for inventory item 332,meat,gal,4.00,Prime Protein Supply,7.00,18.00,14.00,BATCH-062,Dry Storage,5131,SKU-00332,VIN-000996,Notes for item 332
+Sample Item 333,Sample description for inventory item 333,dairy,liter,4.75,DairyBest Distributors,8.00,20.00,15.00,BATCH-063,Freezer,5132,SKU-00333,VIN-000999,Notes for item 333
+Sample Item 334,Sample description for inventory item 334,dry_goods,case,5.50,Metro Restaurant Supply,9.00,22.00,20.00,BATCH-064,Bar Storage,5133,SKU-00334,VIN-001002,Notes for item 334
+Sample Item 335,Sample description for inventory item 335,beverages,each,6.25,Gourmet Goods LLC,10.00,24.00,14.00,BATCH-065,Prep Station,5134,SKU-00335,VIN-001005,Notes for item 335
+Sample Item 336,Sample description for inventory item 336,other,pack,7.00,Sunrise Produce,11.00,21.00,16.00,BATCH-066,Pantry,5135,SKU-00336,VIN-001008,Notes for item 336
+Sample Item 337,Sample description for inventory item 337,produce,lb,7.75,Fresh Farms Co.,5.00,16.00,5.00,BATCH-067,Walk-in Cooler,5136,SKU-00337,VIN-001011,Notes for item 337
+Sample Item 338,Sample description for inventory item 338,meat,kg,8.50,Prime Protein Supply,6.00,18.00,18.00,BATCH-068,Dry Storage,5137,SKU-00338,VIN-001014,Notes for item 338
+Sample Item 339,Sample description for inventory item 339,dairy,oz,9.25,DairyBest Distributors,7.00,20.00,9.00,BATCH-069,Freezer,5138,SKU-00339,VIN-001017,Notes for item 339
+Sample Item 340,Sample description for inventory item 340,dry_goods,gal,10.00,Metro Restaurant Supply,8.00,22.00,17.00,BATCH-070,Bar Storage,5139,SKU-00340,VIN-001020,Notes for item 340
+Sample Item 341,Sample description for inventory item 341,beverages,liter,10.75,Gourmet Goods LLC,9.00,19.00,19.00,BATCH-071,Prep Station,5140,SKU-00341,VIN-001023,Notes for item 341
+Sample Item 342,Sample description for inventory item 342,other,case,11.50,Sunrise Produce,10.00,21.00,15.00,BATCH-072,Pantry,5141,SKU-00342,VIN-001026,Notes for item 342
+Sample Item 343,Sample description for inventory item 343,produce,each,12.25,Fresh Farms Co.,11.00,23.00,15.00,BATCH-073,Walk-in Cooler,5142,SKU-00343,VIN-001029,Notes for item 343
+Sample Item 344,Sample description for inventory item 344,meat,pack,13.00,Prime Protein Supply,5.00,18.00,12.00,BATCH-074,Dry Storage,5143,SKU-00344,VIN-001032,Notes for item 344
+Sample Item 345,Sample description for inventory item 345,dairy,lb,13.75,DairyBest Distributors,6.00,20.00,20.00,BATCH-075,Freezer,5144,SKU-00345,VIN-001035,Notes for item 345
+Sample Item 346,Sample description for inventory item 346,dry_goods,kg,3.25,Metro Restaurant Supply,7.00,17.00,11.00,BATCH-076,Bar Storage,5145,SKU-00346,VIN-001038,Notes for item 346
+Sample Item 347,Sample description for inventory item 347,beverages,oz,4.00,Gourmet Goods LLC,8.00,19.00,18.00,BATCH-077,Prep Station,5146,SKU-00347,VIN-001041,Notes for item 347
+Sample Item 348,Sample description for inventory item 348,other,gal,4.75,Sunrise Produce,9.00,21.00,18.00,BATCH-078,Pantry,5147,SKU-00348,VIN-001044,Notes for item 348
+Sample Item 349,Sample description for inventory item 349,produce,liter,5.50,Fresh Farms Co.,10.00,23.00,22.00,BATCH-079,Walk-in Cooler,5148,SKU-00349,VIN-001047,Notes for item 349
+Sample Item 350,Sample description for inventory item 350,meat,case,6.25,Prime Protein Supply,11.00,25.00,15.00,BATCH-080,Dry Storage,5149,SKU-00350,VIN-001050,Notes for item 350
+Sample Item 351,Sample description for inventory item 351,dairy,each,7.00,DairyBest Distributors,5.00,15.00,14.00,BATCH-081,Freezer,5100,SKU-00351,VIN-001053,Notes for item 351
+Sample Item 352,Sample description for inventory item 352,dry_goods,pack,7.75,Metro Restaurant Supply,6.00,17.00,9.00,BATCH-082,Bar Storage,5101,SKU-00352,VIN-001056,Notes for item 352
+Sample Item 353,Sample description for inventory item 353,beverages,lb,8.50,Gourmet Goods LLC,7.00,19.00,8.00,BATCH-083,Prep Station,5102,SKU-00353,VIN-001059,Notes for item 353
+Sample Item 354,Sample description for inventory item 354,other,kg,9.25,Sunrise Produce,8.00,21.00,11.00,BATCH-084,Pantry,5103,SKU-00354,VIN-001062,Notes for item 354
+Sample Item 355,Sample description for inventory item 355,produce,oz,10.00,Fresh Farms Co.,9.00,23.00,18.00,BATCH-085,Walk-in Cooler,5104,SKU-00355,VIN-001065,Notes for item 355
+Sample Item 356,Sample description for inventory item 356,meat,gal,10.75,Prime Protein Supply,10.00,20.00,13.00,BATCH-086,Dry Storage,5105,SKU-00356,VIN-001068,Notes for item 356
+Sample Item 357,Sample description for inventory item 357,dairy,liter,11.50,DairyBest Distributors,11.00,22.00,19.00,BATCH-087,Freezer,5106,SKU-00357,VIN-001071,Notes for item 357
+Sample Item 358,Sample description for inventory item 358,dry_goods,case,12.25,Metro Restaurant Supply,5.00,17.00,11.00,BATCH-088,Bar Storage,5107,SKU-00358,VIN-001074,Notes for item 358
+Sample Item 359,Sample description for inventory item 359,beverages,each,13.00,Gourmet Goods LLC,6.00,19.00,14.00,BATCH-089,Prep Station,5108,SKU-00359,VIN-001077,Notes for item 359
+Sample Item 360,Sample description for inventory item 360,other,pack,13.75,Sunrise Produce,7.00,21.00,21.00,BATCH-090,Pantry,5109,SKU-00360,VIN-001080,Notes for item 360
+Sample Item 361,Sample description for inventory item 361,produce,lb,3.25,Fresh Farms Co.,8.00,18.00,16.00,BATCH-001,Walk-in Cooler,5110,SKU-00361,VIN-001083,Notes for item 361
+Sample Item 362,Sample description for inventory item 362,meat,kg,4.00,Prime Protein Supply,9.00,20.00,10.00,BATCH-002,Dry Storage,5111,SKU-00362,VIN-001086,Notes for item 362
+Sample Item 363,Sample description for inventory item 363,dairy,oz,4.75,DairyBest Distributors,10.00,22.00,21.00,BATCH-003,Freezer,5112,SKU-00363,VIN-001089,Notes for item 363
+Sample Item 364,Sample description for inventory item 364,dry_goods,gal,5.50,Metro Restaurant Supply,11.00,24.00,24.00,BATCH-004,Bar Storage,5113,SKU-00364,VIN-001092,Notes for item 364
+Sample Item 365,Sample description for inventory item 365,beverages,liter,6.25,Gourmet Goods LLC,5.00,19.00,9.00,BATCH-005,Prep Station,5114,SKU-00365,VIN-001095,Notes for item 365
+Sample Item 366,Sample description for inventory item 366,other,case,7.00,Sunrise Produce,6.00,16.00,8.00,BATCH-006,Pantry,5115,SKU-00366,VIN-001098,Notes for item 366
+Sample Item 367,Sample description for inventory item 367,produce,each,7.75,Fresh Farms Co.,7.00,18.00,13.00,BATCH-007,Walk-in Cooler,5116,SKU-00367,VIN-001101,Notes for item 367
+Sample Item 368,Sample description for inventory item 368,meat,pack,8.50,Prime Protein Supply,8.00,20.00,11.00,BATCH-008,Dry Storage,5117,SKU-00368,VIN-001104,Notes for item 368
+Sample Item 369,Sample description for inventory item 369,dairy,lb,9.25,DairyBest Distributors,9.00,22.00,13.00,BATCH-009,Freezer,5118,SKU-00369,VIN-001107,Notes for item 369
+Sample Item 370,Sample description for inventory item 370,dry_goods,kg,10.00,Metro Restaurant Supply,10.00,24.00,19.00,BATCH-010,Bar Storage,5119,SKU-00370,VIN-001110,Notes for item 370
+Sample Item 371,Sample description for inventory item 371,beverages,oz,10.75,Gourmet Goods LLC,11.00,21.00,18.00,BATCH-011,Prep Station,5120,SKU-00371,VIN-001113,Notes for item 371
+Sample Item 372,Sample description for inventory item 372,other,gal,11.50,Sunrise Produce,5.00,16.00,16.00,BATCH-012,Pantry,5121,SKU-00372,VIN-001116,Notes for item 372
+Sample Item 373,Sample description for inventory item 373,produce,liter,12.25,Fresh Farms Co.,6.00,18.00,14.00,BATCH-013,Walk-in Cooler,5122,SKU-00373,VIN-001119,Notes for item 373
+Sample Item 374,Sample description for inventory item 374,meat,case,13.00,Prime Protein Supply,7.00,20.00,16.00,BATCH-014,Dry Storage,5123,SKU-00374,VIN-001122,Notes for item 374
+Sample Item 375,Sample description for inventory item 375,dairy,each,13.75,DairyBest Distributors,8.00,22.00,22.00,BATCH-015,Freezer,5124,SKU-00375,VIN-001125,Notes for item 375
+Sample Item 376,Sample description for inventory item 376,dry_goods,pack,3.25,Metro Restaurant Supply,9.00,19.00,10.00,BATCH-016,Bar Storage,5125,SKU-00376,VIN-001128,Notes for item 376
+Sample Item 377,Sample description for inventory item 377,beverages,lb,4.00,Gourmet Goods LLC,10.00,21.00,14.00,BATCH-017,Prep Station,5126,SKU-00377,VIN-001131,Notes for item 377
+Sample Item 378,Sample description for inventory item 378,other,kg,4.75,Sunrise Produce,11.00,23.00,11.00,BATCH-018,Pantry,5127,SKU-00378,VIN-001134,Notes for item 378
+Sample Item 379,Sample description for inventory item 379,produce,oz,5.50,Fresh Farms Co.,5.00,18.00,5.00,BATCH-019,Walk-in Cooler,5128,SKU-00379,VIN-001137,Notes for item 379
+Sample Item 380,Sample description for inventory item 380,meat,gal,6.25,Prime Protein Supply,6.00,20.00,10.00,BATCH-020,Dry Storage,5129,SKU-00380,VIN-001140,Notes for item 380
+Sample Item 381,Sample description for inventory item 381,dairy,liter,7.00,DairyBest Distributors,7.00,17.00,13.00,BATCH-021,Freezer,5130,SKU-00381,VIN-001143,Notes for item 381
+Sample Item 382,Sample description for inventory item 382,dry_goods,case,7.75,Metro Restaurant Supply,8.00,19.00,17.00,BATCH-022,Bar Storage,5131,SKU-00382,VIN-001146,Notes for item 382
+Sample Item 383,Sample description for inventory item 383,beverages,each,8.50,Gourmet Goods LLC,9.00,21.00,14.00,BATCH-023,Prep Station,5132,SKU-00383,VIN-001149,Notes for item 383
+Sample Item 384,Sample description for inventory item 384,other,pack,9.25,Sunrise Produce,10.00,23.00,15.00,BATCH-024,Pantry,5133,SKU-00384,VIN-001152,Notes for item 384
+Sample Item 385,Sample description for inventory item 385,produce,lb,10.00,Fresh Farms Co.,11.00,25.00,20.00,BATCH-025,Walk-in Cooler,5134,SKU-00385,VIN-001155,Notes for item 385
+Sample Item 386,Sample description for inventory item 386,meat,kg,10.75,Prime Protein Supply,5.00,15.00,5.00,BATCH-026,Dry Storage,5135,SKU-00386,VIN-001158,Notes for item 386
+Sample Item 387,Sample description for inventory item 387,dairy,oz,11.50,DairyBest Distributors,6.00,17.00,8.00,BATCH-027,Freezer,5136,SKU-00387,VIN-001161,Notes for item 387
+Sample Item 388,Sample description for inventory item 388,dry_goods,gal,12.25,Metro Restaurant Supply,7.00,19.00,17.00,BATCH-028,Bar Storage,5137,SKU-00388,VIN-001164,Notes for item 388
+Sample Item 389,Sample description for inventory item 389,beverages,liter,13.00,Gourmet Goods LLC,8.00,21.00,18.00,BATCH-029,Prep Station,5138,SKU-00389,VIN-001167,Notes for item 389
+Sample Item 390,Sample description for inventory item 390,other,case,13.75,Sunrise Produce,9.00,23.00,23.00,BATCH-030,Pantry,5139,SKU-00390,VIN-001170,Notes for item 390
+Sample Item 391,Sample description for inventory item 391,produce,each,3.25,Fresh Farms Co.,10.00,20.00,15.00,BATCH-031,Walk-in Cooler,5140,SKU-00391,VIN-001173,Notes for item 391
+Sample Item 392,Sample description for inventory item 392,meat,pack,4.00,Prime Protein Supply,11.00,22.00,18.00,BATCH-032,Dry Storage,5141,SKU-00392,VIN-001176,Notes for item 392
+Sample Item 393,Sample description for inventory item 393,dairy,lb,4.75,DairyBest Distributors,5.00,17.00,7.00,BATCH-033,Freezer,5142,SKU-00393,VIN-001179,Notes for item 393
+Sample Item 394,Sample description for inventory item 394,dry_goods,kg,5.50,Metro Restaurant Supply,6.00,19.00,7.00,BATCH-034,Bar Storage,5143,SKU-00394,VIN-001182,Notes for item 394
+Sample Item 395,Sample description for inventory item 395,beverages,oz,6.25,Gourmet Goods LLC,7.00,21.00,11.00,BATCH-035,Prep Station,5144,SKU-00395,VIN-001185,Notes for item 395
+Sample Item 396,Sample description for inventory item 396,other,gal,7.00,Sunrise Produce,8.00,18.00,18.00,BATCH-036,Pantry,5145,SKU-00396,VIN-001188,Notes for item 396
+Sample Item 397,Sample description for inventory item 397,produce,liter,7.75,Fresh Farms Co.,9.00,20.00,9.00,BATCH-037,Walk-in Cooler,5146,SKU-00397,VIN-001191,Notes for item 397
+Sample Item 398,Sample description for inventory item 398,meat,case,8.50,Prime Protein Supply,10.00,22.00,17.00,BATCH-038,Dry Storage,5147,SKU-00398,VIN-001194,Notes for item 398
+Sample Item 399,Sample description for inventory item 399,dairy,each,9.25,DairyBest Distributors,11.00,24.00,17.00,BATCH-039,Freezer,5148,SKU-00399,VIN-001197,Notes for item 399
+Sample Item 400,Sample description for inventory item 400,dry_goods,pack,10.00,Metro Restaurant Supply,5.00,19.00,14.00,BATCH-040,Bar Storage,5149,SKU-00400,VIN-001200,Notes for item 400
+Sample Item 401,Sample description for inventory item 401,beverages,lb,10.75,Gourmet Goods LLC,6.00,16.00,10.00,BATCH-041,Prep Station,5100,SKU-00401,VIN-001203,Notes for item 401
+Sample Item 402,Sample description for inventory item 402,other,kg,11.50,Sunrise Produce,7.00,18.00,12.00,BATCH-042,Pantry,5101,SKU-00402,VIN-001206,Notes for item 402
+Sample Item 403,Sample description for inventory item 403,produce,oz,12.25,Fresh Farms Co.,8.00,20.00,20.00,BATCH-043,Walk-in Cooler,5102,SKU-00403,VIN-001209,Notes for item 403
+Sample Item 404,Sample description for inventory item 404,meat,gal,13.00,Prime Protein Supply,9.00,22.00,20.00,BATCH-044,Dry Storage,5103,SKU-00404,VIN-001212,Notes for item 404
+Sample Item 405,Sample description for inventory item 405,dairy,liter,13.75,DairyBest Distributors,10.00,24.00,24.00,BATCH-045,Freezer,5104,SKU-00405,VIN-001215,Notes for item 405
+Sample Item 406,Sample description for inventory item 406,dry_goods,case,3.25,Metro Restaurant Supply,11.00,21.00,20.00,BATCH-046,Bar Storage,5105,SKU-00406,VIN-001218,Notes for item 406
+Sample Item 407,Sample description for inventory item 407,beverages,each,4.00,Gourmet Goods LLC,5.00,16.00,15.00,BATCH-047,Prep Station,5106,SKU-00407,VIN-001221,Notes for item 407
+Sample Item 408,Sample description for inventory item 408,other,pack,4.75,Sunrise Produce,6.00,18.00,10.00,BATCH-048,Pantry,5107,SKU-00408,VIN-001224,Notes for item 408
+Sample Item 409,Sample description for inventory item 409,produce,lb,5.50,Fresh Farms Co.,7.00,20.00,9.00,BATCH-049,Walk-in Cooler,5108,SKU-00409,VIN-001227,Notes for item 409
+Sample Item 410,Sample description for inventory item 410,meat,kg,6.25,Prime Protein Supply,8.00,22.00,12.00,BATCH-050,Dry Storage,5109,SKU-00410,VIN-001230,Notes for item 410
+Sample Item 411,Sample description for inventory item 411,dairy,oz,7.00,DairyBest Distributors,9.00,19.00,12.00,BATCH-051,Freezer,5110,SKU-00411,VIN-001233,Notes for item 411
+Sample Item 412,Sample description for inventory item 412,dry_goods,gal,7.75,Metro Restaurant Supply,10.00,21.00,13.00,BATCH-052,Bar Storage,5111,SKU-00412,VIN-001236,Notes for item 412
+Sample Item 413,Sample description for inventory item 413,beverages,liter,8.50,Gourmet Goods LLC,11.00,23.00,20.00,BATCH-053,Prep Station,5112,SKU-00413,VIN-001239,Notes for item 413
+Sample Item 414,Sample description for inventory item 414,other,case,9.25,Sunrise Produce,5.00,18.00,12.00,BATCH-054,Pantry,5113,SKU-00414,VIN-001242,Notes for item 414
+Sample Item 415,Sample description for inventory item 415,produce,each,10.00,Fresh Farms Co.,6.00,20.00,15.00,BATCH-055,Walk-in Cooler,5114,SKU-00415,VIN-001245,Notes for item 415
+Sample Item 416,Sample description for inventory item 416,meat,pack,10.75,Prime Protein Supply,7.00,17.00,15.00,BATCH-056,Dry Storage,5115,SKU-00416,VIN-001248,Notes for item 416
+Sample Item 417,Sample description for inventory item 417,dairy,lb,11.50,DairyBest Distributors,8.00,19.00,16.00,BATCH-057,Freezer,5116,SKU-00417,VIN-001251,Notes for item 417
+Sample Item 418,Sample description for inventory item 418,dry_goods,kg,12.25,Metro Restaurant Supply,9.00,21.00,10.00,BATCH-058,Bar Storage,5117,SKU-00418,VIN-001254,Notes for item 418
+Sample Item 419,Sample description for inventory item 419,beverages,oz,13.00,Gourmet Goods LLC,10.00,23.00,22.00,BATCH-059,Prep Station,5118,SKU-00419,VIN-001257,Notes for item 419
+Sample Item 420,Sample description for inventory item 420,other,gal,13.75,Sunrise Produce,11.00,25.00,25.00,BATCH-060,Pantry,5119,SKU-00420,VIN-001260,Notes for item 420
+Sample Item 421,Sample description for inventory item 421,produce,liter,3.25,Fresh Farms Co.,5.00,15.00,7.00,BATCH-061,Walk-in Cooler,5120,SKU-00421,VIN-001263,Notes for item 421
+Sample Item 422,Sample description for inventory item 422,meat,case,4.00,Prime Protein Supply,6.00,17.00,7.00,BATCH-062,Dry Storage,5121,SKU-00422,VIN-001266,Notes for item 422
+Sample Item 423,Sample description for inventory item 423,dairy,each,4.75,DairyBest Distributors,7.00,19.00,13.00,BATCH-063,Freezer,5122,SKU-00423,VIN-001269,Notes for item 423
+Sample Item 424,Sample description for inventory item 424,dry_goods,pack,5.50,Metro Restaurant Supply,8.00,21.00,11.00,BATCH-064,Bar Storage,5123,SKU-00424,VIN-001272,Notes for item 424
+Sample Item 425,Sample description for inventory item 425,beverages,lb,6.25,Gourmet Goods LLC,9.00,23.00,13.00,BATCH-065,Prep Station,5124,SKU-00425,VIN-001275,Notes for item 425
+Sample Item 426,Sample description for inventory item 426,other,kg,7.00,Sunrise Produce,10.00,20.00,17.00,BATCH-066,Pantry,5125,SKU-00426,VIN-001278,Notes for item 426
+Sample Item 427,Sample description for inventory item 427,produce,oz,7.75,Fresh Farms Co.,11.00,22.00,17.00,BATCH-067,Walk-in Cooler,5126,SKU-00427,VIN-001281,Notes for item 427
+Sample Item 428,Sample description for inventory item 428,meat,gal,8.50,Prime Protein Supply,5.00,17.00,16.00,BATCH-068,Dry Storage,5127,SKU-00428,VIN-001284,Notes for item 428
+Sample Item 429,Sample description for inventory item 429,dairy,liter,9.25,DairyBest Distributors,6.00,19.00,14.00,BATCH-069,Freezer,5128,SKU-00429,VIN-001287,Notes for item 429
+Sample Item 430,Sample description for inventory item 430,dry_goods,case,10.00,Metro Restaurant Supply,7.00,21.00,16.00,BATCH-070,Bar Storage,5129,SKU-00430,VIN-001290,Notes for item 430
+Sample Item 431,Sample description for inventory item 431,beverages,each,10.75,Gourmet Goods LLC,8.00,18.00,9.00,BATCH-071,Prep Station,5130,SKU-00431,VIN-001293,Notes for item 431
+Sample Item 432,Sample description for inventory item 432,other,pack,11.50,Sunrise Produce,9.00,20.00,20.00,BATCH-072,Pantry,5131,SKU-00432,VIN-001296,Notes for item 432
+Sample Item 433,Sample description for inventory item 433,produce,lb,12.25,Fresh Farms Co.,10.00,22.00,13.00,BATCH-073,Walk-in Cooler,5132,SKU-00433,VIN-001299,Notes for item 433
+Sample Item 434,Sample description for inventory item 434,meat,kg,13.00,Prime Protein Supply,11.00,24.00,24.00,BATCH-074,Dry Storage,5133,SKU-00434,VIN-001302,Notes for item 434
+Sample Item 435,Sample description for inventory item 435,dairy,oz,13.75,DairyBest Distributors,5.00,19.00,19.00,BATCH-075,Freezer,5134,SKU-00435,VIN-001305,Notes for item 435
+Sample Item 436,Sample description for inventory item 436,dry_goods,gal,3.25,Metro Restaurant Supply,6.00,16.00,12.00,BATCH-076,Bar Storage,5135,SKU-00436,VIN-001308,Notes for item 436
+Sample Item 437,Sample description for inventory item 437,beverages,liter,4.00,Gourmet Goods LLC,7.00,18.00,11.00,BATCH-077,Prep Station,5136,SKU-00437,VIN-001311,Notes for item 437
+Sample Item 438,Sample description for inventory item 438,other,case,4.75,Sunrise Produce,8.00,20.00,16.00,BATCH-078,Pantry,5137,SKU-00438,VIN-001314,Notes for item 438
+Sample Item 439,Sample description for inventory item 439,produce,each,5.50,Fresh Farms Co.,9.00,22.00,13.00,BATCH-079,Walk-in Cooler,5138,SKU-00439,VIN-001317,Notes for item 439
+Sample Item 440,Sample description for inventory item 440,meat,pack,6.25,Prime Protein Supply,10.00,24.00,14.00,BATCH-080,Dry Storage,5139,SKU-00440,VIN-001320,Notes for item 440
+Sample Item 441,Sample description for inventory item 441,dairy,lb,7.00,DairyBest Distributors,11.00,21.00,11.00,BATCH-081,Freezer,5140,SKU-00441,VIN-001323,Notes for item 441
+Sample Item 442,Sample description for inventory item 442,dry_goods,kg,7.75,Metro Restaurant Supply,5.00,16.00,14.00,BATCH-082,Bar Storage,5141,SKU-00442,VIN-001326,Notes for item 442
+Sample Item 443,Sample description for inventory item 443,beverages,oz,8.50,Gourmet Goods LLC,6.00,18.00,6.00,BATCH-083,Prep Station,5142,SKU-00443,VIN-001329,Notes for item 443
+Sample Item 444,Sample description for inventory item 444,other,gal,9.25,Sunrise Produce,7.00,20.00,16.00,BATCH-084,Pantry,5143,SKU-00444,VIN-001332,Notes for item 444
+Sample Item 445,Sample description for inventory item 445,produce,liter,10.00,Fresh Farms Co.,8.00,22.00,17.00,BATCH-085,Walk-in Cooler,5144,SKU-00445,VIN-001335,Notes for item 445
+Sample Item 446,Sample description for inventory item 446,meat,case,10.75,Prime Protein Supply,9.00,19.00,14.00,BATCH-086,Dry Storage,5145,SKU-00446,VIN-001338,Notes for item 446
+Sample Item 447,Sample description for inventory item 447,dairy,each,11.50,DairyBest Distributors,10.00,21.00,12.00,BATCH-087,Freezer,5146,SKU-00447,VIN-001341,Notes for item 447
+Sample Item 448,Sample description for inventory item 448,dry_goods,pack,12.25,Metro Restaurant Supply,11.00,23.00,16.00,BATCH-088,Bar Storage,5147,SKU-00448,VIN-001344,Notes for item 448
+Sample Item 449,Sample description for inventory item 449,beverages,lb,13.00,Gourmet Goods LLC,5.00,18.00,5.00,BATCH-089,Prep Station,5148,SKU-00449,VIN-001347,Notes for item 449
+Sample Item 450,Sample description for inventory item 450,other,kg,13.75,Sunrise Produce,6.00,20.00,20.00,BATCH-090,Pantry,5149,SKU-00450,VIN-001350,Notes for item 450
+Sample Item 451,Sample description for inventory item 451,produce,oz,3.25,Fresh Farms Co.,7.00,17.00,17.00,BATCH-001,Walk-in Cooler,5100,SKU-00451,VIN-001353,Notes for item 451
+Sample Item 452,Sample description for inventory item 452,meat,gal,4.00,Prime Protein Supply,8.00,19.00,15.00,BATCH-002,Dry Storage,5101,SKU-00452,VIN-001356,Notes for item 452
+Sample Item 453,Sample description for inventory item 453,dairy,liter,4.75,DairyBest Distributors,9.00,21.00,19.00,BATCH-003,Freezer,5102,SKU-00453,VIN-001359,Notes for item 453
+Sample Item 454,Sample description for inventory item 454,dry_goods,case,5.50,Metro Restaurant Supply,10.00,23.00,15.00,BATCH-004,Bar Storage,5103,SKU-00454,VIN-001362,Notes for item 454
+Sample Item 455,Sample description for inventory item 455,beverages,each,6.25,Gourmet Goods LLC,11.00,25.00,15.00,BATCH-005,Prep Station,5104,SKU-00455,VIN-001365,Notes for item 455
+Sample Item 456,Sample description for inventory item 456,other,pack,7.00,Sunrise Produce,5.00,15.00,9.00,BATCH-006,Pantry,5105,SKU-00456,VIN-001368,Notes for item 456
+Sample Item 457,Sample description for inventory item 457,produce,lb,7.75,Fresh Farms Co.,6.00,17.00,6.00,BATCH-007,Walk-in Cooler,5106,SKU-00457,VIN-001371,Notes for item 457
+Sample Item 458,Sample description for inventory item 458,meat,kg,8.50,Prime Protein Supply,7.00,19.00,9.00,BATCH-008,Dry Storage,5107,SKU-00458,VIN-001374,Notes for item 458
+Sample Item 459,Sample description for inventory item 459,dairy,oz,9.25,DairyBest Distributors,8.00,21.00,18.00,BATCH-009,Freezer,5108,SKU-00459,VIN-001377,Notes for item 459
+Sample Item 460,Sample description for inventory item 460,dry_goods,gal,10.00,Metro Restaurant Supply,9.00,23.00,18.00,BATCH-010,Bar Storage,5109,SKU-00460,VIN-001380,Notes for item 460
+Sample Item 461,Sample description for inventory item 461,beverages,liter,10.75,Gourmet Goods LLC,10.00,20.00,19.00,BATCH-011,Prep Station,5110,SKU-00461,VIN-001383,Notes for item 461
+Sample Item 462,Sample description for inventory item 462,other,case,11.50,Sunrise Produce,11.00,22.00,16.00,BATCH-012,Pantry,5111,SKU-00462,VIN-001386,Notes for item 462
+Sample Item 463,Sample description for inventory item 463,produce,each,12.25,Fresh Farms Co.,5.00,17.00,12.00,BATCH-013,Walk-in Cooler,5112,SKU-00463,VIN-001389,Notes for item 463
+Sample Item 464,Sample description for inventory item 464,meat,pack,13.00,Prime Protein Supply,6.00,19.00,7.00,BATCH-014,Dry Storage,5113,SKU-00464,VIN-001392,Notes for item 464
+Sample Item 465,Sample description for inventory item 465,dairy,lb,13.75,DairyBest Distributors,7.00,21.00,21.00,BATCH-015,Freezer,5114,SKU-00465,VIN-001395,Notes for item 465
+Sample Item 466,Sample description for inventory item 466,dry_goods,kg,3.25,Metro Restaurant Supply,8.00,18.00,11.00,BATCH-016,Bar Storage,5115,SKU-00466,VIN-001398,Notes for item 466
+Sample Item 467,Sample description for inventory item 467,beverages,oz,4.00,Gourmet Goods LLC,9.00,20.00,19.00,BATCH-017,Prep Station,5116,SKU-00467,VIN-001401,Notes for item 467
+Sample Item 468,Sample description for inventory item 468,other,gal,4.75,Sunrise Produce,10.00,22.00,22.00,BATCH-018,Pantry,5117,SKU-00468,VIN-001404,Notes for item 468
+Sample Item 469,Sample description for inventory item 469,produce,liter,5.50,Fresh Farms Co.,11.00,24.00,17.00,BATCH-019,Walk-in Cooler,5118,SKU-00469,VIN-001407,Notes for item 469
+Sample Item 470,Sample description for inventory item 470,meat,case,6.25,Prime Protein Supply,5.00,19.00,9.00,BATCH-020,Dry Storage,5119,SKU-00470,VIN-001410,Notes for item 470
+Sample Item 471,Sample description for inventory item 471,dairy,each,7.00,DairyBest Distributors,6.00,16.00,14.00,BATCH-021,Freezer,5120,SKU-00471,VIN-001413,Notes for item 471
+Sample Item 472,Sample description for inventory item 472,dry_goods,pack,7.75,Metro Restaurant Supply,7.00,18.00,10.00,BATCH-022,Bar Storage,5121,SKU-00472,VIN-001416,Notes for item 472
+Sample Item 473,Sample description for inventory item 473,beverages,lb,8.50,Gourmet Goods LLC,8.00,20.00,12.00,BATCH-023,Prep Station,5122,SKU-00473,VIN-001419,Notes for item 473
+Sample Item 474,Sample description for inventory item 474,other,kg,9.25,Sunrise Produce,9.00,22.00,20.00,BATCH-024,Pantry,5123,SKU-00474,VIN-001422,Notes for item 474
+Sample Item 475,Sample description for inventory item 475,produce,oz,10.00,Fresh Farms Co.,10.00,24.00,19.00,BATCH-025,Walk-in Cooler,5124,SKU-00475,VIN-001425,Notes for item 475
+Sample Item 476,Sample description for inventory item 476,meat,gal,10.75,Prime Protein Supply,11.00,21.00,13.00,BATCH-026,Dry Storage,5125,SKU-00476,VIN-001428,Notes for item 476
+Sample Item 477,Sample description for inventory item 477,dairy,liter,11.50,DairyBest Distributors,5.00,16.00,13.00,BATCH-027,Freezer,5126,SKU-00477,VIN-001431,Notes for item 477
+Sample Item 478,Sample description for inventory item 478,dry_goods,case,12.25,Metro Restaurant Supply,6.00,18.00,15.00,BATCH-028,Bar Storage,5127,SKU-00478,VIN-001434,Notes for item 478
+Sample Item 479,Sample description for inventory item 479,beverages,each,13.00,Gourmet Goods LLC,7.00,20.00,9.00,BATCH-029,Prep Station,5128,SKU-00479,VIN-001437,Notes for item 479
+Sample Item 480,Sample description for inventory item 480,other,pack,13.75,Sunrise Produce,8.00,22.00,22.00,BATCH-030,Pantry,5129,SKU-00480,VIN-001440,Notes for item 480
+Sample Item 481,Sample description for inventory item 481,produce,lb,3.25,Fresh Farms Co.,9.00,19.00,16.00,BATCH-031,Walk-in Cooler,5130,SKU-00481,VIN-001443,Notes for item 481
+Sample Item 482,Sample description for inventory item 482,meat,kg,4.00,Prime Protein Supply,10.00,21.00,11.00,BATCH-032,Dry Storage,5131,SKU-00482,VIN-001446,Notes for item 482
+Sample Item 483,Sample description for inventory item 483,dairy,oz,4.75,DairyBest Distributors,11.00,23.00,12.00,BATCH-033,Freezer,5132,SKU-00483,VIN-001449,Notes for item 483
+Sample Item 484,Sample description for inventory item 484,dry_goods,gal,5.50,Metro Restaurant Supply,5.00,18.00,12.00,BATCH-034,Bar Storage,5133,SKU-00484,VIN-001452,Notes for item 484
+Sample Item 485,Sample description for inventory item 485,beverages,liter,6.25,Gourmet Goods LLC,6.00,20.00,10.00,BATCH-035,Prep Station,5134,SKU-00485,VIN-001455,Notes for item 485
+Sample Item 486,Sample description for inventory item 486,other,case,7.00,Sunrise Produce,7.00,17.00,8.00,BATCH-036,Pantry,5135,SKU-00486,VIN-001458,Notes for item 486
+Sample Item 487,Sample description for inventory item 487,produce,each,7.75,Fresh Farms Co.,8.00,19.00,14.00,BATCH-037,Walk-in Cooler,5136,SKU-00487,VIN-001461,Notes for item 487
+Sample Item 488,Sample description for inventory item 488,meat,pack,8.50,Prime Protein Supply,9.00,21.00,15.00,BATCH-038,Dry Storage,5137,SKU-00488,VIN-001464,Notes for item 488
+Sample Item 489,Sample description for inventory item 489,dairy,lb,9.25,DairyBest Distributors,10.00,23.00,22.00,BATCH-039,Freezer,5138,SKU-00489,VIN-001467,Notes for item 489
+Sample Item 490,Sample description for inventory item 490,dry_goods,kg,10.00,Metro Restaurant Supply,11.00,25.00,20.00,BATCH-040,Bar Storage,5139,SKU-00490,VIN-001470,Notes for item 490
+Sample Item 491,Sample description for inventory item 491,beverages,oz,10.75,Gourmet Goods LLC,5.00,15.00,11.00,BATCH-041,Prep Station,5140,SKU-00491,VIN-001473,Notes for item 491
+Sample Item 492,Sample description for inventory item 492,other,gal,11.50,Sunrise Produce,6.00,17.00,17.00,BATCH-042,Pantry,5141,SKU-00492,VIN-001476,Notes for item 492
+Sample Item 493,Sample description for inventory item 493,produce,liter,12.25,Fresh Farms Co.,7.00,19.00,18.00,BATCH-043,Walk-in Cooler,5142,SKU-00493,VIN-001479,Notes for item 493
+Sample Item 494,Sample description for inventory item 494,meat,case,13.00,Prime Protein Supply,8.00,21.00,11.00,BATCH-044,Dry Storage,5143,SKU-00494,VIN-001482,Notes for item 494
+Sample Item 495,Sample description for inventory item 495,dairy,each,13.75,DairyBest Distributors,9.00,23.00,23.00,BATCH-045,Freezer,5144,SKU-00495,VIN-001485,Notes for item 495
+Sample Item 496,Sample description for inventory item 496,dry_goods,pack,3.25,Metro Restaurant Supply,10.00,20.00,10.00,BATCH-046,Bar Storage,5145,SKU-00496,VIN-001488,Notes for item 496
+Sample Item 497,Sample description for inventory item 497,beverages,lb,4.00,Gourmet Goods LLC,11.00,22.00,15.00,BATCH-047,Prep Station,5146,SKU-00497,VIN-001491,Notes for item 497
+Sample Item 498,Sample description for inventory item 498,other,kg,4.75,Sunrise Produce,5.00,17.00,8.00,BATCH-048,Pantry,5147,SKU-00498,VIN-001494,Notes for item 498
+Sample Item 499,Sample description for inventory item 499,produce,oz,5.50,Fresh Farms Co.,6.00,19.00,14.00,BATCH-049,Walk-in Cooler,5148,SKU-00499,VIN-001497,Notes for item 499
+Sample Item 500,Sample description for inventory item 500,meat,gal,6.25,Prime Protein Supply,7.00,21.00,11.00,BATCH-050,Dry Storage,5149,SKU-00500,VIN-001500,Notes for item 500
