@@ -213,10 +213,14 @@ const CATEGORY_MAPPINGS = {
  * CategoryMapper class - Maps POS categories to ingredient categories
  */
 class CategoryMapper {
-    constructor() {
+    constructor(options = {}) {
         this.mappings = CATEGORY_MAPPINGS;
-        this.maxDistance = 3; // Max Levenshtein distance for fuzzy match
-        this.minConfidence = 0.7; // Min confidence score (0-1)
+        this.maxDistance = options.maxDistance ?? 3; // Max Levenshtein distance for fuzzy match
+        this.minConfidence = options.minConfidence ?? 0.7; // Min confidence score (0-1)
+        this.enableFallback = options.enableFallback ?? true;
+        this.fallbackCategory = options.fallbackCategory ?? 'other';
+        this.fallbackConfidence = options.fallbackConfidence ?? 0.35;
+        this.fallbackMatchType = options.fallbackMatchType ?? 'fallback';
     }
     
     /**
@@ -230,7 +234,15 @@ class CategoryMapper {
     mapSquareCategory(posCategory) {
         if (!posCategory || typeof posCategory !== 'string') {
             logger.warn('CategoryMapper: Invalid posCategory input', { posCategory });
-            return null;
+            if (!this.enableFallback) {
+                return null;
+            }
+            return {
+                category: this.fallbackCategory,
+                confidence: this.fallbackConfidence,
+                matchType: this.fallbackMatchType,
+                reason: 'invalid_input'
+            };
         }
         
         const normalized = normalizeString(posCategory);
@@ -286,15 +298,27 @@ class CategoryMapper {
             }
         }
         
-        // 3. No match found
-        logger.info('CategoryMapper: No match found - queuing for user confirmation', {
+        // 3. No match found – fall back to a safe category (typically "other") so downstream flows stay resilient.
+        logger.info('CategoryMapper: No match found - returning fallback category', {
             posCategory,
             normalized,
             bestDistance,
-            bestPattern
+            bestPattern,
+            fallbackCategory: this.fallbackCategory,
+            enableFallback: this.enableFallback
         });
+
+        if (!this.enableFallback) {
+            return null;
+        }
         
-        return null;
+        return {
+            category: this.fallbackCategory,
+            confidence: this.fallbackConfidence,
+            matchType: this.fallbackMatchType,
+            reason: 'no_match',
+            suggestedCategory: bestPattern ? this.mappings[bestPattern] : null
+        };
     }
     
     /**

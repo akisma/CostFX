@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { Calendar, Package, TrendingUp, AlertTriangle } from 'lucide-react'
 import PeriodSelector from './PeriodSelector'

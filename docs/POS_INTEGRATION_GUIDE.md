@@ -336,6 +336,289 @@ if (connection && connection.isActive()) {
 
 ---
 
+## RESTful API Structure
+
+**Updated: October 13, 2025**
+
+The POS Integration API follows RESTful conventions for clear, predictable resource management.
+
+### API Design Principles
+
+1. **Resource-Based URLs**: URLs represent resources (inventory, sales), not actions
+2. **HTTP Methods**: Use standard methods (GET, POST, DELETE) for operations
+3. **Consistent Patterns**: All POS providers follow same URL structure
+4. **Two-Tier Architecture**: Separate endpoints for raw (Tier 1) and transformed (Tier 2) data
+
+### Base URL Structure
+
+```
+/api/pos/:provider/:resource/:tier/:action
+```
+
+**Examples:**
+- `/api/pos/square/inventory/raw` - Get raw Square inventory data (Tier 1)
+- `/api/pos/square/inventory/transformed` - Get transformed inventory data (Tier 2)
+- `/api/pos/square/sales/raw` - Get raw Square sales data (Tier 1)
+- `/api/pos/square/sales/transformed` - Get transformed sales data (Tier 2)
+
+### Inventory Endpoints
+
+#### Sync Inventory (Import from POS)
+```http
+POST /api/pos/square/inventory/sync
+Authorization: Bearer <token>
+
+Response:
+{
+  "success": true,
+  "synced": 45,
+  "errors": 0,
+  "message": "Successfully synced 45 inventory items"
+}
+```
+
+#### Transform Inventory (Tier 1 → Tier 2)
+```http
+POST /api/pos/square/inventory/transform
+Authorization: Bearer <token>
+
+Response:
+{
+  "success": true,
+  "message": "Successfully transformed 45 items",
+  "transformed": 45,
+  "skipped": 0
+}
+```
+
+#### Get Raw Inventory Data (Tier 1)
+```http
+GET /api/pos/square/inventory/raw?connectionId=123
+Authorization: Bearer <token>
+
+Response:
+{
+  "categories": [
+    {
+      "id": "cat_123",
+      "name": "Beverages",
+      "square_id": "ABC123"
+    }
+  ],
+  "items": [
+    {
+      "id": "item_456",
+      "name": "Coffee - Medium Roast",
+      "category_id": "cat_123",
+      "square_id": "DEF456",
+      "unit_cost": 8.50
+    }
+  ]
+}
+```
+
+#### Get Transformed Inventory Data (Tier 2)
+```http
+GET /api/pos/square/inventory/transformed?connectionId=123
+Authorization: Bearer <token>
+
+Response:
+{
+  "items": [
+    {
+      "id": 789,
+      "name": "Coffee - Medium Roast",
+      "category": "Beverages",
+      "unit_cost": 8.50,
+      "unit_of_measure": "lb",
+      "par_level": null,
+      "pos_source": "square",
+      "pos_item_id": "item_456"
+    }
+  ]
+}
+```
+
+#### Clear Inventory Data
+```http
+DELETE /api/pos/square/inventory
+Authorization: Bearer <token>
+
+Response:
+{
+  "success": true,
+  "message": "Successfully cleared inventory data",
+  "deletedRaw": 45,
+  "deletedTransformed": 45
+}
+```
+
+### Sales Endpoints
+
+#### Sync Sales (Import from POS)
+```http
+POST /api/pos/square/sales/sync
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "startDate": "2025-10-01",
+  "endDate": "2025-10-13"
+}
+
+Response:
+{
+  "success": true,
+  "synced": {
+    "orders": 150,
+    "orderItems": 325
+  },
+  "errors": 0,
+  "message": "Successfully synced 150 orders with 325 line items"
+}
+```
+
+#### Transform Sales (Tier 1 → Tier 2)
+```http
+POST /api/pos/square/sales/transform
+Authorization: Bearer <token>
+
+Response:
+{
+  "success": true,
+  "message": "Successfully transformed 325 sales transactions",
+  "transformed": 325,
+  "skipped": 0
+}
+```
+
+#### Get Raw Sales Data (Tier 1)
+```http
+GET /api/pos/square/sales/raw?connectionId=123
+Authorization: Bearer <token>
+
+Response:
+{
+  "orders": [
+    {
+      "id": 1,
+      "square_order_id": "order_abc123",
+      "created_at": "2025-10-13T10:30:00Z",
+      "state": "COMPLETED",
+      "total_money": 2450,
+      "line_items_count": 3
+    }
+  ],
+  "orderItems": [
+    {
+      "id": 1,
+      "order_id": 1,
+      "square_order_item_id": "item_def456",
+      "name": "Burger",
+      "quantity": "2.0",
+      "base_price_money": 1200
+    }
+  ]
+}
+```
+
+#### Get Transformed Sales Data (Tier 2)
+```http
+GET /api/pos/square/sales/transformed?connectionId=123
+Authorization: Bearer <token>
+
+Response:
+{
+  "transactions": [
+    {
+      "id": 1,
+      "transaction_date": "2025-10-13",
+      "item_name": "Burger",
+      "quantity": 2.0,
+      "unit_price": 12.00,
+      "total_amount": 24.00,
+      "pos_source": "square"
+    }
+  ]
+}
+```
+
+#### Clear Sales Data
+```http
+DELETE /api/pos/square/sales
+Authorization: Bearer <token>
+
+Response:
+{
+  "success": true,
+  "message": "Successfully cleared sales data",
+  "deletedRaw": {
+    "orders": 150,
+    "orderItems": 325
+  },
+  "deletedTransformed": 325
+}
+```
+
+### General POS Endpoints
+
+#### Get Connection Status
+```http
+GET /api/pos/square/connection?restaurantId=1
+Authorization: Bearer <token>
+
+Response:
+{
+  "id": 123,
+  "provider": "square",
+  "status": "active",
+  "merchantId": "merchant_abc",
+  "connectedAt": "2025-10-01T12:00:00Z",
+  "tokenExpiresAt": "2025-11-01T12:00:00Z",
+  "lastSyncAt": "2025-10-13T08:00:00Z",
+  "hoursUntilExpiration": 456
+}
+```
+
+#### Disconnect POS
+```http
+POST /api/pos/square/disconnect
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "restaurantId": 1
+}
+
+Response:
+{
+  "success": true,
+  "message": "Successfully disconnected Square integration"
+}
+```
+
+### Error Responses
+
+All endpoints follow consistent error format:
+
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{
+  "error": "Connection not found or not active"
+}
+```
+
+Common error codes:
+- `400` - Bad Request (missing parameters, invalid data)
+- `401` - Unauthorized (missing or invalid token)
+- `403` - Forbidden (insufficient permissions)
+- `404` - Not Found (connection or resource doesn't exist)
+- `500` - Internal Server Error (unexpected server issue)
+
+---
+
 ## Data Synchronization
 
 ### Manual Inventory Sync

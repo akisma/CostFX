@@ -91,28 +91,43 @@ describe('CategoryMapper', () => {
     });
     
     describe('Unmapped Categories', () => {
-        it('should return null for completely unknown category', () => {
+        it('should return fallback mapping for completely unknown category', () => {
             const result = mapper.mapSquareCategory('unicorn food');
-            expect(result).toBeNull();
+            expect(result).toMatchObject({
+                category: 'other',
+                matchType: 'fallback',
+                reason: 'no_match'
+            });
+            expect(result.confidence).toBeGreaterThan(0);
+            expect(result.confidence).toBeLessThan(1);
         });
         
-        it('should return null for category with too many typos', () => {
+        it('should return fallback mapping for category with too many typos', () => {
             const result = mapper.mapSquareCategory('prodxyz'); // 3+ char difference
-            expect(result).toBeNull();
+            expect(result).toMatchObject({
+                category: 'other',
+                matchType: 'fallback'
+            });
         });
         
-        it('should return null for empty string', () => {
+        it('should return fallback mapping for empty string', () => {
             const result = mapper.mapSquareCategory('');
-            expect(result).toBeNull();
+            expect(result).toMatchObject({ category: 'other', matchType: 'fallback' });
         });
         
-        it('should return null for null input', () => {
+        it('should return fallback mapping for null input', () => {
             const result = mapper.mapSquareCategory(null);
-            expect(result).toBeNull();
+            expect(result).toMatchObject({ category: 'other', matchType: 'fallback' });
         });
         
-        it('should return null for undefined input', () => {
+        it('should return fallback mapping for undefined input', () => {
             const result = mapper.mapSquareCategory(undefined);
+            expect(result).toMatchObject({ category: 'other', matchType: 'fallback' });
+        });
+        
+        it('should return null when fallback disabled', () => {
+            const customMapper = new CategoryMapper({ enableFallback: false });
+            const result = customMapper.mapSquareCategory('unicorn food');
             expect(result).toBeNull();
         });
     });

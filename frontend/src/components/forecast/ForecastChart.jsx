@@ -6,7 +6,9 @@ import { BarChart3, TrendingUp, TrendingDown } from 'lucide-react'
  * Since we don't have a charting library, we'll create a simple bar representation
  */
 const ForecastChart = ({ data, title, showTrend = true }) => {
-  if (!data || data.length === 0) {
+  const chartData = Array.isArray(data) ? data : []
+
+  if (chartData.length === 0) {
     return (
       <div className="flex items-center justify-center h-48 text-gray-500">
         <BarChart3 className="h-8 w-8 mr-2" />
@@ -16,17 +18,17 @@ const ForecastChart = ({ data, title, showTrend = true }) => {
   }
 
   // Calculate max value for scaling
-  const maxValue = Math.max(...data.map(item => item.value || item.demand || item.revenue || 0))
+  const maxValue = Math.max(...chartData.map(item => item.value || item.demand || item.revenue || 0))
   
   // Calculate trend if showing trend
-  const trend = showTrend && data.length > 1 ? 
-    ((data[data.length - 1].value || 0) - (data[0].value || 0)) / (data[0].value || 1) * 100 : 0
+  const trend = showTrend && chartData.length > 1 ? 
+    ((chartData[chartData.length - 1].value || 0) - (chartData[0].value || 0)) / (chartData[0].value || 1) * 100 : 0
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-        {showTrend && data.length > 1 && (
+        {showTrend && chartData.length > 1 && (
           <div className="flex items-center">
             {trend > 0 ? (
               <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
@@ -44,7 +46,7 @@ const ForecastChart = ({ data, title, showTrend = true }) => {
 
       {/* Simple bar chart representation */}
       <div className="space-y-2">
-        {data.map((item, index) => {
+        {chartData.map((item, index) => {
           const value = item.value || item.demand || item.revenue || 0
           const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0
           
@@ -78,13 +80,13 @@ const ForecastChart = ({ data, title, showTrend = true }) => {
       <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
         <div className="text-center">
           <div className="text-lg font-semibold text-gray-900">
-            {data.reduce((sum, item) => sum + (item.value || item.demand || item.revenue || 0), 0).toLocaleString()}
+            {chartData.reduce((sum, item) => sum + (item.value || item.demand || item.revenue || 0), 0).toLocaleString()}
           </div>
           <div className="text-sm text-gray-500">Total</div>
         </div>
         <div className="text-center">
           <div className="text-lg font-semibold text-gray-900">
-            {Math.round(data.reduce((sum, item) => sum + (item.value || item.demand || item.revenue || 0), 0) / data.length).toLocaleString()}
+            {Math.round(chartData.reduce((sum, item) => sum + (item.value || item.demand || item.revenue || 0), 0) / chartData.length).toLocaleString()}
           </div>
           <div className="text-sm text-gray-500">Average</div>
         </div>
@@ -100,7 +102,7 @@ const ForecastChart = ({ data, title, showTrend = true }) => {
 }
 
 ForecastChart.propTypes = {
-  data: PropTypes.arrayOf(PropTypes.object).isRequired,
+  data: PropTypes.arrayOf(PropTypes.object),
   title: PropTypes.string.isRequired,
   type: PropTypes.oneOf(['bar', 'line']),
   showTrend: PropTypes.bool

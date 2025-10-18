@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { Database, Package, AlertCircle } from 'lucide-react';
 
 /**
@@ -14,19 +15,17 @@ export default function DataReviewPanel({ connectionId }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (connectionId) {
-      fetchData();
+  const fetchData = useCallback(async () => {
+    if (!connectionId) {
+      return;
     }
-  }, [connectionId]);
 
-  const fetchData = async () => {
     setLoading(true);
     setError(null);
 
     try {
       // Fetch Tier 1 data (raw Square data)
-      const tier1Response = await fetch(`/api/v1/pos/square/raw-data/${connectionId}`);
+      const tier1Response = await fetch(`/api/v1/pos/square/inventory/raw/${connectionId}`);
       if (!tier1Response.ok) {
         throw new Error('Failed to fetch Tier 1 data');
       }
@@ -34,7 +33,7 @@ export default function DataReviewPanel({ connectionId }) {
       setTier1Data(tier1.data || { categories: [], items: [] });
 
       // Fetch Tier 2 data (transformed inventory items)
-      const tier2Response = await fetch(`/api/v1/pos/square/transformed-data/${connectionId}`);
+      const tier2Response = await fetch(`/api/v1/pos/square/inventory/transformed/${connectionId}`);
       if (!tier2Response.ok) {
         throw new Error('Failed to fetch Tier 2 data');
       }
@@ -46,7 +45,13 @@ export default function DataReviewPanel({ connectionId }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [connectionId]);
+
+  useEffect(() => {
+    if (connectionId) {
+      fetchData();
+    }
+  }, [connectionId, fetchData]);
 
   if (loading) {
     return (
@@ -211,7 +216,7 @@ export default function DataReviewPanel({ connectionId }) {
                       <div className="text-gray-500">
                         <Package className="w-12 h-12 mx-auto mb-2 text-gray-400" />
                         <p className="font-medium">No inventory items transformed yet</p>
-                        <p className="text-sm">Click the "Transform" button to create inventory items from Square data</p>
+                        <p className="text-sm">Click the &quot;Transform&quot; button to create inventory items from Square data</p>
                       </div>
                     </td>
                   </tr>
@@ -250,3 +255,7 @@ export default function DataReviewPanel({ connectionId }) {
     </div>
   );
 }
+
+DataReviewPanel.propTypes = {
+  connectionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+};

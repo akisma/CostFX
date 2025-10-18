@@ -41,6 +41,9 @@ const createMockStore = (initialState = {}) => {
     reducer: {
       inventory: inventoryReducer
     },
+    middleware: (getDefaultMiddleware) => getDefaultMiddleware({
+      serializableCheck: false
+    }),
     preloadedState: {
       inventory: {
         periodSelection: {
@@ -228,7 +231,10 @@ describe('usePeriodSelection Hook', () => {
         periodEnd: '2024-03-07T23:59:59Z',
         status: 'active'
       };
-      const response = result.current.selectPeriod(validPeriod);
+      let response;
+      act(() => {
+        response = result.current.selectPeriod(validPeriod);
+      });
       
       expect(response.success).toBe(true);
       expect(response.period).toEqual(validPeriod);
@@ -249,7 +255,10 @@ describe('usePeriodSelection Hook', () => {
         status: 'active'
       };
       
-      const response = result.current.selectPeriod(invalidPeriod);
+      let response;
+      act(() => {
+        response = result.current.selectPeriod(invalidPeriod);
+      });
       
       expect(response.success).toBe(false);
       expect(response.errors.length).toBeGreaterThan(0);
@@ -262,7 +271,10 @@ describe('usePeriodSelection Hook', () => {
         { wrapper }
       );
 
-      const response = result.current.selectPeriod(null);
+      let response;
+      act(() => {
+        response = result.current.selectPeriod(null);
+      });
       
       expect(response.success).toBe(true);
       expect(response.period).toBe(null);
@@ -279,7 +291,10 @@ describe('usePeriodSelection Hook', () => {
       const startDate = new Date('2024-03-01');
       const endDate = new Date('2024-03-07');
       
-      const response = result.current.validateCustomRange(startDate, endDate);
+      let response;
+      act(() => {
+        response = result.current.validateCustomRange(startDate, endDate);
+      });
       
       expect(response.success).toBe(true);
       expect(response.range).toEqual({ from: startDate, to: endDate });
@@ -295,7 +310,10 @@ describe('usePeriodSelection Hook', () => {
       const startDate = new Date('2024-03-07');
       const endDate = new Date('2024-03-01'); // Invalid: end before start
       
-      const response = result.current.validateCustomRange(startDate, endDate);
+      let response;
+      act(() => {
+        response = result.current.validateCustomRange(startDate, endDate);
+      });
       
       expect(response.success).toBe(false);
       expect(response.errors.length).toBeGreaterThan(0);

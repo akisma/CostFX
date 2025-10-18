@@ -1,0 +1,101 @@
+transaction_date,order_id,item_name,line_item_id,quantity,unit_price,total_amount,modifiers,notes,location,server_name,guest_count
+2025-10-01T11:00:00.000Z,ORD-1000,Sample Item 1,LI-000001,1,5.00,5.00,,,Main Dining,Alex Rivera,1
+2025-10-01T11:15:00.000Z,ORD-1000,Sample Item 2,LI-000002,2,5.75,11.50,Extra Sauce,VIP guest,Patio,Jordan Kim,2
+2025-10-01T11:30:00.000Z,ORD-1001,Sample Item 3,LI-000003,3,6.50,19.50,No Onions,Birthday table,Bar,Taylor Morgan,3
+2025-10-01T11:45:00.000Z,ORD-1001,Sample Item 4,LI-000004,4,7.25,29.00,Add Cheese,Handle with care,Takeout Window,Casey Lopez,4
+2025-10-01T12:00:00.000Z,ORD-1002,Sample Item 5,LI-000005,1,8.00,8.00,Gluten Free,Rush order,Private Room,Riley Chen,5
+2025-10-01T12:15:00.000Z,ORD-1002,Sample Item 6,LI-000006,2,8.75,17.50,No Salt,,Main Dining,Alex Rivera,6
+2025-10-01T12:30:00.000Z,ORD-1003,Sample Item 7,LI-000007,3,9.50,28.50,,VIP guest,Patio,Jordan Kim,1
+2025-10-01T12:45:00.000Z,ORD-1003,Sample Item 8,LI-000008,4,10.25,41.00,Extra Sauce,Birthday table,Bar,Taylor Morgan,2
+2025-10-01T13:00:00.000Z,ORD-1004,Sample Item 9,LI-000009,1,11.00,11.00,No Onions,Handle with care,Takeout Window,Casey Lopez,3
+2025-10-01T13:15:00.000Z,ORD-1004,Sample Item 10,LI-000010,2,11.75,23.50,Add Cheese,Rush order,Private Room,Riley Chen,4
+2025-10-01T13:30:00.000Z,ORD-1005,Sample Item 11,LI-000011,3,12.50,37.50,Gluten Free,,Main Dining,Alex Rivera,5
+2025-10-01T13:45:00.000Z,ORD-1005,Sample Item 12,LI-000012,4,13.25,53.00,No Salt,VIP guest,Patio,Jordan Kim,6
+2025-10-01T14:00:00.000Z,ORD-1006,Sample Item 13,LI-000013,1,14.00,14.00,,Birthday table,Bar,Taylor Morgan,1
+2025-10-01T14:15:00.000Z,ORD-1006,Sample Item 14,LI-000014,2,14.75,29.50,Extra Sauce,Handle with care,Takeout Window,Casey Lopez,2
+2025-10-01T14:30:00.000Z,ORD-1007,Sample Item 15,LI-000015,3,15.50,46.50,No Onions,Rush order,Private Room,Riley Chen,3
+2025-10-01T14:45:00.000Z,ORD-1007,Sample Item 16,LI-000016,4,16.25,65.00,Add Cheese,,Main Dining,Alex Rivera,4
+2025-10-01T15:00:00.000Z,ORD-1008,Sample Item 17,LI-000017,1,17.00,17.00,Gluten Free,VIP guest,Patio,Jordan Kim,5
+2025-10-01T15:15:00.000Z,ORD-1008,Sample Item 18,LI-000018,2,17.75,35.50,No Salt,Birthday table,Bar,Taylor Morgan,6
+2025-10-01T15:30:00.000Z,ORD-1009,Sample Item 19,LI-000019,3,18.50,55.50,,Handle with care,Takeout Window,Casey Lopez,1
+2025-10-01T15:45:00.000Z,ORD-1009,Sample Item 20,LI-000020,4,19.25,77.00,Extra Sauce,Rush order,Private Room,Riley Chen,2
+2025-10-01T16:00:00.000Z,ORD-1010,Sample Item 21,LI-000021,1,5.00,5.00,No Onions,,Main Dining,Alex Rivera,3
+2025-10-01T16:15:00.000Z,ORD-1010,Sample Item 22,LI-000022,2,5.75,11.50,Add Cheese,VIP guest,Patio,Jordan Kim,4
+2025-10-01T16:30:00.000Z,ORD-1011,Sample Item 23,LI-000023,3,6.50,19.50,Gluten Free,Birthday table,Bar,Taylor Morgan,5
+2025-10-01T16:45:00.000Z,ORD-1011,Sample Item 24,LI-000024,4,7.25,29.00,No Salt,Handle with care,Takeout Window,Casey Lopez,6
+2025-10-01T17:00:00.000Z,ORD-1012,Sample Item 25,LI-000025,1,8.00,8.00,,Rush order,Private Room,Riley Chen,1
+2025-10-01T17:15:00.000Z,ORD-1012,Sample Item 26,LI-000026,2,8.75,17.50,Extra Sauce,,Main Dining,Alex Rivera,2
+2025-10-01T17:30:00.000Z,ORD-1013,Sample Item 27,LI-000027,3,9.50,28.50,No Onions,VIP guest,Patio,Jordan Kim,3
+2025-10-01T17:45:00.000Z,ORD-1013,Sample Item 28,LI-000028,4,10.25,41.00,Add Cheese,Birthday table,Bar,Taylor Morgan,4
+2025-10-01T18:00:00.000Z,ORD-1014,Sample Item 29,LI-000029,1,11.00,11.00,Gluten Free,Handle with care,Takeout Window,Casey Lopez,5
+2025-10-01T18:15:00.000Z,ORD-1014,Sample Item 30,LI-000030,2,11.75,23.50,No Salt,Rush order,Private Room,Riley Chen,6
+2025-10-01T18:30:00.000Z,ORD-1015,Sample Item 31,LI-000031,3,12.50,37.50,,,Main Dining,Alex Rivera,1
+2025-10-01T18:45:00.000Z,ORD-1015,Sample Item 32,LI-000032,4,13.25,53.00,Extra Sauce,VIP guest,Patio,Jordan Kim,2
+2025-10-01T19:00:00.000Z,ORD-1016,Sample Item 33,LI-000033,1,14.00,14.00,No Onions,Birthday table,Bar,Taylor Morgan,3
+2025-10-01T19:15:00.000Z,ORD-1016,Sample Item 34,LI-000034,2,14.75,29.50,Add Cheese,Handle with care,Takeout Window,Casey Lopez,4
+2025-10-01T19:30:00.000Z,ORD-1017,Sample Item 35,LI-000035,3,15.50,46.50,Gluten Free,Rush order,Private Room,Riley Chen,5
+2025-10-01T19:45:00.000Z,ORD-1017,Sample Item 36,LI-000036,4,16.25,65.00,No Salt,,Main Dining,Alex Rivera,6
+2025-10-01T20:00:00.000Z,ORD-1018,Sample Item 37,LI-000037,1,17.00,17.00,,VIP guest,Patio,Jordan Kim,1
+2025-10-01T20:15:00.000Z,ORD-1018,Sample Item 38,LI-000038,2,17.75,35.50,Extra Sauce,Birthday table,Bar,Taylor Morgan,2
+2025-10-01T20:30:00.000Z,ORD-1019,Sample Item 39,LI-000039,3,18.50,55.50,No Onions,Handle with care,Takeout Window,Casey Lopez,3
+2025-10-01T20:45:00.000Z,ORD-1019,Sample Item 40,LI-000040,4,19.25,77.00,Add Cheese,Rush order,Private Room,Riley Chen,4
+2025-10-01T21:00:00.000Z,ORD-1020,Sample Item 41,LI-000041,1,5.00,5.00,Gluten Free,,Main Dining,Alex Rivera,5
+2025-10-01T21:15:00.000Z,ORD-1020,Sample Item 42,LI-000042,2,5.75,11.50,No Salt,VIP guest,Patio,Jordan Kim,6
+2025-10-01T21:30:00.000Z,ORD-1021,Sample Item 43,LI-000043,3,6.50,19.50,,Birthday table,Bar,Taylor Morgan,1
+2025-10-01T21:45:00.000Z,ORD-1021,Sample Item 44,LI-000044,4,7.25,29.00,Extra Sauce,Handle with care,Takeout Window,Casey Lopez,2
+2025-10-01T22:00:00.000Z,ORD-1022,Sample Item 45,LI-000045,1,8.00,8.00,No Onions,Rush order,Private Room,Riley Chen,3
+2025-10-01T22:15:00.000Z,ORD-1022,Sample Item 46,LI-000046,2,8.75,17.50,Add Cheese,,Main Dining,Alex Rivera,4
+2025-10-01T22:30:00.000Z,ORD-1023,Sample Item 47,LI-000047,3,9.50,28.50,Gluten Free,VIP guest,Patio,Jordan Kim,5
+2025-10-01T22:45:00.000Z,ORD-1023,Sample Item 48,LI-000048,4,10.25,41.00,No Salt,Birthday table,Bar,Taylor Morgan,6
+2025-10-01T23:00:00.000Z,ORD-1024,Sample Item 49,LI-000049,1,11.00,11.00,,Handle with care,Takeout Window,Casey Lopez,1
+2025-10-01T23:15:00.000Z,ORD-1024,Sample Item 50,LI-000050,2,11.75,23.50,Extra Sauce,Rush order,Private Room,Riley Chen,2
+2025-10-01T23:30:00.000Z,ORD-1025,Sample Item 51,LI-000051,3,12.50,37.50,No Onions,,Main Dining,Alex Rivera,3
+2025-10-01T23:45:00.000Z,ORD-1025,Sample Item 52,LI-000052,4,13.25,53.00,Add Cheese,VIP guest,Patio,Jordan Kim,4
+2025-10-02T00:00:00.000Z,ORD-1026,Sample Item 53,LI-000053,1,14.00,14.00,Gluten Free,Birthday table,Bar,Taylor Morgan,5
+2025-10-02T00:15:00.000Z,ORD-1026,Sample Item 54,LI-000054,2,14.75,29.50,No Salt,Handle with care,Takeout Window,Casey Lopez,6
+2025-10-02T00:30:00.000Z,ORD-1027,Sample Item 55,LI-000055,3,15.50,46.50,,Rush order,Private Room,Riley Chen,1
+2025-10-02T00:45:00.000Z,ORD-1027,Sample Item 56,LI-000056,4,16.25,65.00,Extra Sauce,,Main Dining,Alex Rivera,2
+2025-10-02T01:00:00.000Z,ORD-1028,Sample Item 57,LI-000057,1,17.00,17.00,No Onions,VIP guest,Patio,Jordan Kim,3
+2025-10-02T01:15:00.000Z,ORD-1028,Sample Item 58,LI-000058,2,17.75,35.50,Add Cheese,Birthday table,Bar,Taylor Morgan,4
+2025-10-02T01:30:00.000Z,ORD-1029,Sample Item 59,LI-000059,3,18.50,55.50,Gluten Free,Handle with care,Takeout Window,Casey Lopez,5
+2025-10-02T01:45:00.000Z,ORD-1029,Sample Item 60,LI-000060,4,19.25,77.00,No Salt,Rush order,Private Room,Riley Chen,6
+2025-10-02T02:00:00.000Z,ORD-1030,Sample Item 61,LI-000061,1,5.00,5.00,,,Main Dining,Alex Rivera,1
+2025-10-02T02:15:00.000Z,ORD-1030,Sample Item 62,LI-000062,2,5.75,11.50,Extra Sauce,VIP guest,Patio,Jordan Kim,2
+2025-10-02T02:30:00.000Z,ORD-1031,Sample Item 63,LI-000063,3,6.50,19.50,No Onions,Birthday table,Bar,Taylor Morgan,3
+2025-10-02T02:45:00.000Z,ORD-1031,Sample Item 64,LI-000064,4,7.25,29.00,Add Cheese,Handle with care,Takeout Window,Casey Lopez,4
+2025-10-02T03:00:00.000Z,ORD-1032,Sample Item 65,LI-000065,1,8.00,8.00,Gluten Free,Rush order,Private Room,Riley Chen,5
+2025-10-02T03:15:00.000Z,ORD-1032,Sample Item 66,LI-000066,2,8.75,17.50,No Salt,,Main Dining,Alex Rivera,6
+2025-10-02T03:30:00.000Z,ORD-1033,Sample Item 67,LI-000067,3,9.50,28.50,,VIP guest,Patio,Jordan Kim,1
+2025-10-02T03:45:00.000Z,ORD-1033,Sample Item 68,LI-000068,4,10.25,41.00,Extra Sauce,Birthday table,Bar,Taylor Morgan,2
+2025-10-02T04:00:00.000Z,ORD-1034,Sample Item 69,LI-000069,1,11.00,11.00,No Onions,Handle with care,Takeout Window,Casey Lopez,3
+2025-10-02T04:15:00.000Z,ORD-1034,Sample Item 70,LI-000070,2,11.75,23.50,Add Cheese,Rush order,Private Room,Riley Chen,4
+2025-10-02T04:30:00.000Z,ORD-1035,Sample Item 71,LI-000071,3,12.50,37.50,Gluten Free,,Main Dining,Alex Rivera,5
+2025-10-02T04:45:00.000Z,ORD-1035,Sample Item 72,LI-000072,4,13.25,53.00,No Salt,VIP guest,Patio,Jordan Kim,6
+2025-10-02T05:00:00.000Z,ORD-1036,Sample Item 73,LI-000073,1,14.00,14.00,,Birthday table,Bar,Taylor Morgan,1
+2025-10-02T05:15:00.000Z,ORD-1036,Sample Item 74,LI-000074,2,14.75,29.50,Extra Sauce,Handle with care,Takeout Window,Casey Lopez,2
+2025-10-02T05:30:00.000Z,ORD-1037,Sample Item 75,LI-000075,3,15.50,46.50,No Onions,Rush order,Private Room,Riley Chen,3
+2025-10-02T05:45:00.000Z,ORD-1037,Sample Item 76,LI-000076,4,16.25,65.00,Add Cheese,,Main Dining,Alex Rivera,4
+2025-10-02T06:00:00.000Z,ORD-1038,Sample Item 77,LI-000077,1,17.00,17.00,Gluten Free,VIP guest,Patio,Jordan Kim,5
+2025-10-02T06:15:00.000Z,ORD-1038,Sample Item 78,LI-000078,2,17.75,35.50,No Salt,Birthday table,Bar,Taylor Morgan,6
+2025-10-02T06:30:00.000Z,ORD-1039,Sample Item 79,LI-000079,3,18.50,55.50,,Handle with care,Takeout Window,Casey Lopez,1
+2025-10-02T06:45:00.000Z,ORD-1039,Sample Item 80,LI-000080,4,19.25,77.00,Extra Sauce,Rush order,Private Room,Riley Chen,2
+2025-10-02T07:00:00.000Z,ORD-1040,Sample Item 81,LI-000081,1,5.00,5.00,No Onions,,Main Dining,Alex Rivera,3
+2025-10-02T07:15:00.000Z,ORD-1040,Sample Item 82,LI-000082,2,5.75,11.50,Add Cheese,VIP guest,Patio,Jordan Kim,4
+2025-10-02T07:30:00.000Z,ORD-1041,Sample Item 83,LI-000083,3,6.50,19.50,Gluten Free,Birthday table,Bar,Taylor Morgan,5
+2025-10-02T07:45:00.000Z,ORD-1041,Sample Item 84,LI-000084,4,7.25,29.00,No Salt,Handle with care,Takeout Window,Casey Lopez,6
+2025-10-02T08:00:00.000Z,ORD-1042,Sample Item 85,LI-000085,1,8.00,8.00,,Rush order,Private Room,Riley Chen,1
+2025-10-02T08:15:00.000Z,ORD-1042,Sample Item 86,LI-000086,2,8.75,17.50,Extra Sauce,,Main Dining,Alex Rivera,2
+2025-10-02T08:30:00.000Z,ORD-1043,Sample Item 87,LI-000087,3,9.50,28.50,No Onions,VIP guest,Patio,Jordan Kim,3
+2025-10-02T08:45:00.000Z,ORD-1043,Sample Item 88,LI-000088,4,10.25,41.00,Add Cheese,Birthday table,Bar,Taylor Morgan,4
+2025-10-02T09:00:00.000Z,ORD-1044,Sample Item 89,LI-000089,1,11.00,11.00,Gluten Free,Handle with care,Takeout Window,Casey Lopez,5
+2025-10-02T09:15:00.000Z,ORD-1044,Sample Item 90,LI-000090,2,11.75,23.50,No Salt,Rush order,Private Room,Riley Chen,6
+2025-10-02T09:30:00.000Z,ORD-1045,Sample Item 91,LI-000091,3,12.50,37.50,,,Main Dining,Alex Rivera,1
+2025-10-02T09:45:00.000Z,ORD-1045,Sample Item 92,LI-000092,4,13.25,53.00,Extra Sauce,VIP guest,Patio,Jordan Kim,2
+2025-10-02T10:00:00.000Z,ORD-1046,Sample Item 93,LI-000093,1,14.00,14.00,No Onions,Birthday table,Bar,Taylor Morgan,3
+2025-10-02T10:15:00.000Z,ORD-1046,Sample Item 94,LI-000094,2,14.75,29.50,Add Cheese,Handle with care,Takeout Window,Casey Lopez,4
+2025-10-02T10:30:00.000Z,ORD-1047,Sample Item 95,LI-000095,3,15.50,46.50,Gluten Free,Rush order,Private Room,Riley Chen,5
+2025-10-02T10:45:00.000Z,ORD-1047,Sample Item 96,LI-000096,4,16.25,65.00,No Salt,,Main Dining,Alex Rivera,6
+2025-10-02T11:00:00.000Z,ORD-1048,Sample Item 97,LI-000097,1,17.00,17.00,,VIP guest,Patio,Jordan Kim,1
+2025-10-02T11:15:00.000Z,ORD-1048,Sample Item 98,LI-000098,2,17.75,35.50,Extra Sauce,Birthday table,Bar,Taylor Morgan,2
+2025-10-02T11:30:00.000Z,ORD-1049,Sample Item 99,LI-000099,3,18.50,55.50,No Onions,Handle with care,Takeout Window,Casey Lopez,3
+2025-10-02T11:45:00.000Z,ORD-1049,Sample Item 100,LI-000100,4,19.25,77.00,Add Cheese,Rush order,Private Room,Riley Chen,4

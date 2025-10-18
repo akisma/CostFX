@@ -85,6 +85,11 @@ describe('SquareInventorySyncService', () => {
 
     // Create service
     service = new SquareInventorySyncService(mockSquareAdapter);
+    expect(POSDataTransformer).toHaveBeenCalledWith({
+      categoryMapperOptions: {
+        enableFallback: false
+      }
+    });
   });
 
   describe('Constructor', () => {
