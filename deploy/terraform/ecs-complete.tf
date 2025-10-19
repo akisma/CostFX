@@ -40,7 +40,7 @@ resource "aws_iam_role" "ecs_task_execution_role" {
 
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
   count      = var.deployment_type == "ecs" ? 1 : 0
-  role       = aws_iam_role.ecs_task_execution_role[0].name
+  role       = aws_iam_role.ecs_task_execution_role[count.index].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
@@ -48,7 +48,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
 resource "aws_iam_role_policy" "ecs_task_execution_ssm_policy" {
   count = var.deployment_type == "ecs" ? 1 : 0
   name  = "${var.app_name}-${var.environment}-ecs-task-execution-ssm-policy"
-  role  = aws_iam_role.ecs_task_execution_role[0].id
+  role  = aws_iam_role.ecs_task_execution_role[count.index].id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -76,7 +76,7 @@ resource "aws_ecs_task_definition" "backend" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = var.backend_cpu
   memory                   = var.backend_memory
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role[0].arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role[count.index].arn
 
   container_definitions = jsonencode([
     {
@@ -144,14 +144,13 @@ resource "aws_ecs_task_definition" "backend" {
         },
         {
           name  = "FRONTEND_URL"
-          value = "https://${aws_lb.main[0].dns_name}"
+          value = "https://${aws_lb.main[count.index].dns_name}"
         },
         {
           name  = "CORS_ORIGINS"
-          value = "https://${aws_lb.main[0].dns_name}"
+          value = "https://${aws_lb.main[count.index].dns_name}"
         }
       ]
-
       secrets = [
         {
           name      = "DATABASE_URL"
@@ -182,7 +181,7 @@ resource "aws_ecs_task_definition" "frontend" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = var.frontend_cpu
   memory                   = var.frontend_memory
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role[0].arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role[count.index].arn
 
   container_definitions = jsonencode([
     {
@@ -256,18 +255,18 @@ resource "aws_cloudwatch_log_group" "frontend" {
 resource "aws_ecs_service" "backend" {
   count           = var.deployment_type == "ecs" ? 1 : 0
   name            = "${var.app_name}-${var.environment}-backend"
-  cluster         = aws_ecs_cluster.main[0].id
-  task_definition = aws_ecs_task_definition.backend[0].arn
+  cluster         = aws_ecs_cluster.main[count.index].id
+  task_definition = aws_ecs_task_definition.backend[count.index].arn
   desired_count   = var.backend_desired_count
   launch_type     = "FARGATE"
 
   network_configuration {
     subnets         = module.vpc.private_subnets
-    security_groups = [module.ecs_backend_security_group[0].security_group_id]
+    security_groups = [module.ecs_backend_security_group[count.index].security_group_id]
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.backend[0].arn
+    target_group_arn = aws_lb_target_group.backend[count.index].arn
     container_name   = "backend"
     container_port   = 3001
   }
@@ -283,18 +282,18 @@ resource "aws_ecs_service" "backend" {
 resource "aws_ecs_service" "frontend" {
   count           = var.deployment_type == "ecs" ? 1 : 0
   name            = "${var.app_name}-${var.environment}-frontend"
-  cluster         = aws_ecs_cluster.main[0].id
-  task_definition = aws_ecs_task_definition.frontend[0].arn
+  cluster         = aws_ecs_cluster.main[count.index].id
+  task_definition = aws_ecs_task_definition.frontend[count.index].arn
   desired_count   = var.frontend_desired_count
   launch_type     = "FARGATE"
 
   network_configuration {
     subnets         = module.vpc.private_subnets
-    security_groups = [module.ecs_frontend_security_group[0].security_group_id]
+    security_groups = [module.ecs_frontend_security_group[count.index].security_group_id]
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.frontend[0].arn
+    target_group_arn = aws_lb_target_group.frontend[count.index].arn
     container_name   = "frontend"
     container_port   = 80
   }

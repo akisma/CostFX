@@ -221,8 +221,8 @@ resource "aws_wafv2_web_acl" "main" {
 resource "aws_wafv2_web_acl_association" "main" {
   count = var.deployment_type == "ecs" ? 1 : 0
 
-  resource_arn = aws_lb.main[0].arn
-  web_acl_arn  = aws_wafv2_web_acl.main[0].arn
+  resource_arn = aws_lb.main[count.index].arn
+  web_acl_arn  = aws_wafv2_web_acl.main[count.index].arn
 }
 
 # CloudWatch Log Group for WAF logs (for future use)
@@ -259,7 +259,7 @@ resource "aws_cloudwatch_metric_alarm" "waf_blocked_requests" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    WebACL = aws_wafv2_web_acl.main[0].name
+    WebACL = aws_wafv2_web_acl.main[count.index].name
     Region = var.aws_region
     Rule   = "ALL"
   }
@@ -287,7 +287,7 @@ resource "aws_cloudwatch_metric_alarm" "waf_rate_limit_triggered" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    WebACL = aws_wafv2_web_acl.main[0].name
+    WebACL = aws_wafv2_web_acl.main[count.index].name
     Region = var.aws_region
     Rule   = "RateLimitRule"
   }

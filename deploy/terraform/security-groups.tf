@@ -18,7 +18,7 @@ module "ecs_backend_security_group" {
       to_port                  = 3001
       protocol                 = "tcp"
       description              = "Allow ALB to backend"
-      source_security_group_id = module.alb_security_group[0].security_group_id
+      source_security_group_id = module.alb_security_group[count.index].security_group_id
     }
   ]
 
@@ -46,7 +46,7 @@ module "ecs_frontend_security_group" {
       to_port                  = 80
       protocol                 = "tcp"
       description              = "Allow ALB to frontend"
-      source_security_group_id = module.alb_security_group[0].security_group_id
+      source_security_group_id = module.alb_security_group[count.index].security_group_id
     }
   ]
 
