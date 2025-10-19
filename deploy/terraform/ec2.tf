@@ -92,14 +92,14 @@ resource "aws_iam_role" "ec2_role" {
 # Attach SSM managed policy for Systems Manager access
 resource "aws_iam_role_policy_attachment" "ec2_ssm" {
   count      = var.deployment_type == "ec2" ? 1 : 0
-  role       = aws_iam_role.ec2_role[0].name
+  role       = aws_iam_role.ec2_role[count.index].name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 # Attach CloudWatch agent policy
 resource "aws_iam_role_policy_attachment" "ec2_cloudwatch" {
   count      = var.deployment_type == "ec2" ? 1 : 0
-  role       = aws_iam_role.ec2_role[0].name
+  role       = aws_iam_role.ec2_role[count.index].name
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
 
@@ -107,7 +107,7 @@ resource "aws_iam_role_policy_attachment" "ec2_cloudwatch" {
 resource "aws_iam_role_policy" "ec2_ecr_policy" {
   count = var.deployment_type == "ec2" ? 1 : 0
   name  = "${var.app_name}-${var.environment}-ec2-ecr-policy"
-  role  = aws_iam_role.ec2_role[0].id
+  role  = aws_iam_role.ec2_role[count.index].id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -130,7 +130,7 @@ resource "aws_iam_role_policy" "ec2_ecr_policy" {
 resource "aws_iam_role_policy" "ec2_ssm_params" {
   count = var.deployment_type == "ec2" ? 1 : 0
   name  = "${var.app_name}-${var.environment}-ec2-ssm-params-policy"
-  role  = aws_iam_role.ec2_role[0].id
+  role  = aws_iam_role.ec2_role[count.index].id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -154,7 +154,7 @@ resource "aws_iam_role_policy" "ec2_ssm_params" {
 resource "aws_iam_instance_profile" "ec2_profile" {
   count = var.deployment_type == "ec2" ? 1 : 0
   name  = "${var.app_name}-${var.environment}-ec2-profile"
-  role  = aws_iam_role.ec2_role[0].name
+  role  = aws_iam_role.ec2_role[count.index].name
 
   tags = {
     Name = "${var.app_name}-${var.environment}-ec2-profile"
@@ -175,25 +175,30 @@ resource "aws_cloudwatch_log_group" "ec2_app" {
 
 # User data script for EC2 instance
 locals {
+  backend_image_url  = var.backend_image != "" ? var.backend_image : "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-${var.environment}-backend:latest"
+  frontend_image_url = var.frontend_image != "" ? var.frontend_image : "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-${var.environment}-frontend:latest"
+  backend_registry   = length(local.backend_image_url) > 0 ? split("/", local.backend_image_url)[0] : ""
+
   ec2_user_data = var.deployment_type == "ec2" ? templatefile("${path.module}/user_data_ec2.sh", {
-    app_name       = var.app_name
-    environment    = var.environment
-    aws_region     = var.aws_region
-    backend_image  = var.backend_image != "" ? var.backend_image : "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-${var.environment}-backend:latest"
-    frontend_image = var.frontend_image != "" ? var.frontend_image : "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-${var.environment}-frontend:latest"
-    db_endpoint    = module.rds.db_instance_endpoint
-    log_group      = aws_cloudwatch_log_group.ec2_app[0].name
+    app_name         = var.app_name
+    environment      = var.environment
+    aws_region       = var.aws_region
+    backend_image    = local.backend_image_url
+    frontend_image   = local.frontend_image_url
+    backend_registry = local.backend_registry
+    db_endpoint      = module.rds.db_instance_endpoint
+    log_group        = aws_cloudwatch_log_group.ec2_app[0].name
   }) : ""
 }
 
 # EC2 Instance
 resource "aws_instance" "app" {
   count                  = var.deployment_type == "ec2" ? 1 : 0
-  ami                    = data.aws_ami.amazon_linux_2023[0].id
+  ami                    = data.aws_ami.amazon_linux_2023[count.index].id
   instance_type          = var.ec2_instance_type
   subnet_id              = module.vpc.public_subnets[0]
-  vpc_security_group_ids = [module.ec2_security_group[0].security_group_id]
-  iam_instance_profile   = aws_iam_instance_profile.ec2_profile[0].name
+  vpc_security_group_ids = [module.ec2_security_group[count.index].security_group_id]
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile[count.index].name
   key_name               = var.ec2_key_name != "" ? var.ec2_key_name : null
 
   user_data                   = local.ec2_user_data
@@ -239,7 +244,7 @@ resource "aws_instance" "app" {
 # Elastic IP for EC2 Instance
 resource "aws_eip" "app" {
   count    = var.deployment_type == "ec2" ? 1 : 0
-  instance = aws_instance.app[0].id
+  instance = aws_instance.app[count.index].id
   domain   = "vpc"
 
   tags = {
@@ -254,7 +259,7 @@ resource "aws_security_group_rule" "rds_from_ec2" {
   from_port                = 5432
   to_port                  = 5432
   protocol                 = "tcp"
-  source_security_group_id = module.ec2_security_group[0].security_group_id
+  source_security_group_id = module.ec2_security_group[count.index].security_group_id
   security_group_id        = module.rds_security_group.security_group_id
   description              = "Allow EC2 instance to PostgreSQL"
 }

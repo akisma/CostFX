@@ -113,7 +113,7 @@ systemctl enable amazon-ssm-agent
 
 # Login to ECR
 echo "Logging in to ECR..."
-aws ecr get-login-password --region ${aws_region} | docker login --username AWS --password-stdin ${backend_image%%/*}
+aws ecr get-login-password --region ${aws_region} | docker login --username AWS --password-stdin ${backend_registry}
 
 # Pull Docker images
 echo "Pulling Docker images..."

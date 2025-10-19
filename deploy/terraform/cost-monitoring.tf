@@ -162,7 +162,7 @@ resource "aws_cloudwatch_dashboard" "cost_monitoring_ecs" {
 
         properties = {
           metrics = [
-            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", replace(aws_lb.main[0].arn_suffix, "app/", "")],
+            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", replace(aws_lb.main[count.index].arn_suffix, "app/", "")],
             [".", "TargetResponseTime", ".", "."],
             ["AWS/WAFV2", "AllowedRequests", "WebACL", "${var.app_name}-${var.environment}-waf", "Region", var.aws_region, "Rule", "ALL"],
             [".", "BlockedRequests", ".", ".", ".", ".", ".", "."]
@@ -214,7 +214,7 @@ resource "aws_cloudwatch_dashboard" "cost_monitoring_ec2" {
 
         properties = {
           metrics = [
-            ["AWS/EC2", "CPUUtilization", "InstanceId", aws_instance.app[0].id],
+            ["AWS/EC2", "CPUUtilization", "InstanceId", aws_instance.app[count.index].id],
             [".", "NetworkIn", ".", "."],
             [".", "NetworkOut", ".", "."]
           ]
@@ -254,7 +254,7 @@ resource "aws_cloudwatch_dashboard" "cost_monitoring_ec2" {
 
         properties = {
           metrics = [
-            ["AWS/EC2", "StatusCheckFailed", "InstanceId", aws_instance.app[0].id],
+            ["AWS/EC2", "StatusCheckFailed", "InstanceId", aws_instance.app[count.index].id],
             [".", "StatusCheckFailed_Instance", ".", "."],
             [".", "StatusCheckFailed_System", ".", "."]
           ]
@@ -273,7 +273,7 @@ resource "aws_cloudwatch_dashboard" "cost_monitoring_ec2" {
 resource "aws_s3_bucket_intelligent_tiering_configuration" "alb_logs_tiering" {
   count = var.deployment_type == "ecs" ? 1 : 0
 
-  bucket = aws_s3_bucket.alb_logs[0].id
+  bucket = aws_s3_bucket.alb_logs[count.index].id
   name   = "entire-bucket-tiering"
 
   filter {
@@ -299,9 +299,9 @@ resource "aws_lambda_function" "cost_optimizer" {
 
   filename         = "cost_optimizer.zip"
   function_name    = "${var.app_name}-${var.environment}-cost-optimizer"
-  role             = aws_iam_role.lambda_cost_optimizer[0].arn
+  role             = aws_iam_role.lambda_cost_optimizer[count.index].arn
   handler          = "index.handler"
-  source_code_hash = data.archive_file.cost_optimizer_zip[0].output_base64sha256
+  source_code_hash = data.archive_file.cost_optimizer_zip[count.index].output_base64sha256
   runtime          = "python3.11"
   timeout          = 300
 
@@ -431,7 +431,7 @@ resource "aws_iam_role_policy" "lambda_cost_optimizer" {
   count = var.environment == "dev" ? 1 : 0
 
   name = "${var.app_name}-${var.environment}-lambda-cost-optimizer-policy"
-  role = aws_iam_role.lambda_cost_optimizer[0].id
+  role = aws_iam_role.lambda_cost_optimizer[count.index].id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -479,9 +479,9 @@ resource "aws_cloudwatch_event_rule" "cost_optimizer_schedule" {
 resource "aws_cloudwatch_event_target" "cost_optimizer_target" {
   count = var.environment == "dev" ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.cost_optimizer_schedule[0].name
+  rule      = aws_cloudwatch_event_rule.cost_optimizer_schedule[count.index].name
   target_id = "CostOptimizerTarget"
-  arn       = aws_lambda_function.cost_optimizer[0].arn
+  arn       = aws_lambda_function.cost_optimizer[count.index].arn
 }
 
 # Lambda permission for CloudWatch Events
@@ -490,7 +490,7 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
 
   statement_id  = "AllowExecutionFromCloudWatch"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.cost_optimizer[0].function_name
+  function_name = aws_lambda_function.cost_optimizer[count.index].function_name
   principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.cost_optimizer_schedule[0].arn
+  source_arn    = aws_cloudwatch_event_rule.cost_optimizer_schedule[count.index].arn
 }

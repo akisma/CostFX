@@ -145,7 +145,7 @@ variable "alert_email" {
 variable "ec2_instance_type" {
   description = "EC2 instance type for simplified deployment"
   type        = string
-  default     = "t3.small"  # Sufficient for single user/developer; use t3.medium for higher traffic
+  default     = "t3.small" # Sufficient for single user/developer; use t3.medium for higher traffic
 }
 
 variable "ec2_key_name" {

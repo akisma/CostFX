@@ -37,7 +37,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_response_time" {
   ok_actions          = [aws_sns_topic.alerts.arn]
 
   dimensions = {
-    LoadBalancer = aws_lb.main[0].arn_suffix
+    LoadBalancer = aws_lb.main[count.index].arn_suffix
   }
 
   tags = {
@@ -64,7 +64,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    LoadBalancer = aws_lb.main[0].arn_suffix
+    LoadBalancer = aws_lb.main[count.index].arn_suffix
   }
 
   tags = {
@@ -90,8 +90,8 @@ resource "aws_cloudwatch_metric_alarm" "ecs_backend_cpu_high" {
   ok_actions          = [aws_sns_topic.alerts.arn]
 
   dimensions = {
-    ServiceName = aws_ecs_service.backend[0].name
-    ClusterName = aws_ecs_cluster.main[0].name
+    ServiceName = aws_ecs_service.backend[count.index].name
+    ClusterName = aws_ecs_cluster.main[count.index].name
   }
 
   tags = {
@@ -117,8 +117,8 @@ resource "aws_cloudwatch_metric_alarm" "ecs_backend_memory_high" {
   ok_actions          = [aws_sns_topic.alerts.arn]
 
   dimensions = {
-    ServiceName = aws_ecs_service.backend[0].name
-    ClusterName = aws_ecs_cluster.main[0].name
+    ServiceName = aws_ecs_service.backend[count.index].name
+    ClusterName = aws_ecs_cluster.main[count.index].name
   }
 
   tags = {
@@ -145,8 +145,8 @@ resource "aws_cloudwatch_metric_alarm" "ecs_backend_running_tasks_low" {
   treat_missing_data  = "breaching"
 
   dimensions = {
-    ServiceName = aws_ecs_service.backend[0].name
-    ClusterName = aws_ecs_cluster.main[0].name
+    ServiceName = aws_ecs_service.backend[count.index].name
+    ClusterName = aws_ecs_cluster.main[count.index].name
   }
 
   tags = {
@@ -172,7 +172,7 @@ resource "aws_cloudwatch_metric_alarm" "ec2_cpu_high" {
   ok_actions          = [aws_sns_topic.alerts.arn]
 
   dimensions = {
-    InstanceId = aws_instance.app[0].id
+    InstanceId = aws_instance.app[count.index].id
   }
 
   tags = {
@@ -198,7 +198,7 @@ resource "aws_cloudwatch_metric_alarm" "ec2_status_check_failed" {
   ok_actions          = [aws_sns_topic.alerts.arn]
 
   dimensions = {
-    InstanceId = aws_instance.app[0].id
+    InstanceId = aws_instance.app[count.index].id
   }
 
   tags = {

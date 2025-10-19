@@ -8,7 +8,7 @@
 resource "aws_s3_bucket_versioning" "alb_logs" {
   count = var.deployment_type == "ecs" ? 1 : 0
 
-  bucket = aws_s3_bucket.alb_logs[0].id
+  bucket = aws_s3_bucket.alb_logs[count.index].id
   versioning_configuration {
     status = "Enabled"
   }
@@ -18,7 +18,7 @@ resource "aws_s3_bucket_versioning" "alb_logs" {
 resource "aws_s3_bucket_server_side_encryption_configuration" "alb_logs" {
   count = var.deployment_type == "ecs" ? 1 : 0
 
-  bucket = aws_s3_bucket.alb_logs[0].id
+  bucket = aws_s3_bucket.alb_logs[count.index].id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -32,7 +32,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "alb_logs" {
 resource "aws_s3_bucket_public_access_block" "alb_logs" {
   count = var.deployment_type == "ecs" ? 1 : 0
 
-  bucket = aws_s3_bucket.alb_logs[0].id
+  bucket = aws_s3_bucket.alb_logs[count.index].id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -44,7 +44,7 @@ resource "aws_s3_bucket_public_access_block" "alb_logs" {
 resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
   count = var.deployment_type == "ecs" ? 1 : 0
 
-  bucket = aws_s3_bucket.alb_logs[0].id
+  bucket = aws_s3_bucket.alb_logs[count.index].id
 
   rule {
     id     = "alb_logs_lifecycle"
@@ -103,7 +103,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
 # CloudWatch Log Group for S3 access logging (optional for production)
 resource "aws_cloudwatch_log_group" "s3_access_logs" {
   count             = var.environment == "prod" && var.deployment_type == "ecs" ? 1 : 0
-  name              = "/aws/s3/${aws_s3_bucket.alb_logs[0].id}/access-logs"
+  name              = "/aws/s3/${aws_s3_bucket.alb_logs[count.index].id}/access-logs"
   retention_in_days = 90
 
   tags = {
@@ -116,7 +116,7 @@ resource "aws_cloudwatch_log_group" "s3_access_logs" {
 resource "aws_s3_bucket_metric" "alb_logs" {
   count = var.deployment_type == "ecs" ? 1 : 0
 
-  bucket = aws_s3_bucket.alb_logs[0].id
+  bucket = aws_s3_bucket.alb_logs[count.index].id
   name   = "entire-bucket"
 }
 
@@ -124,7 +124,7 @@ resource "aws_s3_bucket_metric" "alb_logs" {
 resource "aws_s3_bucket_request_payment_configuration" "alb_logs" {
   count = var.deployment_type == "ecs" ? 1 : 0
 
-  bucket = aws_s3_bucket.alb_logs[0].id
+  bucket = aws_s3_bucket.alb_logs[count.index].id
   payer  = "BucketOwner"
 }
 
@@ -132,7 +132,7 @@ resource "aws_s3_bucket_request_payment_configuration" "alb_logs" {
 resource "aws_s3_bucket_policy" "alb_logs_enhanced" {
   count = var.deployment_type == "ecs" ? 1 : 0
 
-  bucket = aws_s3_bucket.alb_logs[0].id
+  bucket = aws_s3_bucket.alb_logs[count.index].id
 
   # This will replace the existing bucket policy
   policy = jsonencode({
@@ -145,7 +145,7 @@ resource "aws_s3_bucket_policy" "alb_logs_enhanced" {
           AWS = "arn:aws:iam::797873946194:root" # ELB service account for us-west-2
         }
         Action   = "s3:PutObject"
-        Resource = "${aws_s3_bucket.alb_logs[0].arn}/*"
+        Resource = "${aws_s3_bucket.alb_logs[count.index].arn}/*"
         Condition = {
           StringEquals = {
             "s3:x-amz-acl" = "bucket-owner-full-control"
@@ -159,7 +159,7 @@ resource "aws_s3_bucket_policy" "alb_logs_enhanced" {
           AWS = "arn:aws:iam::797873946194:root" # ELB service account for us-west-2
         }
         Action   = "s3:GetBucketAcl"
-        Resource = aws_s3_bucket.alb_logs[0].arn
+        Resource = aws_s3_bucket.alb_logs[count.index].arn
       },
       {
         Sid       = "DenyInsecureConnections"
@@ -167,8 +167,8 @@ resource "aws_s3_bucket_policy" "alb_logs_enhanced" {
         Principal = "*"
         Action    = "s3:*"
         Resource = [
-          aws_s3_bucket.alb_logs[0].arn,
-          "${aws_s3_bucket.alb_logs[0].arn}/*"
+          aws_s3_bucket.alb_logs[count.index].arn,
+          "${aws_s3_bucket.alb_logs[count.index].arn}/*"
         ]
         Condition = {
           Bool = {
