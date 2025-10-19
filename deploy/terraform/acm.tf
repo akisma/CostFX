@@ -5,11 +5,11 @@
 # Look up the SSL certificate dynamically by domain name
 data "aws_acm_certificate" "app_cert" {
   count = var.domain_name != "" && var.domain_name != "your-new-domain.com" ? 1 : 0
-  
+
   domain      = var.domain_name
-  statuses    = ["ISSUED", "PENDING_VALIDATION"]  # Include pending certificates
+  statuses    = ["ISSUED", "PENDING_VALIDATION"] # Include pending certificates
   most_recent = true
-  
+
   # Ensure we're looking in the correct region for ALB certificates
   # ALB requires certificates to be in the same region as the load balancer
 }

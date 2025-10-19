@@ -14,17 +14,17 @@ resource "aws_budgets_budget" "monthly_cost" {
   # Alert at 80% of budget
   notification {
     comparison_operator        = "GREATER_THAN"
-    threshold                 = 80
-    threshold_type            = "PERCENTAGE"
-    notification_type         = "ACTUAL"
+    threshold                  = 80
+    threshold_type             = "PERCENTAGE"
+    notification_type          = "ACTUAL"
     subscriber_email_addresses = [var.alert_email]
   }
 
   # Alert at 90% of budget
   notification {
     comparison_operator        = "GREATER_THAN"
-    threshold                 = 90
-    threshold_type            = "PERCENTAGE"
+    threshold                  = 90
+    threshold_type             = "PERCENTAGE"
     notification_type          = "ACTUAL"
     subscriber_email_addresses = [var.alert_email]
   }
@@ -32,8 +32,8 @@ resource "aws_budgets_budget" "monthly_cost" {
   # Forecasted alert at 100%
   notification {
     comparison_operator        = "GREATER_THAN"
-    threshold                 = 100
-    threshold_type            = "PERCENTAGE"
+    threshold                  = 100
+    threshold_type             = "PERCENTAGE"
     notification_type          = "FORECASTED"
     subscriber_email_addresses = [var.alert_email]
   }
@@ -44,7 +44,7 @@ resource "aws_budgets_budget" "monthly_cost" {
 # Daily Cost Budget for Development Environment
 resource "aws_budgets_budget" "daily_cost" {
   count = var.environment == "dev" ? 1 : 0
-  
+
   name              = "${var.app_name}-${var.environment}-daily-budget"
   budget_type       = "COST"
   limit_amount      = "5"
@@ -54,8 +54,8 @@ resource "aws_budgets_budget" "daily_cost" {
 
   notification {
     comparison_operator        = "GREATER_THAN"
-    threshold                 = 100
-    threshold_type            = "PERCENTAGE"
+    threshold                  = 100
+    threshold_type             = "PERCENTAGE"
     notification_type          = "ACTUAL"
     subscriber_email_addresses = [var.alert_email]
   }
@@ -63,8 +63,10 @@ resource "aws_budgets_budget" "daily_cost" {
   depends_on = [aws_sns_topic.alerts]
 }
 
-# Usage Budget for ECS Service Hours
+# Usage Budget for ECS Service Hours (only for ECS deployment)
 resource "aws_budgets_budget" "ecs_usage" {
+  count = var.deployment_type == "ecs" ? 1 : 0
+
   name              = "${var.app_name}-${var.environment}-ecs-hours"
   budget_type       = "USAGE"
   limit_amount      = var.environment == "prod" ? "2000" : "500"
@@ -74,8 +76,8 @@ resource "aws_budgets_budget" "ecs_usage" {
 
   notification {
     comparison_operator        = "GREATER_THAN"
-    threshold                 = 80
-    threshold_type            = "PERCENTAGE"
+    threshold                  = 80
+    threshold_type             = "PERCENTAGE"
     notification_type          = "ACTUAL"
     subscriber_email_addresses = [var.alert_email]
   }
@@ -83,8 +85,10 @@ resource "aws_budgets_budget" "ecs_usage" {
   depends_on = [aws_sns_topic.alerts]
 }
 
-# CloudWatch Dashboard for Cost Monitoring
-resource "aws_cloudwatch_dashboard" "cost_monitoring" {
+# CloudWatch Dashboard for Cost Monitoring (ECS deployment)
+resource "aws_cloudwatch_dashboard" "cost_monitoring_ecs" {
+  count = var.deployment_type == "ecs" ? 1 : 0
+
   dashboard_name = "${var.app_name}-${var.environment}-cost-monitoring"
 
   dashboard_body = jsonencode({
@@ -158,7 +162,7 @@ resource "aws_cloudwatch_dashboard" "cost_monitoring" {
 
         properties = {
           metrics = [
-            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", replace(aws_lb.main.arn_suffix, "app/", "")],
+            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", replace(aws_lb.main[0].arn_suffix, "app/", "")],
             [".", "TargetResponseTime", ".", "."],
             ["AWS/WAFV2", "AllowedRequests", "WebACL", "${var.app_name}-${var.environment}-waf", "Region", var.aws_region, "Rule", "ALL"],
             [".", "BlockedRequests", ".", ".", ".", ".", ".", "."]
@@ -174,9 +178,102 @@ resource "aws_cloudwatch_dashboard" "cost_monitoring" {
   })
 }
 
-# S3 Intelligent Tiering for ALB logs (cost optimization)
+# CloudWatch Dashboard for Cost Monitoring (EC2 deployment)
+resource "aws_cloudwatch_dashboard" "cost_monitoring_ec2" {
+  count = var.deployment_type == "ec2" ? 1 : 0
+
+  dashboard_name = "${var.app_name}-${var.environment}-cost-monitoring"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/Billing", "EstimatedCharges", "Currency", "USD"]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "Estimated AWS Charges"
+          period  = 86400
+          stat    = "Maximum"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/EC2", "CPUUtilization", "InstanceId", aws_instance.app[0].id],
+            [".", "NetworkIn", ".", "."],
+            [".", "NetworkOut", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "EC2 Instance Metrics"
+          period  = 300
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", "${var.app_name}-${var.environment}-postgres"],
+            [".", "CPUUtilization", ".", "."],
+            [".", "FreeStorageSpace", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "RDS Resource Usage"
+          period  = 300
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 6
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/EC2", "StatusCheckFailed", "InstanceId", aws_instance.app[0].id],
+            [".", "StatusCheckFailed_Instance", ".", "."],
+            [".", "StatusCheckFailed_System", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "EC2 Health Checks"
+          period  = 300
+        }
+      }
+    ]
+  })
+}
+
+# S3 Intelligent Tiering for ALB logs (cost optimization) - only for ECS deployment
 resource "aws_s3_bucket_intelligent_tiering_configuration" "alb_logs_tiering" {
-  bucket = aws_s3_bucket.alb_logs.id
+  count = var.deployment_type == "ecs" ? 1 : 0
+
+  bucket = aws_s3_bucket.alb_logs[0].id
   name   = "entire-bucket-tiering"
 
   filter {
@@ -202,11 +299,11 @@ resource "aws_lambda_function" "cost_optimizer" {
 
   filename         = "cost_optimizer.zip"
   function_name    = "${var.app_name}-${var.environment}-cost-optimizer"
-  role            = aws_iam_role.lambda_cost_optimizer[0].arn
-  handler         = "index.handler"
+  role             = aws_iam_role.lambda_cost_optimizer[0].arn
+  handler          = "index.handler"
   source_code_hash = data.archive_file.cost_optimizer_zip[0].output_base64sha256
-  runtime         = "python3.11"
-  timeout         = 300
+  runtime          = "python3.11"
+  timeout          = 300
 
   environment {
     variables = {
@@ -224,12 +321,12 @@ resource "aws_lambda_function" "cost_optimizer" {
 # Lambda function code
 data "archive_file" "cost_optimizer_zip" {
   count = var.environment == "dev" ? 1 : 0
-  
+
   type        = "zip"
   output_path = "cost_optimizer.zip"
-  
+
   source {
-    content = <<EOF
+    content  = <<EOF
 import boto3
 import json
 import os
@@ -307,7 +404,7 @@ EOF
 # IAM role for Lambda cost optimizer
 resource "aws_iam_role" "lambda_cost_optimizer" {
   count = var.environment == "dev" ? 1 : 0
-  
+
   name = "${var.app_name}-${var.environment}-lambda-cost-optimizer"
 
   assume_role_policy = jsonencode({
@@ -332,7 +429,7 @@ resource "aws_iam_role" "lambda_cost_optimizer" {
 # IAM policy for Lambda cost optimizer
 resource "aws_iam_role_policy" "lambda_cost_optimizer" {
   count = var.environment == "dev" ? 1 : 0
-  
+
   name = "${var.app_name}-${var.environment}-lambda-cost-optimizer-policy"
   role = aws_iam_role.lambda_cost_optimizer[0].id
 
@@ -367,7 +464,7 @@ resource "aws_iam_role_policy" "lambda_cost_optimizer" {
 # CloudWatch Event Rule for daily cost optimization
 resource "aws_cloudwatch_event_rule" "cost_optimizer_schedule" {
   count = var.environment == "dev" ? 1 : 0
-  
+
   name                = "${var.app_name}-${var.environment}-cost-optimizer-schedule"
   description         = "Trigger cost optimizer lambda daily"
   schedule_expression = "rate(1 day)"
@@ -381,7 +478,7 @@ resource "aws_cloudwatch_event_rule" "cost_optimizer_schedule" {
 # CloudWatch Event Target
 resource "aws_cloudwatch_event_target" "cost_optimizer_target" {
   count = var.environment == "dev" ? 1 : 0
-  
+
   rule      = aws_cloudwatch_event_rule.cost_optimizer_schedule[0].name
   target_id = "CostOptimizerTarget"
   arn       = aws_lambda_function.cost_optimizer[0].arn
@@ -390,7 +487,7 @@ resource "aws_cloudwatch_event_target" "cost_optimizer_target" {
 # Lambda permission for CloudWatch Events
 resource "aws_lambda_permission" "allow_cloudwatch" {
   count = var.environment == "dev" ? 1 : 0
-  
+
   statement_id  = "AllowExecutionFromCloudWatch"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.cost_optimizer[0].function_name

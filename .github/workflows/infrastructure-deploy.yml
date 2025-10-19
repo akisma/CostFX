@@ -11,6 +11,14 @@ on:
         options:
           - dev
           - prod
+      deployment_type:
+        description: 'Deployment type (ecs or ec2)'
+        required: true
+        default: 'ec2'
+        type: choice
+        options:
+          - ec2
+          - ecs
       force_deploy:
         description: 'Force deployment even if no changes detected'
         required: false
@@ -28,19 +36,23 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       environment: ${{ steps.env.outputs.environment }}
+      deployment_type: ${{ steps.env.outputs.deployment_type }}
       deploy: ${{ steps.env.outputs.deploy }}
     steps:
       - name: Determine environment
         id: env
         run: |
           ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
+          DEPLOYMENT_TYPE="${{ github.event.inputs.deployment_type || 'ec2' }}"
           FORCE_DEPLOY="${{ github.event.inputs.force_deploy || 'false' }}"
           
           echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+          echo "deployment_type=$DEPLOYMENT_TYPE" >> $GITHUB_OUTPUT
           echo "deploy=true" >> $GITHUB_OUTPUT
           
           echo "🏗️ Infrastructure deployment requested"
           echo "Environment: $ENVIRONMENT"
+          echo "Deployment Type: $DEPLOYMENT_TYPE"
           echo "Force deploy: $FORCE_DEPLOY"
 
   # Run application tests (MUST PASS for deployment)
@@ -190,6 +202,7 @@ jobs:
           workspace: ${{ needs.setup.outputs.environment }}
           variables: |
             environment = "${{ needs.setup.outputs.environment }}"
+            deployment_type = "${{ needs.setup.outputs.deployment_type }}"
             backend_image = "${{ needs.build.outputs.backend-image }}"
             frontend_image = "${{ needs.build.outputs.frontend-image }}"
           backend_config: |
@@ -206,6 +219,7 @@ jobs:
           workspace: ${{ needs.setup.outputs.environment }}
           variables: |
             environment = "${{ needs.setup.outputs.environment }}"
+            deployment_type = "${{ needs.setup.outputs.deployment_type }}"
             backend_image = "${{ needs.build.outputs.backend-image }}"
             frontend_image = "${{ needs.build.outputs.frontend-image }}"
           backend_config: |
@@ -227,7 +241,12 @@ jobs:
 
       - name: Set output variables
         run: |
-          echo "LOAD_BALANCER_URL=${{ steps.tf-outputs.outputs.load_balancer_url }}" >> $GITHUB_ENV
+          if [[ "${{ needs.setup.outputs.deployment_type }}" == "ecs" ]]; then
+            echo "LOAD_BALANCER_URL=${{ steps.tf-outputs.outputs.load_balancer_url }}" >> $GITHUB_ENV
+            echo "APP_URL=${{ steps.tf-outputs.outputs.load_balancer_url }}" >> $GITHUB_ENV
+          else
+            echo "APP_URL=${{ steps.tf-outputs.outputs.application_url }}" >> $GITHUB_ENV
+          fi
           echo "BACKEND_URL=${{ steps.tf-outputs.outputs.backend_url }}" >> $GITHUB_ENV
 
   # Update SSM parameters with secrets
@@ -294,20 +313,34 @@ jobs:
             region=${{ env.AWS_REGION }}
 
       - name: Wait for ECS service stability
+        if: needs.setup.outputs.deployment_type == 'ecs'
         run: |
           echo "Waiting for ECS services to become stable..."
           aws ecs wait services-stable \
             --cluster costfx-${{ needs.setup.outputs.environment }}-cluster \
             --services costfx-${{ needs.setup.outputs.environment }}-backend costfx-${{ needs.setup.outputs.environment }}-frontend \
             --region ${{ env.AWS_REGION }}
+      
+      - name: Wait for EC2 instance to be ready
+        if: needs.setup.outputs.deployment_type == 'ec2'
+        run: |
+          echo "Waiting for EC2 instance to initialize..."
+          # Give the instance time to run user data script
+          sleep 180
 
       - name: Health check backend
         run: |
           BACKEND_URL="${{ steps.tf-outputs.outputs.backend_url }}"
-          echo "Testing backend health at: $BACKEND_URL/api/v1/"
+          if [[ "${{ needs.setup.outputs.deployment_type }}" == "ecs" ]]; then
+            echo "Testing backend health at: $BACKEND_URL/api/v1/"
+            TEST_URL="$BACKEND_URL/api/v1/"
+          else
+            echo "Testing backend health at: $BACKEND_URL/v1/"
+            TEST_URL="$BACKEND_URL/v1/"
+          fi
           
           for i in {1..30}; do
-            if curl -f -s --connect-timeout 10 --max-time 30 "$BACKEND_URL/api/v1/" > /dev/null; then
+            if curl -f -s --connect-timeout 10 --max-time 30 "$TEST_URL" > /dev/null; then
               echo "✅ Backend is healthy!"
               break
             fi
@@ -321,7 +354,7 @@ jobs:
 
       - name: Health check frontend
         run: |
-          FRONTEND_URL="${{ steps.tf-outputs.outputs.load_balancer_url }}"
+          FRONTEND_URL="${{ steps.tf-outputs.outputs.application_url }}"
           echo "Testing frontend health at: $FRONTEND_URL"
           
           for i in {1..20}; do
@@ -340,13 +373,18 @@ jobs:
       - name: Test core API endpoints
         run: |
           BACKEND_URL="${{ steps.tf-outputs.outputs.backend_url }}"
+          if [[ "${{ needs.setup.outputs.deployment_type }}" == "ecs" ]]; then
+            API_PATH="/api/v1"
+          else
+            API_PATH="/v1"
+          fi
           echo "Testing core API endpoints..."
           
           # Test restaurant endpoints
-          curl -f -s --connect-timeout 10 --max-time 30 "$BACKEND_URL/api/v1/restaurants" || echo "⚠️ Restaurants endpoint not ready"
+          curl -f -s --connect-timeout 10 --max-time 30 "$BACKEND_URL${API_PATH}/restaurants" || echo "⚠️ Restaurants endpoint not ready"
           
           # Test agent endpoints  
-          curl -f -s --connect-timeout 10 --max-time 30 "$BACKEND_URL/api/v1/agents/health" || echo "⚠️ Agents health endpoint not ready"
+          curl -f -s --connect-timeout 10 --max-time 30 "$BACKEND_URL${API_PATH}/agents/health" || echo "⚠️ Agents health endpoint not ready"
           
           echo "🎉 Deployment health check completed!"
 
@@ -362,8 +400,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🌐 Deployment Details" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment**: ${{ needs.setup.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Frontend URL**: ${{ steps.tf-outputs.outputs.load_balancer_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Backend URL**: ${{ steps.tf-outputs.outputs.backend_url }}/api/v1" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment Type**: ${{ needs.setup.outputs.deployment_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Application URL**: ${{ steps.tf-outputs.outputs.application_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend API URL**: ${{ steps.tf-outputs.outputs.api_url }}" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.setup.outputs.deployment_type }}" == "ec2" ]]; then
+            echo "- **EC2 Public IP**: ${{ steps.tf-outputs.outputs.ec2_public_ip }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **EC2 Instance Type**: ${{ steps.tf-outputs.outputs.ec2_instance_type }}" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "- **Backend Image**: ${{ needs.build.outputs.backend-image }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Frontend Image**: ${{ needs.build.outputs.frontend-image }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

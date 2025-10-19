@@ -10,8 +10,8 @@ resource "random_password" "jwt_secret" {
 
 # Database URL parameter
 resource "aws_ssm_parameter" "database_url" {
-  name  = "/${var.app_name}/${var.environment}/database_url"
-  type  = "SecureString"
+  name = "/${var.app_name}/${var.environment}/database_url"
+  type = "SecureString"
   # Ensure password is URL-encoded and SSL is required by default
   value = "postgresql://${module.rds.db_instance_username}:${urlencode(random_password.db_password.result)}@${module.rds.db_instance_endpoint}/${module.rds.db_instance_name}?ssl=true"
 
