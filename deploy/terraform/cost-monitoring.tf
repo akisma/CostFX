@@ -63,8 +63,10 @@ resource "aws_budgets_budget" "daily_cost" {
   depends_on = [aws_sns_topic.alerts]
 }
 
-# Usage Budget for ECS Service Hours
+# Usage Budget for ECS Service Hours (only for ECS deployment)
 resource "aws_budgets_budget" "ecs_usage" {
+  count = var.deployment_type == "ecs" ? 1 : 0
+
   name              = "${var.app_name}-${var.environment}-ecs-hours"
   budget_type       = "USAGE"
   limit_amount      = var.environment == "prod" ? "2000" : "500"
@@ -83,8 +85,10 @@ resource "aws_budgets_budget" "ecs_usage" {
   depends_on = [aws_sns_topic.alerts]
 }
 
-# CloudWatch Dashboard for Cost Monitoring
-resource "aws_cloudwatch_dashboard" "cost_monitoring" {
+# CloudWatch Dashboard for Cost Monitoring (ECS deployment)
+resource "aws_cloudwatch_dashboard" "cost_monitoring_ecs" {
+  count = var.deployment_type == "ecs" ? 1 : 0
+
   dashboard_name = "${var.app_name}-${var.environment}-cost-monitoring"
 
   dashboard_body = jsonencode({
@@ -158,7 +162,7 @@ resource "aws_cloudwatch_dashboard" "cost_monitoring" {
 
         properties = {
           metrics = [
-            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", replace(aws_lb.main.arn_suffix, "app/", "")],
+            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", replace(aws_lb.main[0].arn_suffix, "app/", "")],
             [".", "TargetResponseTime", ".", "."],
             ["AWS/WAFV2", "AllowedRequests", "WebACL", "${var.app_name}-${var.environment}-waf", "Region", var.aws_region, "Rule", "ALL"],
             [".", "BlockedRequests", ".", ".", ".", ".", ".", "."]
@@ -174,9 +178,102 @@ resource "aws_cloudwatch_dashboard" "cost_monitoring" {
   })
 }
 
-# S3 Intelligent Tiering for ALB logs (cost optimization)
+# CloudWatch Dashboard for Cost Monitoring (EC2 deployment)
+resource "aws_cloudwatch_dashboard" "cost_monitoring_ec2" {
+  count = var.deployment_type == "ec2" ? 1 : 0
+
+  dashboard_name = "${var.app_name}-${var.environment}-cost-monitoring"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/Billing", "EstimatedCharges", "Currency", "USD"]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "Estimated AWS Charges"
+          period  = 86400
+          stat    = "Maximum"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/EC2", "CPUUtilization", "InstanceId", aws_instance.app[0].id],
+            [".", "NetworkIn", ".", "."],
+            [".", "NetworkOut", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "EC2 Instance Metrics"
+          period  = 300
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", "${var.app_name}-${var.environment}-postgres"],
+            [".", "CPUUtilization", ".", "."],
+            [".", "FreeStorageSpace", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "RDS Resource Usage"
+          period  = 300
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 6
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/EC2", "StatusCheckFailed", "InstanceId", aws_instance.app[0].id],
+            [".", "StatusCheckFailed_Instance", ".", "."],
+            [".", "StatusCheckFailed_System", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "EC2 Health Checks"
+          period  = 300
+        }
+      }
+    ]
+  })
+}
+
+# S3 Intelligent Tiering for ALB logs (cost optimization) - only for ECS deployment
 resource "aws_s3_bucket_intelligent_tiering_configuration" "alb_logs_tiering" {
-  bucket = aws_s3_bucket.alb_logs.id
+  count = var.deployment_type == "ecs" ? 1 : 0
+
+  bucket = aws_s3_bucket.alb_logs[0].id
   name   = "entire-bucket-tiering"
 
   filter {

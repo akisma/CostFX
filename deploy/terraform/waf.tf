@@ -1,9 +1,13 @@
 # ============================================================================
 # AWS WAF v2 WEB APPLICATION FIREWALL
 # ============================================================================
+# Only deployed when deployment_type = "ecs" (requires ALB)
+# ============================================================================
 
 # WAF Web ACL for Application Load Balancer
 resource "aws_wafv2_web_acl" "main" {
+  count = var.deployment_type == "ecs" ? 1 : 0
+
   name        = "${var.app_name}-${var.environment}-waf"
   description = "WAF for ${var.app_name} Application Load Balancer"
   scope       = "REGIONAL"
@@ -215,12 +219,16 @@ resource "aws_wafv2_web_acl" "main" {
 
 # Associate WAF with ALB
 resource "aws_wafv2_web_acl_association" "main" {
-  resource_arn = aws_lb.main.arn
-  web_acl_arn  = aws_wafv2_web_acl.main.arn
+  count = var.deployment_type == "ecs" ? 1 : 0
+
+  resource_arn = aws_lb.main[0].arn
+  web_acl_arn  = aws_wafv2_web_acl.main[0].arn
 }
 
 # CloudWatch Log Group for WAF logs (for future use)
 resource "aws_cloudwatch_log_group" "waf_logs" {
+  count = var.deployment_type == "ecs" ? 1 : 0
+
   name              = "/aws/wafv2/${var.app_name}-${var.environment}"
   retention_in_days = var.environment == "prod" ? 30 : 14
 
@@ -235,6 +243,8 @@ resource "aws_cloudwatch_log_group" "waf_logs" {
 
 # CloudWatch Alarms for WAF
 resource "aws_cloudwatch_metric_alarm" "waf_blocked_requests" {
+  count = var.deployment_type == "ecs" ? 1 : 0
+
   alarm_name          = "${var.app_name}-${var.environment}-waf-blocked-requests"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = "2"
@@ -249,7 +259,7 @@ resource "aws_cloudwatch_metric_alarm" "waf_blocked_requests" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    WebACL = aws_wafv2_web_acl.main.name
+    WebACL = aws_wafv2_web_acl.main[0].name
     Region = var.aws_region
     Rule   = "ALL"
   }
@@ -261,6 +271,8 @@ resource "aws_cloudwatch_metric_alarm" "waf_blocked_requests" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "waf_rate_limit_triggered" {
+  count = var.deployment_type == "ecs" ? 1 : 0
+
   alarm_name          = "${var.app_name}-${var.environment}-waf-rate-limit"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = "1"
@@ -275,7 +287,7 @@ resource "aws_cloudwatch_metric_alarm" "waf_rate_limit_triggered" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    WebACL = aws_wafv2_web_acl.main.name
+    WebACL = aws_wafv2_web_acl.main[0].name
     Region = var.aws_region
     Rule   = "RateLimitRule"
   }
