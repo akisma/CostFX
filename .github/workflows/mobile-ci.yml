@@ -1,0 +1,33 @@
+name: Mobile CI
+
+on:
+  pull_request:
+    paths:
+      - 'mobile/**'
+      - 'shared/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/mobile-ci.yml'
+  workflow_dispatch:
+
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint mobile workspace
+        run: npm run lint:mobile
+
+      - name: Run mobile tests
+        run: npm run test:mobile

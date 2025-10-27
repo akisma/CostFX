@@ -2809,6 +2809,24 @@ npm run setup:workspace
 npm run dev
 ```
 
+#### Mobile Workspace (Expo)
+The **chef-facing mobile app** lives under `mobile/` and is powered by Expo (React Native).
+
+```bash
+# Start the Expo development server (runs Metro bundler)
+npm run dev:mobile
+
+# Run linting and tests for the mobile workspace
+npm run lint:mobile
+npm run test:mobile
+```
+
+Key details:
+- **Shared Code**: Imports from `restaurant-ai-shared` are resolved via Metro + Babel aliases, so utilities defined in `shared/src` can be reused on mobile.
+- **Hello World Verification**: Launching the app (Expo Go, Android emulator, or iOS simulator) should display the “CostFX Mobile” screen with the shared greeting—this confirms end-to-end workspace wiring.
+- **CI Coverage**: `.github/workflows/mobile-ci.yml` runs lint + tests whenever mobile or shared code changes, keeping parity with backend/frontend pipelines.
+- **Expo Requirements**: Install Expo CLI (`npm install -g expo-cli`) and the Expo Go app on test devices for manual validation. Future EAS credentials will be added before distribution builds.
+
 #### Docker Deployment (Verified September 28, 2025)
 **Full Stack Deployment with Fresh Database**:
 ```bash
@@ -3999,6 +4017,64 @@ git add frontend/src/components/NewComponent.jsx
 git commit -m "Add new dashboard component"
 git push origin main  # Triggers app-deploy.yml automatically
 ```
+
+### Simplified EC2 Deployment Path (October 2025)
+
+**Goal**: Offer a lower-cost, single-instance alternative for demos, QA, and temporary environments while keeping the ECS/Fargate stack as the production standard.
+
+#### Activation Overview
+- **Terraform Feature Flag**: Controlled via `var.deployment_type` in `deploy/terraform/variables.tf`
+  - `deployment_type = "ecs"` (default) → preserves the highly available ECS setup
+  - `deployment_type = "ec2"` → enables the simplified EC2 path
+- **Apply Location**: Same Terraform project (`deploy/terraform`). Set the variable in `terraform.tfvars` or pass `-var deployment_type=ec2`.
+- **State Awareness**: Terraform will destroy/create resources when toggling types. Always run `terraform plan` first.
+
+#### Infrastructure Created in EC2 Mode
+- **Compute**: One Amazon Linux 2023 instance (`aws_instance.app`) plus an Elastic IP and dedicated security group
+- **Bootstrap**: `deploy/terraform/user_data_ec2.sh` installs Docker, pulls backend/frontend images from ECR, retrieves secrets from SSM, and launches both containers via Docker Compose
+- **Networking**: Reuses VPC, subnets, and RDS security groups; adds ingress rule to allow the EC2 instance to reach PostgreSQL
+- **Observability**: Creates `/ec2/{app}-{env}` CloudWatch log group and enables EC2-specific alarms defined in `monitoring-basic.tf`
+- **Cost Controls**: Skips ALB/S3 logging modules and other ECS-only features to minimize spend
+
+#### Prerequisites
+- **ECR Images**: Ensure the latest backend/frontend images exist (GitHub Actions `app-deploy.yml` still handles builds and pushes)
+- **SSM Parameters**: Existing hierarchy `/costfx/{env}/...` remains unchanged; EC2 bootstrap consumes the same secrets
+- **SSH Policy**: Security group currently allows `0.0.0.0/0` on port 22. Restrict before using in production
+- **TLS**: No ALB in EC2 mode. Traffic terminates directly on the instance over HTTP (ports 80/3001)
+
+#### Switching to EC2 Mode (Dev Example)
+```bash
+cd deploy/terraform
+
+# 1. Enable EC2 path
+cat <<'EOF' > terraform.tfvars
+deployment_type = "ec2"
+environment     = "dev"
+EOF
+
+# 2. Review proposed changes
+terraform plan -var-file=terraform.tfvars
+
+# 3. Apply if plan is acceptable
+terraform apply -var-file=terraform.tfvars
+
+# 4. Capture the new public endpoint
+terraform output ec2_public_ip
+```
+
+#### Operating the EC2 Instance
+- **Container Health**: `sudo docker-compose -f /opt/costfx/docker-compose.yml ps`
+- **Redeploy Images**: `sudo docker-compose pull && sudo docker-compose up -d`
+- **Logs**: `/var/log/user-data.log` and `/var/log/docker-app.log` (also shipped to CloudWatch)
+- **AMI Updates**: Re-run `terraform apply` after updating the Amazon Linux 2023 AMI data source
+
+#### Rolling Back to ECS
+1. Set `deployment_type = "ecs"`
+2. Run `terraform plan` to verify EC2 resources will be destroyed and ECS components recreated
+3. Apply the plan and validate that ECS services report healthy targets
+4. Release the Elastic IP if it is no longer required
+
+> ⚠️ **Recommendation**: Reserve EC2 mode for non-production scenarios. ECS remains the resilient, load-balanced option for customer-facing workloads.
 
 ### Infrastructure Deployment Workflow
 

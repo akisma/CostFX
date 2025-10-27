@@ -1,0 +1,15 @@
+# Remove iOS/Android native code for Expo Go workflow
+ios/
+android/
+
+# Expo
+.expo/
+.expo-shared/
+
+# Dependencies
+node_modules/
+
+# Build
+dist/
+build/
+*.log
